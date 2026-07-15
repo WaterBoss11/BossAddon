@@ -1,0 +1,17 @@
+{
+  "required": true,
+  "package": "com.boss.pvp.client.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "EntityHitboxMixin",
+    "AutoPotSilentRotationMixin",
+    "FastPlaceMixin",
+    "TowerJumpMixin",
+    "NoSlowdownMixin",
+    "NoHurtCamMixin",
+    "AntiEntityPushMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

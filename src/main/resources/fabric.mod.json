@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "boss-pvp",
+  "version": "${version}",
+  "name": "Boss's PVP",
+  "description": "PvP addon for AUTISM Client: 20 combat/utility modules (AutoCrystal, KillAura, AutoTotem, AutoPot, Surround, AutoAnchor, BedAura, HoleFiller, Burrow, Scaffold, AutoHook, AntiKnockback, AutoArmor, AutoGap, ShieldBreaker, Criticals, AimAssist, Offhand, Hitbox, FastPlace).",
+  "authors": [
+    "Boss"
+  ],
+  "license": "GPL-3.0",
+  "custom": {
+    "autism:color": "255,90,53",
+    "modmenu": {
+      "parent": {
+        "id": "autism"
+      }
+    }
+  },
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.boss.pvp.BossPvpInit"
+    ],
+    "autism": [
+      "com.boss.pvp.BossPvpAddon"
+    ]
+  },
+  "mixins": [
+    "boss-pvp.mixins.json"
+  ],
+  "depends": {
+    "java": ">=25",
+    "minecraft": "${mc_compat}",
+    "fabricloader": ">=0.18.4",
+    "fabric-api": "*",
+    "autism": ">=2.3"
+  }
+}

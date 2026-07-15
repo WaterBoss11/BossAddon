@@ -1,0 +1,7 @@
+.gradle/
+build/
+run/
+*.log
+
+# Local dependency drop-in: keep the folder (.gitkeep + README), never commit the jars.
+libs/*.jar

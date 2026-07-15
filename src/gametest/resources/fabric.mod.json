@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "boss-pvp-test",
+  "version": "1.0.0",
+  "name": "Boss PVP Tests",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-client-gametest": ["com.boss.pvp.test.BossPvpClientGameTest"]
+  },
+  "depends": {
+    "boss-pvp": "*",
+    "fabric-api": "*"
+  }
+}
