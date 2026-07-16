@@ -82,6 +82,9 @@ public final class BossPvpAddon extends AutismAddon {
     public static SelfDestructModule selfDestruct;
     public static TrajectoryModule trajectory;
 
+    private static int autoTestCountdown = -1;
+    private static boolean autoTestEnabled = false;
+
     public static java.util.List<String> friends() {
         return killAura != null ? killAura.friends() : java.util.List.of();
     }
@@ -154,9 +157,19 @@ public final class BossPvpAddon extends AutismAddon {
             + " id=" + cmdResult.id() + " reason=" + cmdResult.reason()
             + " | find()=" + cmdFound + " | prefix='" + autismclient.commands.AutismCommands.effectivePrefix() + "'");
 
+        // Auto-enable the test modules 3s after joining a localhost server (client-side, so they actually
+        // turn on). Disable them again on disconnect so they don't linger after testing.
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+            if (isLocalhostServer(client)) autoTestCountdown = 60;
+        });
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            if (autoTestEnabled) disableTestModules();
+        });
+
         AutismAddons.events().onTick(mc -> {
             if (mc.player == null || mc.level == null) return;
 
+            if (autoTestCountdown > 0 && --autoTestCountdown == 0) enableTestModules();
             com.boss.pvp.command.BossAutoTestCommand.tickClient();
             killAura.pollFriendKey(mc);
             com.boss.pvp.util.CombatManager.tick();
@@ -404,6 +417,36 @@ public final class BossPvpAddon extends AutismAddon {
 
             System.out.println("[BossPvP] HUD visibility: restore failed (" + t + ") — will retry next launch.");
         }
+    }
+
+    private static boolean isLocalhostServer(Minecraft client) {
+        net.minecraft.client.multiplayer.ServerData sd = client.getCurrentServer();
+        if (sd == null || sd.ip == null) return false;
+        String host = sd.ip;
+        int colon = host.indexOf(':');
+        if (colon >= 0) host = host.substring(0, colon);
+        host = host.trim().toLowerCase(java.util.Locale.ROOT);
+        return host.equals("localhost") || host.equals("127.0.0.1");
+    }
+
+    private static Module[] autoTestModules() {
+        return new Module[]{ killAura, autoTotem, autoArmor, surround, reach, noSlowdown, antiEntityPush, scaffold, autoCrystal };
+    }
+
+    private static void enableTestModules() {
+        for (Module m : autoTestModules()) if (m != null && !m.isEnabled()) m.setEnabled(true);
+        autoTestEnabled = true;
+        autoTestCountdown = -1;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null) {
+            mc.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("[BossPVP] Test modules enabled automatically"));
+        }
+    }
+
+    private static void disableTestModules() {
+        for (Module m : autoTestModules()) if (m != null && m.isEnabled()) m.setEnabled(false);
+        autoTestEnabled = false;
+        autoTestCountdown = -1;
     }
 
     @Override
