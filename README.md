@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/LogoWithText.png" width="400" alt="Boss's PVP">
+  <img src="assets/LogoWithText.png" width="600" alt="Boss's PVP">
 </p>
 
 <p align="center"><sub>Logo by @WaterBoss11</sub></p>
