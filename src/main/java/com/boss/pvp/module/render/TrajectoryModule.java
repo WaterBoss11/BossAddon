@@ -5,13 +5,14 @@ import com.boss.pvp.util.pvp.PvpUtil;
 
 import autismclient.modules.Module;
 import autismclient.api.module.*;
-import autismclient.util.AutismBufferSource;
 import autismclient.util.AutismWorldGeometry;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 
-import net.minecraft.client.Camera;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.rendertype.AutismRenderTypes;
@@ -28,8 +29,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-
-import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,6 +63,10 @@ public final class TrajectoryModule extends Module {
             .description("Draw a segment every N simulated ticks.").group("Display"));
         add(new IntSetting("maxTicks", "Max ticks", 100, 20, 200, 1)
             .description("How many ticks of flight to simulate.").group("Display"));
+
+        // World-space geometry must be drawn from Fabric's level-render event (which supplies the correct
+        // pose + buffer source), NOT from Module.onRenderLevel — the matrices there are not set up for it.
+        LevelRenderEvents.COLLECT_SUBMITS.register(this::renderTrajectory);
     }
 
     private record Spec(double speed, double gravity, double drag) {}
@@ -77,8 +80,7 @@ public final class TrajectoryModule extends Module {
         hitFriend = false;
     }
 
-    @Override
-    public void onRenderLevel(float partialTick) {
+    private void renderTrajectory(LevelRenderContext context) {
         if (!isEnabled()) return;
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer p = mc.player;
@@ -99,40 +101,37 @@ public final class TrajectoryModule extends Module {
         List<Vec3> path = cachedPath;
         if (path.size() < 2) return;
 
-        int color = cachedColor;
+        final int color = cachedColor;
+        final float width = 2.5f;
+        final int spacing = Math.max(1, integer("dotSpacing"));
+        final List<Vec3> pts = path;
 
-        Camera cam = mc.gameRenderer.mainCamera();
-        Vec3 camPos = cam.position();
-        PoseStack ps = new PoseStack();
-        ps.mulPose(cam.getViewRotationMatrix(new Matrix4f()));
-        PoseStack.Pose pose = ps.last();
+        Vec3 camPos = mc.gameRenderer.mainCamera().position();
+        final double cxp = camPos.x, cyp = camPos.y, czp = camPos.z;
 
-        AutismBufferSource src = new AutismBufferSource();
-        VertexConsumer vc = src.getBuffer(AutismRenderTypes.tracerEspLines());
-
-        double cxp = camPos.x, cyp = camPos.y, czp = camPos.z;
-        int spacing = Math.max(1, integer("dotSpacing"));
-        for (int i = 0; i + 1 < path.size(); i += spacing) {
-            int j = Math.min(i + spacing, path.size() - 1);
-            Vec3 a = path.get(i);
-            Vec3 b = path.get(j);
-            AutismWorldGeometry.line(pose, vc, a.x - cxp, a.y - cyp, a.z - czp, b.x - cxp, b.y - cyp, b.z - czp, color, 2.0f);
-        }
-
-        Vec3 end = path.get(path.size() - 1);
-        double ex = end.x - cxp, ey = end.y - cyp, ez = end.z - czp, s = 0.15;
-        AutismWorldGeometry.line(pose, vc, ex - s, ey, ez, ex + s, ey, ez, color, 2.0f);
-        AutismWorldGeometry.line(pose, vc, ex, ey - s, ez, ex, ey + s, ez, color, 2.0f);
-        AutismWorldGeometry.line(pose, vc, ex, ey, ez - s, ex, ey, ez + s, color, 2.0f);
-
-        src.uploadAndDraw();
+        context.submitNodeCollector().submitCustomGeometry(context.poseStack(),
+            AutismRenderTypes.tracerEspLines(),
+            (pose, vc) -> {
+                for (int i = 0; i + 1 < pts.size(); i += spacing) {
+                    int j = Math.min(i + spacing, pts.size() - 1);
+                    Vec3 a = pts.get(i);
+                    Vec3 b = pts.get(j);
+                    AutismWorldGeometry.line(pose, vc, a.x - cxp, a.y - cyp, a.z - czp, b.x - cxp, b.y - cyp, b.z - czp, color, width);
+                }
+                Vec3 end = pts.get(pts.size() - 1);
+                double ex = end.x - cxp, ey = end.y - cyp, ez = end.z - czp, s = 0.2;
+                AutismWorldGeometry.line(pose, vc, ex - s, ey, ez, ex + s, ey, ez, color, width);
+                AutismWorldGeometry.line(pose, vc, ex, ey - s, ez, ex, ey + s, ez, color, width);
+                AutismWorldGeometry.line(pose, vc, ex, ey, ez - s, ex, ey, ez + s, color, width);
+            });
     }
 
     private List<Vec3> simulate(LocalPlayer p, Level level, Spec spec) {
         hitPlayer = false;
         hitFriend = false;
-        Vec3 pos = p.getEyePosition();
-        Vec3 vel = p.getViewVector(1.0f).normalize().scale(spec.speed());
+        Vec3 look = p.getViewVector(1.0f).normalize();
+        Vec3 pos = p.getEyePosition().add(look.scale(0.3));
+        Vec3 vel = look.scale(spec.speed());
         int max = integer("maxTicks");
         List<Vec3> pts = new ArrayList<>();
         pts.add(pos);
