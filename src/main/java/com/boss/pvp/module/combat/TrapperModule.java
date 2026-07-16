@@ -104,14 +104,14 @@ public final class TrapperModule extends Module {
         if (bool("onlyKillAuraTarget")) {
             if (BossPvpAddon.killAura != null && BossPvpAddon.killAura.isEnabled()
                 && BossPvpAddon.killAura.currentTarget() instanceof Player pl
-                && !(bool("teamCheck") && PvpUtil.isTeammate(p, pl))) return pl;
+                && !(PvpUtil.isFriend(pl, BossPvpAddon.friends()) || (bool("teamCheck") && PvpUtil.isTeammate(p, pl)))) return pl;
             return null;
         }
         Player best = null;
         double bestD = decimal("range") * decimal("range");
         for (Player pl : mc.level.players()) {
             if (pl == p || pl.isSpectator()) continue;
-            if (bool("teamCheck") && PvpUtil.isTeammate(p, pl)) continue;
+            if (PvpUtil.isFriend(pl, BossPvpAddon.friends()) || (bool("teamCheck") && PvpUtil.isTeammate(p, pl))) continue;
             double d = pl.distanceToSqr(p);
             if (d < bestD) { bestD = d; best = pl; }
         }

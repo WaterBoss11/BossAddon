@@ -70,7 +70,7 @@ public final class HoleFillerModule extends Module {
 
         LivingEntity target = pickTarget(mc, me);
 
-        if (target == null || (bool("teamCheck") && target instanceof Player tp && PvpUtil.isTeammate(me, tp))) {
+        if (target == null || (target instanceof Player tp && (PvpUtil.isFriend(tp, BossPvpAddon.friends()) || (bool("teamCheck") && PvpUtil.isTeammate(me, tp))))) {
             legitAim = null; HeldSlotManager.release(this); restoreSlot(mc, me); return;
         }
 
@@ -118,7 +118,7 @@ public final class HoleFillerModule extends Module {
         double bestDist = 36.0;
         for (Player pl : mc.level.players()) {
             if (pl == me || pl.isSpectator()) continue;
-            if (bool("teamCheck") && PvpUtil.isTeammate(me, pl)) continue;
+            if (PvpUtil.isFriend(pl, BossPvpAddon.friends()) || (bool("teamCheck") && PvpUtil.isTeammate(me, pl))) continue;
             double d = pl.distanceToSqr(me);
             if (d < bestDist) { bestDist = d; best = pl; }
         }

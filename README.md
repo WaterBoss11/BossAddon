@@ -70,6 +70,7 @@ conflict within a tick.
 | Module | Description |
 |--------|-------------|
 | NoHurtCam | Removes the camera shake/tilt when you take damage |
+| Trajectory | Predicts projectile flight paths (bow, pearl, snowball, potion, etc.) before you throw |
 
 ## HUD
 
@@ -94,6 +95,13 @@ color as yours.
 
 Wired into KillAura, AimAssist, AutoCrystal, AutoAnchor, BedAura, TriggerBot, ShieldBreaker, Trapper,
 HoleFiller, and Surround.
+
+## Friends List
+
+KillAura holds a shared **Friends list** (an editable list of player names) that all of the team-check modules
+above also respect. Any player whose name matches an entry (case-insensitive) is skipped whenever the list has
+entries — independent of Team check. Bind **Add target to friends** in KillAura to add your current crosshair or
+combat target to the list on the fly. The list persists via AUTISM's settings.
 
 ---
 

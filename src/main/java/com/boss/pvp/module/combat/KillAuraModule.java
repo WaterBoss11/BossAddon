@@ -7,10 +7,13 @@ import com.boss.pvp.util.pvp.PlayerSimulation;
 
 import autismclient.modules.Module;
 import autismclient.api.module.*;
+import autismclient.util.AutismBindUtil;
+import autismclient.util.AutismInputGate;
 import autismclient.util.AutismRotationUtil;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.util.Mth;
@@ -79,7 +82,15 @@ public final class KillAuraModule extends Module {
 
         add(new BoolSetting("teamCheck", "Team check", false)
             .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").group("Team"));
+        add(new StringListSetting("friends", "Friends list", java.util.List.<String>of())
+            .description("Whitelisted player names, case-insensitive. Skipped by all combat modules whenever this list has entries.").group("Team"));
+        add(new KeybindSetting("addFriendKey", "Add target to friends", -1)
+            .description("Adds your current KillAura or crosshair target to the friends list.").group("Team"));
     }
+
+    private boolean prevAddFriendDown = false;
+
+    public java.util.List<String> friends() { return list("friends"); }
 
     @Override
     public void onDisable() {
@@ -98,6 +109,7 @@ public final class KillAuraModule extends Module {
     public long lastAttackMs() { return lastAttackMs; }
 
     public void tick(Minecraft mc) {
+        handleAddFriendKey(mc);
         currentTarget = null;
         LocalPlayer p = mc.player;
         if (p == null || mc.level == null || mc.gameMode == null || mc.gui.screen() != null) { haveAim = false; return; }
@@ -175,7 +187,8 @@ public final class KillAuraModule extends Module {
                 e -> e != p && !e.isRemoved() && e.isAlive())) {
             if (living.hurtTime > hurtCap) continue;
             if (!PvpUtil.matchesEntity(living, ids)) continue;
-            if (bool("teamCheck") && living instanceof Player pl && PvpUtil.isTeammate(p, pl)) continue;
+            if (living instanceof Player pl && (PvpUtil.isFriend(pl, friends())
+                    || (bool("teamCheck") && PvpUtil.isTeammate(p, pl)))) continue;
             if (living.distanceToSqr(p) > rangeSq) continue;
             if (fov < 180.0 && PvpUtil.angleTo(p, living) > fov) continue;
             if (los && !PvpUtil.canSeeEntity(mc, p, living)) continue;
@@ -263,5 +276,32 @@ public final class KillAuraModule extends Module {
 
     private boolean isWeapon(ItemStack stack) {
         return stack.is(ItemTags.SWORDS) || stack.is(ItemTags.AXES);
+    }
+
+    private void handleAddFriendKey(Minecraft mc) {
+        int key = parseKey(value("addFriendKey"));
+        if (key == -1 || !AutismInputGate.canRunAutismKeybinds()) { prevAddFriendDown = false; return; }
+        boolean down = AutismBindUtil.isBindPressed(mc, key);
+        if (down && !prevAddFriendDown) addCurrentTargetToFriends(mc);
+        prevAddFriendDown = down;
+    }
+
+    private void addCurrentTargetToFriends(Minecraft mc) {
+        Player target = null;
+        if (mc.crosshairPickEntity instanceof Player cp) target = cp;
+        else if (currentTarget instanceof Player pl) target = pl;
+        if (target == null || target == mc.player) return;
+        String name = target.getGameProfile().name();
+        if (name == null || name.isBlank()) return;
+        java.util.List<String> cur = new java.util.ArrayList<>(list("friends"));
+        for (String f : cur) if (f != null && f.trim().equalsIgnoreCase(name)) return;
+        cur.add(name);
+        setValue("friends", String.join(",", cur));
+        if (mc.player != null) mc.player.sendSystemMessage(Component.literal("[BossPVP] Added " + name + " to friends"));
+    }
+
+    private int parseKey(String s) {
+        if (s == null) return -1;
+        try { return Integer.parseInt(s.trim()); } catch (NumberFormatException e) { return -1; }
     }
 }

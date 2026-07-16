@@ -214,7 +214,7 @@ public final class SurroundModule extends Module {
         double r = 8.0;
         for (Player pl : mc.level.players()) {
             if (pl == p || pl.isSpectator()) continue;
-            if (bool("teamCheck") && PvpUtil.isTeammate(p, pl)) continue;
+            if (PvpUtil.isFriend(pl, BossPvpAddon.friends()) || (bool("teamCheck") && PvpUtil.isTeammate(p, pl))) continue;
             if (pl.distanceToSqr(p) <= r * r) return true;
         }
         AABB box = p.getBoundingBox().inflate(r);

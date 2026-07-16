@@ -259,7 +259,7 @@ public final class AimAssistModule extends Module {
                     && held.distanceToSqr(me) <= rangeSq
                     && aimPoint(mc, me, eyes, held) != null;
 
-                if (good && bool("teamCheck") && held instanceof Player hp && PvpUtil.isTeammate(me, hp)) good = false;
+                if (good && held instanceof Player hp && (PvpUtil.isFriend(hp, BossPvpAddon.friends()) || (bool("teamCheck") && PvpUtil.isTeammate(me, hp)))) good = false;
 
                 if (good && bool("showCircle") && bool("releaseOnLeave")
                         && !withinCircle(mc, me, held, eyes)) {
@@ -306,7 +306,7 @@ public final class AimAssistModule extends Module {
         if (entity == me || entity.isRemoved() || !entity.isAlive()) return false;
         if (entity.hurtTime > integer("hurt-time")) return false;
         if (!matchesEntity(entity)) return false;
-        if (bool("teamCheck") && entity instanceof Player pl && PvpUtil.isTeammate(me, pl)) return false;
+        if (entity instanceof Player pl && (PvpUtil.isFriend(pl, BossPvpAddon.friends()) || (bool("teamCheck") && PvpUtil.isTeammate(me, pl)))) return false;
         if (entity.distanceToSqr(me) > rangeSq) return false;
         if (crosshairAngle(entity, current, eyes) > fov) return false;
 

@@ -59,7 +59,7 @@ public final class TriggerBotModule extends Module {
         double range = decimal("range");
         if (target.distanceToSqr(p) > range * range) return;
 
-        if (bool("teamCheck") && target instanceof Player pl && PvpUtil.isTeammate(p, pl)) return;
+        if (target instanceof Player pl && (PvpUtil.isFriend(pl, BossPvpAddon.friends()) || (bool("teamCheck") && PvpUtil.isTeammate(p, pl)))) return;
 
         if (target.hurtTime > integer("hurtTime")) return;
 

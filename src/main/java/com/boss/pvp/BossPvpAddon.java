@@ -39,6 +39,7 @@ import com.boss.pvp.module.automation.TriggerBotModule;
 import com.boss.pvp.module.automation.AutoLeaveModule;
 import com.boss.pvp.module.automation.SelfDestructModule;
 import com.boss.pvp.module.render.NoHurtCamModule;
+import com.boss.pvp.module.render.TrajectoryModule;
 import com.boss.pvp.module.combat.AntiEntityPushModule;
 import com.boss.pvp.module.combat.ReachModule;
 
@@ -79,6 +80,11 @@ public final class BossPvpAddon extends AutismAddon {
     public static NoHurtCamModule noHurtCam;
     public static AntiEntityPushModule antiEntityPush;
     public static SelfDestructModule selfDestruct;
+    public static TrajectoryModule trajectory;
+
+    public static java.util.List<String> friends() {
+        return killAura != null ? killAura.friends() : java.util.List.of();
+    }
 
     @Override
     public int apiVersion() {
@@ -119,13 +125,14 @@ public final class BossPvpAddon extends AutismAddon {
         noHurtCam = new NoHurtCamModule();
         antiEntityPush = new AntiEntityPushModule();
         selfDestruct = new SelfDestructModule();
+        trajectory = new TrajectoryModule();
 
         Module[] all = {
             autoPot, hitbox, autoCrystal, autoTotem, aimAssist, killAura, surround, criticals,
             offhand, shieldBreaker, autoArmor, antiKnockback, autoHook, scaffold, autoAnchor,
             bedAura, holeFiller, fastPlace, burrow, autoGap, invManager, trapper, autoXP,
             autoClutch, triggerBot, reach, autoWeapon, noSlowdown, autoLeave, noHurtCam, antiEntityPush,
-            selfDestruct
+            selfDestruct, trajectory
         };
         for (Module m : all) AutismAddons.modules().register(m);
 

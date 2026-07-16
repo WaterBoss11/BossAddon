@@ -324,7 +324,7 @@ public final class AutoCrystalModule extends Module {
         for (Player pl : mc.level.players()) {
             if (pl == me || pl.isSpectator()) continue;
             if (pl.getName().getString().equals(me.getName().getString())) continue;
-            if (bool("teamCheck") && PvpUtil.isTeammate(me, pl)) continue;
+            if (PvpUtil.isFriend(pl, BossPvpAddon.friends()) || (bool("teamCheck") && PvpUtil.isTeammate(me, pl))) continue;
             double d = pl.distanceToSqr(me);
             if (d < bestDist) { bestDist = d; best = pl; }
         }

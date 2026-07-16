@@ -216,6 +216,16 @@ public final class PvpUtil {
     private static final int TEAM_COLOR_TOLERANCE = 15;
     private static final int TEAM_MIN_MATCHES = 2;
 
+    public static boolean isFriend(Player target, List<String> friends) {
+        if (target == null || friends == null || friends.isEmpty()) return false;
+        String name = target.getGameProfile().name();
+        if (name == null || name.isBlank()) return false;
+        for (String f : friends) {
+            if (f != null && f.trim().equalsIgnoreCase(name)) return true;
+        }
+        return false;
+    }
+
     public static boolean isTeammate(LocalPlayer self, Player target) {
         if (self == null || target == null || self == target) return false;
         int matches = 0;

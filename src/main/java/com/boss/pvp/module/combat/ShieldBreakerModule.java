@@ -62,7 +62,7 @@ public final class ShieldBreakerModule extends Module {
             LivingEntity target = target(mc, p);
             if (target == null) return;
 
-            if (bool("teamCheck") && target instanceof Player tp && PvpUtil.isTeammate(p, tp)) return;
+            if (target instanceof Player tp && (PvpUtil.isFriend(tp, BossPvpAddon.friends()) || (bool("teamCheck") && PvpUtil.isTeammate(p, tp)))) return;
             if (bool("onlyWhenBlocking") && !(target instanceof Player pl && pl.isBlocking())) return;
             int axe = findAxe(p);
             if (axe < 0) return;
@@ -111,7 +111,7 @@ public final class ShieldBreakerModule extends Module {
         double bestD = rangeSq;
         for (Player pl : mc.level.players()) {
             if (pl == p || pl.isSpectator()) continue;
-            if (bool("teamCheck") && PvpUtil.isTeammate(p, pl)) continue;
+            if (PvpUtil.isFriend(pl, BossPvpAddon.friends()) || (bool("teamCheck") && PvpUtil.isTeammate(p, pl))) continue;
             double d = pl.distanceToSqr(p);
             if (d < bestD) { bestD = d; best = pl; }
         }
