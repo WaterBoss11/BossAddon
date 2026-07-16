@@ -168,7 +168,14 @@ public final class BossPvpAddon extends AutismAddon {
         // Auto-enable the test modules 3s after joining a localhost server (client-side, so they actually
         // turn on). Disable them again on disconnect so they don't linger after testing.
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-            if (isLocalhostServer(client)) autoTestCountdown = 60;
+            boolean local = isLocalhostServer(client);
+            net.minecraft.client.multiplayer.ServerData sd = client.getCurrentServer();
+            System.out.println("[BossPvP] JOIN: server='" + (sd == null ? "<null/singleplayer>" : sd.ip)
+                + "' localhost=" + local);
+            if (local) {
+                autoTestCountdown = 60;
+                System.out.println("[BossPvP] auto-enable armed (60-tick countdown; fires once mc.player+mc.level are in world)");
+            }
         });
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             if (autoTestEnabled) disableTestModules();
@@ -443,10 +450,21 @@ public final class BossPvpAddon extends AutismAddon {
     }
 
     private static void enableTestModules() {
-        for (Module m : autoTestModules()) if (m != null && !m.isEnabled()) m.setEnabled(true);
+        Minecraft mc = Minecraft.getInstance();
+        System.out.println("[BossPvP] auto-enable firing: in-world=" + (mc.player != null && mc.level != null)
+            + " — enabling " + autoTestModules().length + " test modules");
+        for (Module m : autoTestModules()) {
+            if (m == null) { System.out.println("[BossPvP]   - <null module reference> (skipped)"); continue; }
+            if (m.isEnabled()) { System.out.println("[BossPvP]   - " + m.name() + ": already enabled"); continue; }
+            try {
+                m.setEnabled(true);
+                System.out.println("[BossPvP]   - " + m.name() + ": setEnabled(true) -> isEnabled=" + m.isEnabled());
+            } catch (Throwable t) {
+                System.out.println("[BossPvP]   - " + m.name() + ": setEnabled(true) FAILED -> " + t);
+            }
+        }
         autoTestEnabled = true;
         autoTestCountdown = -1;
-        Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
             mc.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("[BossPVP] Test modules enabled automatically"));
         }
