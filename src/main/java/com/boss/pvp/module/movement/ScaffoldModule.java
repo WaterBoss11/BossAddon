@@ -22,6 +22,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
@@ -105,9 +106,9 @@ public final class ScaffoldModule extends Module {
             .description("Send extra swings when a placement can't land, to look legit.").group("Rotation"));
 
         add(new BoolSetting("tower", "Tower (hold jump)", true).group("Tower"));
-        add(new DoubleSetting("towerMotion", "Tower motion", 0.42, 0.0, 1.0, 0.01).group("Tower"));
-        add(new DoubleSetting("towerTrigger", "Tower trigger height", 0.78, 0.76, 1.0, 0.01).group("Tower"));
-        add(new DoubleSetting("towerSlow", "Tower horizontal slow", 1.0, 0.0, 1.0, 0.05).group("Tower"));
+        add(new DoubleSetting("towerSpeed", "Tower speed", 0.5, 0.1, 1.0, 0.01).group("Tower"));
+        add(new BoolSetting("whileMoving", "Tower while moving", false)
+            .description("Off = only tower when standing still (Meteor default).").group("Tower"));
         add(new BoolSetting("centerFirst", "Center first", true).group("Tower"));
 
         add(new BoolSetting("preferObsidian", "Prefer Obsidian", true).group("Blocks"));
@@ -150,7 +151,8 @@ public final class ScaffoldModule extends Module {
         boolean fast = "Fast".equals(choice("mode"));
         boolean realRot = legit && !bool("silentRotation");
 
-        boolean towering = bool("tower") && mc.options != null && mc.options.keyJump.isDown();
+        boolean towering = bool("tower") && mc.options != null && mc.options.keyJump.isDown()
+            && (bool("whileMoving") || !movingHoriz(p));
 
         if (towering) {
             HeldSlotManager.request(this, HeldSlotManager.PRIORITY_SCAFFOLD);
@@ -330,46 +332,40 @@ public final class ScaffoldModule extends Module {
         return (rng.nextDouble() * 2.0 - 1.0) * range;
     }
 
-    // ---- Tower (LiquidBounce Motion) --------------------------------------------------------------------
+    // ---- Tower (Meteor fast tower) ----------------------------------------------------------------------
 
     private void handleTower(Minecraft mc, LocalPlayer p, Level level, boolean realRot) {
         if (!towerActive) {
             towerActive = true;
-            towerFloorY = Mth.floor(p.getY()) - 1;
-            jumpOffY = p.getY();
             towerCentered = !bool("centerFirst");
         }
-
         if (!towerCentered) {
             if (centerByWalk(mc, p)) towerCentered = true;
             else return;
         }
 
-        if (p.onGround()) { towerFloorY = Mth.floor(p.getY()) - 1; jumpOffY = p.getY(); }
-
-        // Motion tower: when risen past the trigger height, snap to a whole block, re-launch, damp horizontal.
-        double trigger = decimal("towerTrigger");
+        // Meteor-style fast tower: rise at towerSpeed each tick unless a block sits directly above; when it
+        // does, snap up to the whole block and mark grounded so we stand on it.
         Vec3 v = p.getDeltaMovement();
-        if (!Double.isNaN(jumpOffY) && p.getY() > jumpOffY + trigger) {
-            double snappedY = Math.floor(p.getY());
-            p.setPos(p.getX(), snappedY, p.getZ());
-            double slow = decimal("towerSlow");
-            p.setDeltaMovement(v.x * slow, decimal("towerMotion"), v.z * slow);
-            jumpOffY = snappedY;
+        AABB above = p.getBoundingBox().move(0.0, 1.0, 0.0);
+        boolean blockAbove = level.getBlockCollisions(p, above).iterator().hasNext();
+        if (!blockAbove) {
+            p.setDeltaMovement(v.x, decimal("towerSpeed"), v.z);
         } else {
-            p.setDeltaMovement(v.x * decimal("towerSlow"), v.y, v.z * decimal("towerSlow"));
+            p.setDeltaMovement(v.x, Math.ceil(p.getY()) - p.getY(), v.z);
+            p.setOnGround(true);
         }
 
+        // Place the block directly below the player.
         long now = System.currentTimeMillis();
-        if (p.getY() >= towerFloorY + 2.0 && now - lastPlaceMs >= placeDelay(false, false, true)) {
-            BlockPos cell = new BlockPos(Mth.floor(p.getX()), towerFloorY + 1, Mth.floor(p.getZ()));
+        if (now - lastPlaceMs >= placeDelay(false, false, true)) {
+            BlockPos cell = new BlockPos(Mth.floor(p.getX()), Mth.floor(p.getY()) - 1, Mth.floor(p.getZ()));
             if (isReplaceable(level.getBlockState(cell)) && ensureBlock(mc, p)) {
                 Hit h = hitFor(mc, level, p, cell, p.getDirection());
                 if (h != null) {
                     placeAt(mc, p, h, realRot);
                     lastTarget = cell; lastHit = h; lastSentMs = now; retries = 0;
                     lastPlaceMs = now;
-                    towerFloorY = cell.getY();
                 }
             }
         }
@@ -377,11 +373,13 @@ public final class ScaffoldModule extends Module {
 
     public boolean towering() {
         Minecraft mc = Minecraft.getInstance();
-        return isEnabled() && bool("tower") && mc != null && mc.options != null && mc.options.keyJump.isDown();
+        if (!(isEnabled() && bool("tower") && mc != null && mc.player != null
+                && mc.options != null && mc.options.keyJump.isDown())) return false;
+        return bool("whileMoving") || !movingHoriz(mc.player);
     }
 
     public float towerLaunch() {
-        return (float) decimal("towerMotion");
+        return (float) decimal("towerSpeed");
     }
 
     private void stopTower() {

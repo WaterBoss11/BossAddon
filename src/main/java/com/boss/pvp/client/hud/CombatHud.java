@@ -26,7 +26,7 @@ public final class CombatHud implements HudElementProvider {
     @Override public String description() { return "Target + HP, totem/crystal/gapple counts, active modules."; }
 
     @Override public int width()  { return 150; }
-    @Override public int height() { return 33; }
+    @Override public int height() { return 47; }
     @Override public boolean defaultEnabled() { return false; }
     @Override public String defaultAnchor() { return "TOP_LEFT"; }
     @Override public int defaultX() { return 4; }
@@ -77,6 +77,14 @@ public final class CombatHud implements HudElementProvider {
         line += 11;
 
         ctx.text(font, "On: " + onStr, x, line, 0xFF66FF99);
+        line += 11;
+
+        // Attack-cooldown bar (green when fully charged, orange while recharging).
+        float cd = Math.max(0.0f, Math.min(1.0f, mc.player.getAttackStrengthScale(0.0f)));
+        int barW = 120;
+        int filled = Math.round(barW * cd);
+        ctx.fill(x, line, x + barW, line + 3, 0xFF333333);
+        if (filled > 0) ctx.fill(x, line, x + filled, line + 3, cd >= 1.0f ? 0xFF55FF55 : 0xFFFFAA33);
     }
 
     private int fullCubeCount(Minecraft mc) {

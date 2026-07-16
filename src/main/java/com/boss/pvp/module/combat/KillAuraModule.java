@@ -14,6 +14,7 @@ import autismclient.util.AutismRotationUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.util.Mth;
@@ -40,6 +41,8 @@ public final class KillAuraModule extends Module {
     private float aimYaw, aimPitch;
     private boolean haveAim = false;
     private boolean rotationArrived = true;
+    private boolean butterflyFast = false;
+    private final java.util.Random rng = new java.util.Random();
 
     public KillAuraModule() {
         super(BossPvpAddon.ID + ":killaura", "KillAura", "Melee kill aura with silent rotation, prediction and autoblock.");
@@ -56,6 +59,10 @@ public final class KillAuraModule extends Module {
 
         add(new IntSetting("minCps", "Min CPS", 8, 1, 20, 1).group("Attack"));
         add(new IntSetting("maxCps", "Max CPS", 12, 1, 20, 1).group("Attack"));
+        add(new ChoiceSetting("clickPattern", "Click pattern", "Stabilized", "Stabilized", "NormalDistribution", "Butterfly", "Drag")
+            .description("Human-like attack timing. Stabilized = the previous even CPS timing.").group("Attack"));
+        add(new BoolSetting("noMissCooldown", "No-miss cooldown", false)
+            .description("Don't spend the attack cooldown on a tick where no target is in reach.").group("Attack"));
         add(new BoolSetting("fullCharge", "Full charge only", true).group("Attack"));
         add(new IntSetting("hitChance", "Hit chance", 100, 0, 100, 1).formatter(v -> v + "%").group("Attack"));
 
@@ -63,7 +70,12 @@ public final class KillAuraModule extends Module {
         add(new IntSetting("rotationSpeed", "Rotation speed", 180, 1, 180, 1)
             .formatter(v -> v + "°/t")
             .description("Max degrees the aim turns per tick toward the target. 180 = instant snap; lower = smooth, legit glide (attack waits until aligned).").group("Targeting"));
-        add(new ChoiceSetting("targetSort", "Sort", "Distance", "Distance", "Health", "Angle", "Type", "LowestHpThenDistance").group("Targeting"));
+        add(new ChoiceSetting("targetSort", "Sort", "Distance", "Distance", "Health", "HurtTime", "Age", "Direction", "Angle", "Type", "LowestHpThenDistance").group("Targeting"));
+        add(new ChoiceSetting("secondarySort", "Secondary sort", "None", "None", "Distance", "Health", "HurtTime", "Age", "Direction").group("Targeting"));
+        add(new ChoiceSetting("rotationTiming", "Rotation timing", "Always", "Always", "OnTick")
+            .description("OnTick = only rotate on the tick we actually attack (look freely between hits).").group("Targeting"));
+        add(new BoolSetting("ignoreOnShieldBreak", "Ignore cooldown on shield-break", false)
+            .description("Skip the CPS delay while ShieldBreaker is breaking the current target.").group("Targeting"));
         add(new IntSetting("maxTargets", "Max targets", 1, 1, 5, 1).group("Targeting"));
         add(new BoolSetting("rotateOnly", "Rotate only (no auto-attack)", false).group("Targeting"));
         add(new ChoiceSetting("aimPart", "Aim at", "Body", "Body", "Head", "Feet", "Nearest").group("Targeting"));
@@ -130,15 +142,25 @@ public final class KillAuraModule extends Module {
         Vec3 eyes = p.getEyePosition();
         Vec3 point = aimPoint(primary, eyes);
         AutismRotationUtil.Rotation wanted = AutismRotationUtil.lookingAt(point, eyes);
-        applyRotation(p, wanted);
 
-        if (bool("rotateOnly")) return;
-        if (!rotationArrived) { autoBlock(mc, p, true); return; }
+        boolean onTick = "OnTick".equals(choice("rotationTiming"));
+        if (!onTick) {
+            applyRotation(p, wanted);
+            if (bool("rotateOnly")) return;
+            if (!rotationArrived) { autoBlock(mc, p, true); return; }
+        } else {
+            haveAim = false;
+            if (bool("rotateOnly")) { applyRotation(p, wanted); return; }
+        }
+
+        boolean shieldBreakBypass = bool("ignoreOnShieldBreak")
+            && BossPvpAddon.shieldBreaker != null && BossPvpAddon.shieldBreaker.isActive()
+            && BossPvpAddon.shieldBreaker.victim() == primary;
 
         long now = System.currentTimeMillis();
-        if (now - lastAttackMs < nextDelayMs) { autoBlock(mc, p, false); return; }
+        if (!shieldBreakBypass && now - lastAttackMs < nextDelayMs) { autoBlock(mc, p, false); return; }
         if (bool("fullCharge") && !PvpUtil.fullCharge(p)) { autoBlock(mc, p, true); return; }
-        if (!PvpUtil.roll(integer("hitChance"))) { lastAttackMs = now; nextDelayMs = PvpUtil.cpsDelayMs(integer("minCps"), integer("maxCps")); return; }
+        if (!PvpUtil.roll(integer("hitChance"))) { lastAttackMs = now; nextDelayMs = patternDelay(); return; }
 
         if (autoBlocking) { mc.gameMode.releaseUsingItem(p); autoBlocking = false; }
 
@@ -152,8 +174,15 @@ public final class KillAuraModule extends Module {
 
         if (BossPvpAddon.autoWeapon != null && BossPvpAddon.autoWeapon.isEnabled()) BossPvpAddon.autoWeapon.selectBestWeapon(primary);
 
+        if (onTick) {
+            AutismRotationUtil.Rotation snap = AutismRotationUtil.normalizeToSensitivity(wanted, AutismRotationUtil.playerRotation(p));
+            var conn = mc.getConnection();
+            if (conn != null) conn.send(new ServerboundMovePlayerPacket.Rot(snap.yaw(), snap.pitch(), p.onGround(), p.horizontalCollision));
+        }
+
         double atkSq = range * range;
         boolean physPredict = bool("physicsPredict");
+        boolean hit = false;
         for (LivingEntity target : targets) {
             boolean inReach = target.distanceToSqr(p) <= atkSq;
 
@@ -163,11 +192,34 @@ public final class KillAuraModule extends Module {
             if (!inReach) continue;
             mc.gameMode.attack(p, target);
             if (bool("swing")) p.swing(InteractionHand.MAIN_HAND);
+            hit = true;
         }
         if (bool("keepSprint") && wasSprinting) p.setSprinting(true);
 
-        lastAttackMs = now;
-        nextDelayMs = PvpUtil.cpsDelayMs(integer("minCps"), integer("maxCps"));
+        if (hit || !bool("noMissCooldown")) {
+            lastAttackMs = now;
+            nextDelayMs = patternDelay();
+        }
+    }
+
+    private long patternDelay() {
+        int min = integer("minCps");
+        int max = integer("maxCps");
+        return switch (choice("clickPattern")) {
+            case "NormalDistribution" -> {
+                double mean = (min + max) / 2.0;
+                double cps = mean + rng.nextGaussian() * Math.max(0.5, (max - min) / 4.0);
+                cps = Math.max(1.0, Math.min(20.0, cps));
+                yield (long) (1000.0 / cps);
+            }
+            case "Butterfly" -> {
+                butterflyFast = !butterflyFast;
+                int cps = butterflyFast ? max : min;
+                yield (long) (1000.0 / Math.max(1, cps));
+            }
+            case "Drag" -> (long) (1000.0 / Math.max(1, max * 2));
+            default -> PvpUtil.cpsDelayMs(min, max);
+        };
     }
 
     private List<LivingEntity> collectTargets(Minecraft mc, LocalPlayer p, double range, Set<String> ids) {
@@ -193,7 +245,12 @@ public final class KillAuraModule extends Module {
             if (los && !PvpUtil.canSeeEntity(mc, p, living)) continue;
             all.add(living);
         }
-        all.sort((a, b) -> Double.compare(score(p, a, sort), score(p, b, sort)));
+        String secondary = choice("secondarySort");
+        all.sort((a, b) -> {
+            int c = Double.compare(score(p, a, sort), score(p, b, sort));
+            if (c != 0 || "None".equals(secondary)) return c;
+            return Double.compare(score(p, a, secondary), score(p, b, secondary));
+        });
         for (int i = 0; i < all.size() && i < max; i++) out.add(all.get(i));
         return out;
     }
@@ -201,7 +258,9 @@ public final class KillAuraModule extends Module {
     private double score(LocalPlayer p, LivingEntity e, String sort) {
         return switch (sort) {
             case "Health" -> e.getHealth() + e.getAbsorptionAmount();
-            case "Angle" -> PvpUtil.angleTo(p, e);
+            case "Angle", "Direction" -> PvpUtil.angleTo(p, e);
+            case "HurtTime" -> e.hurtTime;
+            case "Age" -> e.tickCount;
 
             case "Type" -> typeWeight(e) * 1.0e6 + Math.sqrt(e.distanceToSqr(p));
             case "LowestHpThenDistance" -> (e.getHealth() + e.getAbsorptionAmount()) * 10000.0 + Math.sqrt(e.distanceToSqr(p));

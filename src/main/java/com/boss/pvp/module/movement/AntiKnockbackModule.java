@@ -43,6 +43,8 @@ public final class AntiKnockbackModule extends Module {
             .description("How many ticks to release W before re-pressing it (resets sprint).").group("W-tap"));
         add(new BoolSetting("wtapOnlyForward", "Only while moving forward", true)
             .description("No-op if you aren't actually holding W (nothing to reset).").group("W-tap"));
+        add(new BoolSetting("superKb", "Super KB (offensive W-tap on hit)", false)
+            .description("Release W on each of your attacks to maximise knockback DEALT (independent of the W-tap toggle).").group("W-tap"));
     }
 
     @Override
@@ -62,7 +64,7 @@ public final class AntiKnockbackModule extends Module {
         int hurt = p.hurtTime;
         boolean freshHit = hurt > prevHurtTime;
 
-        if (bool("wtap")) handleWTap(mc, p, freshHit);
+        if (bool("wtap") || bool("superKb")) handleWTap(mc, p, freshHit);
         else endTap(mc);
 
         if (freshHit) {
@@ -120,7 +122,7 @@ public final class AntiKnockbackModule extends Module {
         prevKaAttackMs = kaMs;
         boolean onHit = attackEdge || kaHit;
 
-        boolean fire = switch (choice("wtapTrigger")) {
+        boolean fire = bool("superKb") ? onHit : switch (choice("wtapTrigger")) {
             case "On hurt" -> freshHit;
             case "Both" -> onHit || freshHit;
             default -> onHit;

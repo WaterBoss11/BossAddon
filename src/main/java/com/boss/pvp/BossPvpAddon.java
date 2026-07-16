@@ -40,6 +40,7 @@ import com.boss.pvp.module.automation.AutoLeaveModule;
 import com.boss.pvp.module.automation.SelfDestructModule;
 import com.boss.pvp.module.render.NoHurtCamModule;
 import com.boss.pvp.module.render.TrajectoryModule;
+import com.boss.pvp.module.combat.AutoShootModule;
 import com.boss.pvp.module.combat.AntiEntityPushModule;
 import com.boss.pvp.module.combat.ReachModule;
 
@@ -81,6 +82,7 @@ public final class BossPvpAddon extends AutismAddon {
     public static AntiEntityPushModule antiEntityPush;
     public static SelfDestructModule selfDestruct;
     public static TrajectoryModule trajectory;
+    public static AutoShootModule autoShoot;
 
     private static int autoTestCountdown = -1;
     private static boolean autoTestEnabled = false;
@@ -129,13 +131,14 @@ public final class BossPvpAddon extends AutismAddon {
         antiEntityPush = new AntiEntityPushModule();
         selfDestruct = new SelfDestructModule();
         trajectory = new TrajectoryModule();
+        autoShoot = new AutoShootModule();
 
         Module[] all = {
             autoPot, hitbox, autoCrystal, autoTotem, aimAssist, killAura, surround, criticals,
             offhand, shieldBreaker, autoArmor, antiKnockback, autoHook, scaffold, autoAnchor,
             bedAura, holeFiller, fastPlace, burrow, autoGap, invManager, trapper, autoXP,
             autoClutch, triggerBot, reach, autoWeapon, noSlowdown, autoLeave, noHurtCam, antiEntityPush,
-            selfDestruct, trajectory
+            selfDestruct, trajectory, autoShoot
         };
         for (Module m : all) AutismAddons.modules().register(m);
 
@@ -200,6 +203,7 @@ public final class BossPvpAddon extends AutismAddon {
             if (reach.isEnabled())         reach.tick(mc);
             if (autoLeave.isEnabled())     autoLeave.tick(mc);
             if (selfDestruct.isEnabled())  selfDestruct.tick(mc);
+            if (autoShoot.isEnabled())     autoShoot.tick(mc);
 
             com.boss.pvp.util.pvp.RotationManager.endTickCommit();
 

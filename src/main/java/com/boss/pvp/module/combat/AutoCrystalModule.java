@@ -20,6 +20,14 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundSoundPacket;
+import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.CombatRules;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffects;
@@ -57,6 +65,9 @@ public final class AutoCrystalModule extends Module {
     private Vec3 legitAim = null;
 
     private final Map<Integer, Long> recentlyHit = new HashMap<>();
+
+    // Set by the packet triggers (network thread) to make the next client tick act without waiting out the delay.
+    private volatile boolean forceAct = false;
 
     private DamageSource explosionSource;
 
@@ -108,12 +119,45 @@ public final class AutoCrystalModule extends Module {
         add(new BoolSetting("teamCheck", "Team check", false)
             .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").group("Team"));
 
+        add(new BoolSetting("onBlockChange", "Trigger on block change", false)
+            .description("Act immediately (skip the delay) when a block near the target changes.").group("Triggers"));
+        add(new BoolSetting("onExplodeSound", "Trigger on explode sound", false)
+            .description("Act immediately when an explosion sound plays.").group("Triggers"));
+        add(new BoolSetting("onEntityTeleport", "Trigger on target teleport", false)
+            .description("Act immediately when an entity teleports.").group("Triggers"));
+        add(new BoolSetting("dualDamage", "Dual-position damage check", false)
+            .description("Require the crystal be effective at both the target's current and 2-tick predicted position.").group("Safety"));
+        add(new DoubleSetting("wallsRange", "Walls range (through-wall)", 0.0, 0.0, 6.0, 0.5)
+            .description("Act on a non-visible crystal/position only within this distance (0 = strict line-of-sight).").group("Targeting"));
+        add(new BoolSetting("offhandCrystal", "Use offhand crystals", false)
+            .description("Place from the offhand if it holds end crystals (no hotbar switch).").group("Switch"));
+
         ClientEntityEvents.ENTITY_LOAD.register(this::onCrystalSpawn);
     }
 
     @Override
-    public void onDisable() {
+    public void onSoundPacket(ClientboundSoundPacket packet) {
+        if (isEnabled() && bool("onExplodeSound") && packet.getSound().value() == SoundEvents.GENERIC_EXPLODE.value()) {
+            forceAct = true;
+        }
+    }
 
+    @Override
+    public boolean onPacketReceive(Packet<?> packet) {
+        if (isEnabled()) {
+            if (bool("onBlockChange")
+                    && (packet instanceof ClientboundBlockUpdatePacket || packet instanceof ClientboundSectionBlocksUpdatePacket)) {
+                forceAct = true;
+            } else if (bool("onEntityTeleport") && packet instanceof ClientboundTeleportEntityPacket) {
+                forceAct = true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public void onDisable() {
+        forceAct = false;
         Minecraft mc = Minecraft.getInstance();
         if (mc != null && mc.player != null && prevSlot >= 0 && bool("switchBack")) {
             AutismInventoryHelper.selectHotbarSlot(mc, prevSlot);
@@ -144,13 +188,15 @@ public final class AutoCrystalModule extends Module {
         long now = System.currentTimeMillis();
         explosionSource = level.damageSources().explosion(null, null);
         pruneRecentlyHit(now);
+        boolean force = forceAct;
+        forceAct = false;
 
         int budget = integer("maxPerTick");
         boolean realRot = "Real".equals(choice("rotationMode"));
 
         if (realRot) easeLegit(me); else legitAim = null;
 
-        if (bool("doBreak") && now - lastBreakMs >= PvpUtil.jitterMs(integer("breakDelay"))) {
+        if (bool("doBreak") && (force || now - lastBreakMs >= PvpUtil.jitterMs(integer("breakDelay")))) {
             int done = 0;
             for (EndCrystal crystal : crystalsNear(mc, target.position(), decimal("breakRange"))) {
                 if (done >= budget) break;
@@ -159,7 +205,8 @@ public final class AutoCrystalModule extends Module {
                 double selfDmg = crystalDamage(me, cpos);
                 double enemyDmg = crystalDamage(target, cpos);
                 if (!safeToAct(me, selfDmg, enemyDmg, decimal("minBreakDamage"), false)) continue;
-                if (bool("raytrace") && !PvpUtil.canSee(mc, me, me.getEyePosition(), cpos)) continue;
+                if (bool("dualDamage") && predictedEnemyDamage(target, cpos) < decimal("minBreakDamage")) continue;
+                if (!losOk(mc, me, cpos)) continue;
 
                 PvpUtil.ghostSafeAttack(mc, me, crystal, cpos, !"Packet".equals(choice("breakMode")));
                 if (bool("setDead")) recentlyHit.put(crystal.getId(), now);
@@ -170,15 +217,17 @@ public final class AutoCrystalModule extends Module {
             if (done > 0) return;
         }
 
-        if (bool("doPlace") && now - lastPlaceMs >= PvpUtil.jitterMs(integer("placeDelay"))) {
+        if (bool("doPlace") && (force || now - lastPlaceMs >= PvpUtil.jitterMs(integer("placeDelay")))) {
             List<Candidate> bases = bestBases(mc, me, target, integer("maxPlace"));
             if (bases.isEmpty()) return;
-            if (!ensureCrystal(mc, me)) return;
+            boolean useOffhand = bool("offhandCrystal") && me.getOffhandItem().is(Items.END_CRYSTAL);
+            if (!useOffhand && !ensureCrystal(mc, me)) return;
             int placed = 0;
             for (Candidate c : bases) {
                 BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(c.base()).add(0, 0.5, 0), Direction.UP, c.base(), false);
 
-                PvpUtil.ghostSafeUseOn(mc, me, hit);
+                if (useOffhand) placeOffhand(mc, me, hit);
+                else PvpUtil.ghostSafeUseOn(mc, me, hit);
                 if (realRot) legitAim = hit.getLocation();
                 placed++;
             }
@@ -222,7 +271,8 @@ public final class AutoCrystalModule extends Module {
                     double enemyDmg = crystalDamage(target, crystalPos);
                     double selfDmg = crystalDamage(me, crystalPos);
                     if (!safeToAct(me, selfDmg, enemyDmg, minEnemy, facePlace)) continue;
-                    if (bool("raytrace") && !PvpUtil.canSee(mc, me, eyes, crystalPos)) continue;
+                    if (!facePlace && bool("dualDamage") && predictedEnemyDamage(target, crystalPos) < minEnemy) continue;
+                    if (!losOk(mc, me, crystalPos)) continue;
 
                     valid.add(new Candidate(base, enemyDmg, selfDmg, distSq));
                 }
@@ -352,7 +402,7 @@ public final class AutoCrystalModule extends Module {
         Vec3 cpos = crystal.position();
         double breakRange = decimal("breakRange");
         if (cpos.distanceToSqr(me.getEyePosition()) > breakRange * breakRange) return;
-        if (bool("raytrace") && !PvpUtil.canSee(mc, me, me.getEyePosition(), cpos)) return;
+        if (!losOk(mc, me, cpos)) return;
 
         Player target = nearestEnemy(mc, me);
         if (target == null) return;
@@ -373,5 +423,36 @@ public final class AutoCrystalModule extends Module {
         if (recentlyHit.isEmpty()) return;
         long window = Math.max(300L, integer("breakDelay") * 3L);
         recentlyHit.values().removeIf(t -> now - t > window);
+    }
+
+    // Line-of-sight gate: visible always passes; a non-visible point passes only within wallsRange (0 = off).
+    private boolean losOk(Minecraft mc, LocalPlayer me, Vec3 to) {
+        if (!bool("raytrace")) return true;
+        Vec3 eyes = me.getEyePosition();
+        if (PvpUtil.canSee(mc, me, eyes, to)) return true;
+        double wr = decimal("wallsRange");
+        return wr > 0.0 && to.distanceToSqr(eyes) <= wr * wr;
+    }
+
+    // Approx damage to the target at its 2-tick predicted position (optimistic full exposure) for dual-damage.
+    private double predictedEnemyDamage(Player target, Vec3 crystalPos) {
+        Vec3 pp = PlayerSimulation.predictPosition(target, 2);
+        if (pp == null) return 0.0;
+        double raw = DamageUtil.rawExplosionDamage(1.0, pp.distanceTo(crystalPos), DamageUtil.CRYSTAL_POWER);
+        if (raw <= 0.0) return 0.0;
+        return DamageUtil.effectiveDamage(target, raw, explosionSource);
+    }
+
+    // Silent place from the offhand (mirrors ghostSafeUseOn but with the off-hand).
+    private void placeOffhand(Minecraft mc, LocalPlayer me, BlockHitResult hit) {
+        AutismRotationUtil.Rotation cur = AutismRotationUtil.playerRotation(me);
+        AutismRotationUtil.Rotation look = AutismRotationUtil.normalizeToSensitivity(
+            AutismRotationUtil.lookingAt(hit.getLocation(), me.getEyePosition()), cur);
+        if (mc.getConnection() != null) {
+            mc.getConnection().send(new ServerboundMovePlayerPacket.Rot(
+                look.yaw(), look.pitch(), me.onGround(), me.horizontalCollision));
+        }
+        mc.gameMode.useItemOn(me, InteractionHand.OFF_HAND, hit);
+        me.swing(InteractionHand.OFF_HAND);
     }
 }

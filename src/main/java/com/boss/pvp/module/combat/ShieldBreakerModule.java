@@ -46,6 +46,10 @@ public final class ShieldBreakerModule extends Module {
         HeldSlotManager.clear(this);
     }
 
+    public boolean isActive() { return seq >= 0; }
+
+    public LivingEntity victim() { return victim; }
+
     public void tick(Minecraft mc) {
         LocalPlayer p = mc.player;
         if (p == null || mc.level == null || mc.gameMode == null || mc.gui.screen() != null) return;
