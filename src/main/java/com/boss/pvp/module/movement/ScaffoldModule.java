@@ -12,7 +12,6 @@ import autismclient.util.AutismRotationUtil;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
@@ -29,6 +28,13 @@ import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Scaffold — auto-bridge rebuilt around LiquidBounce's nextgen technique set, adapted to Java + AUTISM 3.4.
+ * Keeps the ghost-safe placement path (PvpUtil.ghostSafeUseOn), HeldSlotManager slot arbitration, and the
+ * velocity-lookahead placement search; adds Zitter, Eagle, StabilizeMovement, AdvancedRotation, the
+ * None/Safe/OnEdge SafeWalk set, an improved Motion tower, Down scaffold, Slow (speed limiter) and
+ * SimulatePlacementAttempts.
+ */
 public final class ScaffoldModule extends Module {
 
     private static final double PLACE_REACH = 4.5;
@@ -58,25 +64,50 @@ public final class ScaffoldModule extends Module {
     private boolean towerActive = false;
     private boolean towerCentered = false;
     private int towerFloorY = Integer.MIN_VALUE;
+    private double jumpOffY = Double.NaN;
+
+    // Zitter state.
+    private boolean zitterSide = false;
+    private long zitterFlipMs = 0L;
+    // Eagle state.
+    private int placedThisCycle = 0;
 
     private record Hit(BlockPos neighbor, Direction face, Vec3 vec) {}
 
     public ScaffoldModule() {
-        super(BossPvpAddon.ID + ":scaffold", "Scaffold", "Auto-bridge: silent rotation, velocity look-ahead, safewalk.");
+        super(BossPvpAddon.ID + ":scaffold", "Scaffold", "Auto-bridge (LiquidBounce-style): zitter, eagle, stabilize, safewalk, tower.");
 
         add(new ChoiceSetting("mode", "Mode", "Normal", "Normal", "Fast", "Legit").group("General"));
         add(new BoolSetting("silentRotation", "Silent rotation", true)
             .description("ON forces silent even in Legit. OFF lets Legit move the real camera.").group("General"));
         add(new DoubleSetting("lookahead", "Lookahead ticks", 1.5, 0.0, 4.0, 0.1).group("General"));
-        add(new BoolSetting("keepY", "Keep-Y (flat)", true).group("General"));
-        add(new BoolSetting("downBridge", "Down bridge", false).group("General"));
-        add(new ChoiceSetting("safewalkMode", "Safewalk", "Clamp", "Clamp", "Sneak", "Off").group("General"));
+        add(new BoolSetting("keepY", "Keep-Y / Same-Y (flat)", true)
+            .description("Bridge at a fixed Y level (this is the Same-Y feature).").group("General"));
+        add(new BoolSetting("down", "Down scaffold", false)
+            .description("Bridge downward one level (like holding sneak in LiquidBounce's Down).").group("General"));
         add(new BoolSetting("speedScaling", "Speed scaling", true).group("General"));
-        add(new ChoiceSetting("width", "Width", "1", "1", "3").group("Path"));
-        add(new BoolSetting("airPlace", "Air place (no support needed)", false).group("Path"));
+        add(new ChoiceSetting("width", "Width", "1", "1", "3").group("General"));
+        add(new BoolSetting("airPlace", "Air place (no support needed)", false).group("General"));
+
+        add(new ChoiceSetting("safewalk", "SafeWalk", "OnEdge", "None", "Safe", "OnEdge").group("Movement"));
+        add(new ChoiceSetting("zitter", "Zitter", "Off", "Off", "Teleport", "Smooth").group("Movement"));
+        add(new BoolSetting("eagle", "Eagle (auto-sneak on edges)", false).group("Movement"));
+        add(new BoolSetting("stabilize", "Stabilize movement", true)
+            .description("Removes sideways drift so the bridge stays straight (disabled while Zitter is on).").group("Movement"));
+        add(new BoolSetting("slow", "Slow (speed limiter)", false).group("Movement"));
+        add(new DoubleSetting("speedLimit", "Speed limit", 0.11, 0.01, 0.40, 0.01).group("Movement"));
+
+        add(new BoolSetting("advancedRotation", "Advanced rotation (XYZ jitter)", false).group("Rotation"));
+        add(new DoubleSetting("rangeX", "Range X", 0.15, 0.0, 0.5, 0.01).group("Rotation"));
+        add(new DoubleSetting("rangeY", "Range Y", 0.15, 0.0, 0.5, 0.01).group("Rotation"));
+        add(new DoubleSetting("rangeZ", "Range Z", 0.15, 0.0, 0.5, 0.01).group("Rotation"));
+        add(new BoolSetting("simulatePlacements", "Simulate placement attempts", false)
+            .description("Send extra swings when a placement can't land, to look legit.").group("Rotation"));
 
         add(new BoolSetting("tower", "Tower (hold jump)", true).group("Tower"));
-        add(new ChoiceSetting("towerSpeed", "Tower speed", "Normal", "Slow", "Normal", "Fast").group("Tower"));
+        add(new DoubleSetting("towerMotion", "Tower motion", 0.42, 0.0, 1.0, 0.01).group("Tower"));
+        add(new DoubleSetting("towerTrigger", "Tower trigger height", 0.78, 0.76, 1.0, 0.01).group("Tower"));
+        add(new DoubleSetting("towerSlow", "Tower horizontal slow", 1.0, 0.0, 1.0, 0.05).group("Tower"));
         add(new BoolSetting("centerFirst", "Center first", true).group("Tower"));
 
         add(new BoolSetting("preferObsidian", "Prefer Obsidian", true).group("Blocks"));
@@ -92,8 +123,10 @@ public final class ScaffoldModule extends Module {
                 AutismInventoryHelper.selectHotbarSlot(mc, prevSlot);
             }
             setSneak(mc, false);
+            releaseWalkKeys(mc);
         }
         prevSlot = -1;
+        placedThisCycle = 0;
         stopTower();
         HeldSlotManager.clear(this);
     }
@@ -130,6 +163,10 @@ public final class ScaffoldModule extends Module {
         Direction moveDir = movingHoriz(p) ? horizontalDir(p) : p.getDirection();
 
         applySafewalk(mc, p, level);
+        applyEagle(mc, p, level);
+        applySlow(mc, p);
+        applyStabilize(mc, p);
+        applyZitter(mc, p);
 
         HeldSlotManager.request(this, HeldSlotManager.PRIORITY_SCAFFOLD);
         if (!HeldSlotManager.holds(this)) return;
@@ -150,11 +187,11 @@ public final class ScaffoldModule extends Module {
             }
         }
 
-        if (now - lastPlaceMs < placeDelay(legit, fast, towering)) return;
+        if (now - lastPlaceMs < placeDelay(legit, fast, false)) return;
         if (!ensureBlock(mc, p)) return;
 
         int placed = 0;
-        for (BlockPos cell : gatherCells(p, level, towering, moveDir, fast)) {
+        for (BlockPos cell : gatherCells(p, level, false, moveDir, fast)) {
             if (placed >= MAX_PLACE_PER_TICK) break;
             if (!isReplaceable(level.getBlockState(cell))) continue;
             Hit h = hitFor(mc, level, p, cell, moveDir);
@@ -163,28 +200,27 @@ public final class ScaffoldModule extends Module {
             lastTarget = cell; lastHit = h; lastSentMs = now; retries = 0;
             placed++;
         }
-        if (placed > 0) lastPlaceMs = now;
+        if (placed > 0) {
+            lastPlaceMs = now;
+            placedThisCycle += placed;
+        } else if (bool("simulatePlacements") && movingHoriz(p)) {
+            // No valid placement this tick — fake a swing so it looks like a legit misclick.
+            p.swing(InteractionHand.MAIN_HAND);
+        }
     }
 
     private void placeAt(Minecraft mc, LocalPlayer p, Hit h, boolean realRot) {
-        AutismRotationUtil.Rotation cur = AutismRotationUtil.playerRotation(p);
-        AutismRotationUtil.Rotation look = AutismRotationUtil.normalizeToSensitivity(
-            AutismRotationUtil.lookingAt(h.vec(), p.getEyePosition()), cur);
-
-        if (mc.getConnection() != null) {
-            mc.getConnection().send(new ServerboundMovePlayerPacket.Rot(
-                look.yaw(), look.pitch(), p.onGround(), p.horizontalCollision));
-        }
-
+        BlockHitResult bhr = new BlockHitResult(h.vec(), h.face(), h.neighbor(), false);
         if (realRot) {
+            AutismRotationUtil.Rotation cur = AutismRotationUtil.playerRotation(p);
             AutismRotationUtil.Rotation eased = AutismRotationUtil.interpolate(
                 cur, AutismRotationUtil.lookingAt(h.vec(), p.getEyePosition()), 0.35f);
             AutismRotationUtil.apply(p, AutismRotationUtil.normalizeToSensitivity(eased, cur), false);
+            mc.gameMode.useItemOn(p, InteractionHand.MAIN_HAND, bhr);
+            p.swing(InteractionHand.MAIN_HAND);
+        } else {
+            PvpUtil.ghostSafeUseOn(mc, p, bhr);
         }
-
-        mc.gameMode.useItemOn(p, InteractionHand.MAIN_HAND,
-            new BlockHitResult(h.vec(), h.face(), h.neighbor(), false));
-        p.swing(InteractionHand.MAIN_HAND);
     }
 
     private List<BlockPos> gatherCells(LocalPlayer p, Level level, boolean towering, Direction moveDir, boolean fast) {
@@ -197,18 +233,15 @@ public final class ScaffoldModule extends Module {
         Vec3 predicted = p.position().add(vel.x * eff, 0.0, vel.z * eff);
         BlockPos primary = new BlockPos(Mth.floor(predicted.x), ty, Mth.floor(predicted.z));
 
-        cells.add(new BlockPos(Mth.floor(p.getX()), Mth.floor(p.getY()) - 1, Mth.floor(p.getZ())));
+        cells.add(new BlockPos(Mth.floor(p.getX()), targetY(p, 0.0), Mth.floor(p.getZ())));
         cells.add(primary);
 
         if (movingHoriz(p)) {
-
             if (fast || horizSpeed(p) > 0.17) cells.add(primary.relative(moveDir));
-
             if (Math.abs(vel.x) > 0.04 && Math.abs(vel.z) > 0.04) {
                 cells.add(primary.relative(vel.x > 0 ? Direction.EAST : Direction.WEST));
                 cells.add(primary.relative(vel.z > 0 ? Direction.SOUTH : Direction.NORTH));
             }
-
             if ("3".equals(choice("width"))) {
                 Direction perp = moveDir.getClockWise();
                 cells.add(primary.relative(perp));
@@ -225,8 +258,8 @@ public final class ScaffoldModule extends Module {
     }
 
     private int targetY(LocalPlayer p, double eff) {
+        if (bool("down")) return Mth.floor(p.getY()) - 2;
         if (bool("keepY")) return Mth.floor(p.getY()) - 1;
-        if (bool("downBridge")) return Mth.floor(p.getY()) - 2;
         return Mth.floor(p.getY() + p.getDeltaMovement().y * eff) - 1;
     }
 
@@ -257,7 +290,7 @@ public final class ScaffoldModule extends Module {
             if (ns.isAir() || ns.canBeReplaced() || !ns.getFluidState().isEmpty()) continue;
             if (!ns.isCollisionShapeFullBlock(level, n)) continue;
             Direction face = dir.getOpposite();
-            Vec3 vec = randomizeOnFace(Vec3.atCenterOf(n), face);
+            Vec3 vec = pointOnFace(Vec3.atCenterOf(n), face);
             if (vec.distanceToSqr(eyes) > reachSq) continue;
             if (!PvpUtil.canSee(mc, p, eyes, vec)) continue;
             return new Hit(n, face, vec);
@@ -270,20 +303,40 @@ public final class ScaffoldModule extends Module {
         return null;
     }
 
-    private Vec3 randomizeOnFace(Vec3 center, Direction face) {
+    // Pick the click point on the target face. Advanced rotation uses per-axis XYZ ranges; otherwise a small
+    // fixed jitter (unchanged legacy behaviour).
+    private Vec3 pointOnFace(Vec3 center, Direction face) {
         Vec3 base = center.add(face.getStepX() * 0.5, face.getStepY() * 0.5, face.getStepZ() * 0.5);
-        double a = (rng.nextDouble() * 2.0 - 1.0) * FACE_JITTER;
-        double b = (rng.nextDouble() * 2.0 - 1.0) * FACE_JITTER;
-        if (face.getStepX() != 0) return base.add(0.0, a, b);
-        if (face.getStepY() != 0) return base.add(a, 0.0, b);
-        return base.add(a, b, 0.0);
+        double jx, jy, jz;
+        if (bool("advancedRotation")) {
+            jx = rand(decimal("rangeX"));
+            jy = rand(decimal("rangeY"));
+            jz = rand(decimal("rangeZ"));
+        } else {
+            jx = jy = jz = 0.0;
+            double a = rand(FACE_JITTER), b = rand(FACE_JITTER);
+            if (face.getStepX() != 0) { jy = a; jz = b; }
+            else if (face.getStepY() != 0) { jx = a; jz = b; }
+            else { jx = a; jy = b; }
+            return base.add(jx, jy, jz);
+        }
+        // Advanced: jitter only along the two axes tangent to the face so the point stays on the face.
+        if (face.getStepX() != 0) return base.add(0.0, jy, jz);
+        if (face.getStepY() != 0) return base.add(jx, 0.0, jz);
+        return base.add(jx, jy, 0.0);
     }
 
-    private void handleTower(Minecraft mc, LocalPlayer p, Level level, boolean realRot) {
+    private double rand(double range) {
+        return (rng.nextDouble() * 2.0 - 1.0) * range;
+    }
 
+    // ---- Tower (LiquidBounce Motion) --------------------------------------------------------------------
+
+    private void handleTower(Minecraft mc, LocalPlayer p, Level level, boolean realRot) {
         if (!towerActive) {
             towerActive = true;
             towerFloorY = Mth.floor(p.getY()) - 1;
+            jumpOffY = p.getY();
             towerCentered = !bool("centerFirst");
         }
 
@@ -292,10 +345,20 @@ public final class ScaffoldModule extends Module {
             else return;
         }
 
-        if (p.onGround()) towerFloorY = Mth.floor(p.getY()) - 1;
+        if (p.onGround()) { towerFloorY = Mth.floor(p.getY()) - 1; jumpOffY = p.getY(); }
 
+        // Motion tower: when risen past the trigger height, snap to a whole block, re-launch, damp horizontal.
+        double trigger = decimal("towerTrigger");
         Vec3 v = p.getDeltaMovement();
-        p.setDeltaMovement(0.0, v.y, 0.0);
+        if (!Double.isNaN(jumpOffY) && p.getY() > jumpOffY + trigger) {
+            double snappedY = Math.floor(p.getY());
+            p.setPos(p.getX(), snappedY, p.getZ());
+            double slow = decimal("towerSlow");
+            p.setDeltaMovement(v.x * slow, decimal("towerMotion"), v.z * slow);
+            jumpOffY = snappedY;
+        } else {
+            p.setDeltaMovement(v.x * decimal("towerSlow"), v.y, v.z * decimal("towerSlow"));
+        }
 
         long now = System.currentTimeMillis();
         if (p.getY() >= towerFloorY + 2.0 && now - lastPlaceMs >= placeDelay(false, false, true)) {
@@ -312,27 +375,20 @@ public final class ScaffoldModule extends Module {
         }
     }
 
-    private double launchVelocity() {
-        return switch (choice("towerSpeed")) {
-            case "Slow" -> 0.40;
-            case "Fast" -> 0.50;
-            default -> 0.42;
-        };
-    }
-
     public boolean towering() {
         Minecraft mc = Minecraft.getInstance();
         return isEnabled() && bool("tower") && mc != null && mc.options != null && mc.options.keyJump.isDown();
     }
 
     public float towerLaunch() {
-        return (float) launchVelocity();
+        return (float) decimal("towerMotion");
     }
 
     private void stopTower() {
         towerActive = false;
         towerCentered = false;
         towerFloorY = Integer.MIN_VALUE;
+        jumpOffY = Double.NaN;
         releaseWalkKeys(Minecraft.getInstance());
     }
 
@@ -343,10 +399,8 @@ public final class ScaffoldModule extends Module {
         double dz = cz - p.getZ();
         if (dx * dx + dz * dz <= CENTER_EPS_SQ) {
             releaseWalkKeys(mc);
-
             return p.getDeltaMovement().horizontalDistanceSqr() <= VEL_EPS_SQ;
         }
-
         if (playerSteering(mc)) { releaseWalkKeys(mc); return false; }
 
         double yawRad = Math.toRadians(p.getYRot());
@@ -361,30 +415,56 @@ public final class ScaffoldModule extends Module {
         return false;
     }
 
-    private boolean playerSteering(Minecraft mc) {
-        for (int i = 0; i < 4; i++) if (!myKeys[i] && keyFor(mc, i).isDown()) return true;
-        return false;
+    // ---- Movement features -----------------------------------------------------------------------------
+
+    // Zitter: side-to-side to widen placement angle. Smooth uses strafe key input; Teleport nudges velocity.
+    private void applyZitter(Minecraft mc, LocalPlayer p) {
+        String z = choice("zitter");
+        if ("Off".equals(z) || !movingHoriz(p) || !p.onGround() || sneaking) return;
+        long now = System.currentTimeMillis();
+        if (now - zitterFlipMs > 150L) { zitterSide = !zitterSide; zitterFlipMs = now; }
+        Direction perp = horizontalDir(p).getClockWise();
+        double sign = zitterSide ? 1.0 : -1.0;
+        if ("Smooth".equals(z)) {
+            setKey(mc, K_LEFT, zitterSide);
+            setKey(mc, K_RIGHT, !zitterSide);
+        } else { // Teleport
+            Vec3 v = p.getDeltaMovement();
+            p.setDeltaMovement(v.x + perp.getStepX() * 0.2 * sign, v.y, v.z + perp.getStepZ() * 0.2 * sign);
+        }
     }
 
-    private void setKey(Minecraft mc, int i, boolean down) {
-        if (myKeys[i] == down) return;
-        keyFor(mc, i).setDown(down);
-        myKeys[i] = down;
+    // Eagle: auto-sneak while close to an edge, until the first block of the cycle is placed.
+    private void applyEagle(Minecraft mc, LocalPlayer p, Level level) {
+        if (!bool("eagle")) return;
+        if (!p.onGround()) return;
+        if (placedThisCycle > 0) { placedThisCycle = 0; return; }
+        Direction move = movingHoriz(p) ? horizontalDir(p) : p.getDirection();
+        BlockPos ahead = p.blockPosition().below().relative(move);
+        if (!confirmedFull(level, ahead)) setSneak(mc, true);
     }
 
-    private void releaseWalkKeys(Minecraft mc) {
-        if (mc == null || mc.options == null) return;
-        for (int i = 0; i < 4; i++) setKey(mc, i, false);
+    // Slow (speed limiter): stop accelerating once horizontal speed exceeds the limit.
+    private void applySlow(Minecraft mc, LocalPlayer p) {
+        if (!bool("slow")) return;
+        if (horizSpeed(p) > decimal("speedLimit")) releaseWalkKeys(mc);
     }
 
-    private KeyMapping keyFor(Minecraft mc, int i) {
-        return switch (i) {
-            case K_FWD  -> mc.options.keyUp;
-            case K_BACK -> mc.options.keyDown;
-            case K_LEFT -> mc.options.keyLeft;
-            default     -> mc.options.keyRight;
-        };
+    // StabilizeMovement: remove sideways drift so the bridge stays straight. Skipped while Zitter is on
+    // (Zitter deliberately adds sideways motion).
+    private void applyStabilize(Minecraft mc, LocalPlayer p) {
+        if (!bool("stabilize") || !"Off".equals(choice("zitter")) || !movingHoriz(p)) return;
+        Vec3 v = p.getDeltaMovement();
+        double speed = Math.sqrt(v.x * v.x + v.z * v.z);
+        if (speed < 1e-4) return;
+        Direction d = horizontalDir(p);
+        // Re-project velocity onto the cardinal movement direction, dropping the perpendicular component.
+        double aligned = v.x * d.getStepX() + v.z * d.getStepZ();
+        if (aligned <= 0) return;
+        p.setDeltaMovement(d.getStepX() * aligned, v.y, d.getStepZ() * aligned);
     }
+
+    // ---- Blocks / slots --------------------------------------------------------------------------------
 
     private boolean isReplaceable(BlockState s) {
         return s.isAir() || s.canBeReplaced();
@@ -423,8 +503,9 @@ public final class ScaffoldModule extends Module {
 
     private boolean isPlaceable(ItemStack s) {
         if (s == null || s.isEmpty() || !(s.getItem() instanceof BlockItem bi)) return false;
+        // Never place obviously-bad blocks (LiquidBounce's disallowed set, trimmed).
+        if (s.is(Items.TNT) || s.is(Items.COBWEB)) return false;
         if (bool("allowNonFull")) return true;
-
         return bi.getBlock().defaultBlockState().isCollisionShapeFullBlock(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
     }
 
@@ -433,9 +514,11 @@ public final class ScaffoldModule extends Module {
         prevSlot = -1;
     }
 
+    // ---- SafeWalk (None / Safe / OnEdge) ---------------------------------------------------------------
+
     private void applySafewalk(Minecraft mc, LocalPlayer p, Level level) {
-        String sw = choice("safewalkMode");
-        if ("Off".equals(sw)) { setSneak(mc, false); return; }
+        String sw = choice("safewalk");
+        if ("None".equals(sw)) { if (!bool("eagle")) setSneak(mc, false); return; }
 
         Direction move = movingHoriz(p) ? horizontalDir(p) : p.getDirection();
         BlockPos below = p.blockPosition().below();
@@ -443,9 +526,10 @@ public final class ScaffoldModule extends Module {
         boolean edgeAhead = movingHoriz(p) && !confirmedFull(level, below.relative(move));
         boolean protect = overGap || edgeAhead;
 
-        if ("Sneak".equals(sw)) { setSneak(mc, protect); return; }
+        if ("Safe".equals(sw)) { setSneak(mc, protect); return; }
 
-        setSneak(mc, false);
+        // OnEdge: clamp the velocity component that would carry the player off the block.
+        if (!bool("eagle")) setSneak(mc, false);
         if (!protect) return;
         Vec3 d = p.getDeltaMovement();
         double nx = d.x, nz = d.z;
@@ -461,6 +545,33 @@ public final class ScaffoldModule extends Module {
         return !s.isAir() && !s.canBeReplaced() && s.isCollisionShapeFullBlock(level, pos);
     }
 
+    // ---- input plumbing --------------------------------------------------------------------------------
+
+    private boolean playerSteering(Minecraft mc) {
+        for (int i = 0; i < 4; i++) if (!myKeys[i] && keyFor(mc, i).isDown()) return true;
+        return false;
+    }
+
+    private void setKey(Minecraft mc, int i, boolean down) {
+        if (myKeys[i] == down) return;
+        keyFor(mc, i).setDown(down);
+        myKeys[i] = down;
+    }
+
+    private void releaseWalkKeys(Minecraft mc) {
+        if (mc == null || mc.options == null) return;
+        for (int i = 0; i < 4; i++) setKey(mc, i, false);
+    }
+
+    private KeyMapping keyFor(Minecraft mc, int i) {
+        return switch (i) {
+            case K_FWD  -> mc.options.keyUp;
+            case K_BACK -> mc.options.keyDown;
+            case K_LEFT -> mc.options.keyLeft;
+            default     -> mc.options.keyRight;
+        };
+    }
+
     private void setSneak(Minecraft mc, boolean down) {
         if (sneaking == down) return;
         if (mc != null && mc.options != null) mc.options.keyShift.setDown(down);
@@ -472,16 +583,11 @@ public final class ScaffoldModule extends Module {
         restoreSlot(mc, p);
         setSneak(mc, false);
         releaseWalkKeys(mc);
+        placedThisCycle = 0;
     }
 
     private long placeDelay(boolean legit, boolean fast, boolean towering) {
-        if (towering) {
-            return switch (choice("towerSpeed")) {
-                case "Slow" -> PvpUtil.jitterMs(180);
-                case "Fast" -> 0L;
-                default -> PvpUtil.jitterMs(90);
-            };
-        }
+        if (towering) return PvpUtil.jitterMs(90);
         if (fast) return 0L;
         if (legit) return PvpUtil.jitterMs(110, 0.30);
         return PvpUtil.jitterMs(50);
