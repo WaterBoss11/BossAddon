@@ -140,9 +140,17 @@ public final class BossPvpAddon extends AutismAddon {
 
         applyAlphabeticalMenuOrder(all);
 
+        autismclient.api.AddonRegistrationResult cmdResult =
+            AutismAddons.commands().registerDetailed(new com.boss.pvp.command.BossAutoTestCommand());
+        boolean cmdFound = autismclient.commands.AutismCommands.find("bossautotest") != null;
+        System.out.println("[BossPvP] command 'bossautotest' register: accepted=" + cmdResult.accepted()
+            + " id=" + cmdResult.id() + " reason=" + cmdResult.reason()
+            + " | find()=" + cmdFound + " | prefix='" + autismclient.commands.AutismCommands.effectivePrefix() + "'");
+
         AutismAddons.events().onTick(mc -> {
             if (mc.player == null || mc.level == null) return;
 
+            com.boss.pvp.command.BossAutoTestCommand.tickClient();
             com.boss.pvp.util.CombatManager.tick();
             if (autoPot.isEnabled())       autoPot.tick(mc);
             if (autoCrystal.isEnabled())   autoCrystal.tick(mc);

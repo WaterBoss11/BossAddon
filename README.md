@@ -65,6 +65,12 @@ conflict within a tick.
 | AntiKnockback | Reduces or cancels knockback |
 | NoSlowdown | Removes slowdown while eating/drinking/blocking |
 
+## Render
+
+| Module | Description |
+|--------|-------------|
+| NoHurtCam | Removes the camera shake/tilt when you take damage |
+
 ## HUD
 
 | Module | Description |

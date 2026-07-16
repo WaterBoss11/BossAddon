@@ -50,7 +50,6 @@ public final class AutoWeaponModule extends Module {
         LocalPlayer p = mc.player;
         if (p == null) return;
 
-        boolean ignored = bool("onlyHotbar");
         int cur = p.getInventory().getSelectedSlot();
         int best = cur;
         double bestScore = scoreWeapon(p.getInventory().getItem(cur), target, p);

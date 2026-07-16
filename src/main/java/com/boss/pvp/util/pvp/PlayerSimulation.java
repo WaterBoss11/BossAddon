@@ -1,6 +1,7 @@
 package com.boss.pvp.util.pvp;
 
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
@@ -45,10 +46,12 @@ public final class PlayerSimulation {
 
     public static List<Vec3> simulateTrajectory(Player target, int ticks) {
         if (target == null || ticks <= 0) return List.of();
-        long now = target.level().getGameTime();
-        if (now != lastCacheGameTime) {
+        Level level = target.level();
+        long now = level.getGameTime();
+        if (now != lastCacheGameTime || level != lastCacheLevel) {
             cache.clear();
             lastCacheGameTime = now;
+            lastCacheLevel = level;
         }
         UUID id = target.getUUID();
         Cached c = cache.get(id);
@@ -63,10 +66,12 @@ public final class PlayerSimulation {
     public static void reset() {
         cache.clear();
         lastCacheGameTime = -1L;
+        lastCacheLevel = null;
     }
 
     private record Cached(int ticks, List<Vec3> traj) {}
 
     private static final Map<UUID, Cached> cache = new HashMap<>();
     private static long lastCacheGameTime = -1L;
+    private static Level lastCacheLevel = null;
 }
