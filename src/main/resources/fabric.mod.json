@@ -3,9 +3,9 @@
   "id": "boss-pvp",
   "version": "${version}",
   "name": "Boss's PVP",
-  "description": "PvP addon for AUTISM Client: 20 combat/utility modules (AutoCrystal, KillAura, AutoTotem, AutoPot, Surround, AutoAnchor, BedAura, HoleFiller, Burrow, Scaffold, AutoHook, AntiKnockback, AutoArmor, AutoGap, ShieldBreaker, Criticals, AimAssist, Offhand, Hitbox, FastPlace).",
+  "description": "The best PvP addon for 2b2t | @WaterBoss11",
   "authors": [
-    "Boss"
+    "WaterBoss11"
   ],
   "license": "GPL-3.0",
   "custom": {

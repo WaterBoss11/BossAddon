@@ -1,3 +1,9 @@
+<p align="center">
+  <img src="assets/logo.png" width="400" alt="Boss's PVP">
+</p>
+
+<p align="center"><sub>Logo by @WaterBoss11</sub></p>
+
 # Boss's PVP
 
 > An open-source PvP addon for AUTISM Client on Minecraft 26.2

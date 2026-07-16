@@ -91,6 +91,11 @@ public final class BossPvpAddon extends AutismAddon {
         return killAura != null ? killAura.friends() : java.util.List.of();
     }
 
+    public BossPvpAddon() {
+        this.name = "Boss's PVP";
+        this.authors = "@WaterBoss11";
+    }
+
     @Override
     public int apiVersion() {
         return AutismAddons.apiVersion();
