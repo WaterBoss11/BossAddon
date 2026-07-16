@@ -22,6 +22,13 @@ public final class FovCircleHud implements HudElementProvider {
 
     private static final int SEGMENTS = 128;
 
+    private static final org.joml.Matrix3x2f[] SEG_ROT = new org.joml.Matrix3x2f[SEGMENTS];
+    static {
+        for (int i = 0; i < SEGMENTS; i++) {
+            SEG_ROT[i] = new org.joml.Matrix3x2f().rotate((float) (2.0 * Math.PI * i / SEGMENTS));
+        }
+    }
+
     @Override public String id() { return BossPvpAddon.ID + ":fov-circle"; }
     @Override public String label() { return "AimAssist FOV Circle"; }
     @Override public String description() { return "FOV circle for AimAssist, centered on the crosshair."; }
@@ -83,10 +90,9 @@ public final class FovCircleHud implements HudElementProvider {
 
         Matrix3x2fStack pose = ctx.pose();
         for (int i = 0; i < SEGMENTS; i++) {
-            float theta = (float) (2.0 * Math.PI * i / SEGMENTS);
             pose.pushMatrix();
             pose.translate((float) cx, (float) cy);
-            pose.rotate(theta);
+            pose.mul(SEG_ROT[i]);
             ctx.fill(xIn, -half, xOut, half, argb);
             pose.popMatrix();
         }

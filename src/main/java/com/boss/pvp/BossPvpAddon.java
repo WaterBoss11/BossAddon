@@ -158,6 +158,7 @@ public final class BossPvpAddon extends AutismAddon {
             if (mc.player == null || mc.level == null) return;
 
             com.boss.pvp.command.BossAutoTestCommand.tickClient();
+            killAura.pollFriendKey(mc);
             com.boss.pvp.util.CombatManager.tick();
             if (autoPot.isEnabled())       autoPot.tick(mc);
             if (autoCrystal.isEnabled())   autoCrystal.tick(mc);

@@ -97,6 +97,19 @@ class RotationMathTest {
     }
 
     @Test
+    void testAngleDifference180() {
+        assertEquals(180f, Math.abs(AutismRotationUtil.angleDifference(0f, 180f)), EPS,
+            "opposite angles differ by exactly 180 degrees");
+    }
+
+    @Test
+    void testInterpolateQuarterWay() {
+        Rotation q = AutismRotationUtil.interpolate(new Rotation(0f, 0f), new Rotation(80f, 40f), 0.25f);
+        assertEquals(20f, q.yaw(), 1.0f, "t=0.25 of yaw 0->80 is ~20");
+        assertEquals(10f, q.pitch(), 1.0f, "t=0.25 of pitch 0->40 is ~10");
+    }
+
+    @Test
     void testInterpolateAtZero() {
         Rotation a = new Rotation(12f, -7f);
         Rotation b = new Rotation(88f, 33f);

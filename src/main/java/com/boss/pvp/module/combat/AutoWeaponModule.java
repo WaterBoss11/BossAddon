@@ -65,7 +65,7 @@ public final class AutoWeaponModule extends Module {
     }
 
     public void tick(Minecraft mc) {
-
+        if (mc.player == null || mc.level == null) return;
         if (!switchedPending) return;
         if (bool("switchBack") && prevSlot >= 0 && mc.player != null) {
             AutismInventoryHelper.selectHotbarSlot(mc, prevSlot);

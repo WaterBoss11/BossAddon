@@ -76,6 +76,24 @@ class CombatManagerTest {
     }
 
     @Test
+    void testResetClearsState() {
+        CombatManager.pauseCombat(10);
+        assertTrue(CombatManager.isCombatPaused(), "paused before reset");
+        CombatManager.reset();
+        assertFalse(CombatManager.isCombatPaused(), "reset() clears the pause state immediately");
+    }
+
+    @Test
+    void testPauseWithZeroTicks() {
+        CombatManager.pauseCombat(0);
+        assertFalse(CombatManager.isCombatPaused(), "pauseCombat(0) on fresh state does not pause");
+        // 0 must not cancel/shrink an already-active window (max semantics).
+        CombatManager.pauseCombat(2);
+        CombatManager.pauseCombat(0);
+        assertTrue(CombatManager.isCombatPaused(), "pauseCombat(0) must not cancel an active 2-tick pause");
+    }
+
+    @Test
     void testMultipleTicksDecrement() {
         CombatManager.pauseCombat(4);
         assertTrue(CombatManager.isCombatPaused());

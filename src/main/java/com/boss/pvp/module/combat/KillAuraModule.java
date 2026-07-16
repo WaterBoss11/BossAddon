@@ -90,7 +90,7 @@ public final class KillAuraModule extends Module {
 
     private boolean prevAddFriendDown = false;
 
-    public java.util.List<String> friends() { return list("friends"); }
+    public java.util.List<String> friends() { return java.util.Collections.unmodifiableList(list("friends")); }
 
     @Override
     public void onDisable() {
@@ -109,7 +109,6 @@ public final class KillAuraModule extends Module {
     public long lastAttackMs() { return lastAttackMs; }
 
     public void tick(Minecraft mc) {
-        handleAddFriendKey(mc);
         currentTarget = null;
         LocalPlayer p = mc.player;
         if (p == null || mc.level == null || mc.gameMode == null || mc.gui.screen() != null) { haveAim = false; return; }
@@ -278,7 +277,7 @@ public final class KillAuraModule extends Module {
         return stack.is(ItemTags.SWORDS) || stack.is(ItemTags.AXES);
     }
 
-    private void handleAddFriendKey(Minecraft mc) {
+    public void pollFriendKey(Minecraft mc) {
         int key = parseKey(value("addFriendKey"));
         if (key == -1 || !AutismInputGate.canRunAutismKeybinds()) { prevAddFriendDown = false; return; }
         boolean down = AutismBindUtil.isBindPressed(mc, key);

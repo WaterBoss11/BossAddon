@@ -44,6 +44,13 @@ public final class TrajectoryModule extends Module {
     private boolean hitPlayer = false;
     private boolean hitFriend = false;
 
+    // Per-tick simulation cache: re-simulate only when the game tick advances or the held item
+    // changes, not on every rendered frame.
+    private List<Vec3> cachedPath = null;
+    private int cachedColor = COLOR_BLOCK;
+    private long cachedTick = Long.MIN_VALUE;
+    private Item cachedItem = null;
+
     public TrajectoryModule() {
         super(BossPvpAddon.ID + ":trajectory", "Trajectory",
             "Show the predicted flight path of projectiles before you throw them.");
@@ -62,19 +69,37 @@ public final class TrajectoryModule extends Module {
     private record Spec(double speed, double gravity, double drag) {}
 
     @Override
+    public void onDisable() {
+        cachedPath = null;
+        cachedItem = null;
+        cachedTick = Long.MIN_VALUE;
+        hitPlayer = false;
+        hitFriend = false;
+    }
+
+    @Override
     public void onRenderLevel(float partialTick) {
         if (!isEnabled()) return;
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer p = mc.player;
         if (p == null || mc.level == null) return;
 
-        Spec spec = specFor(p);
-        if (spec == null) return;
+        ItemStack held = throwable(p);
+        if (held == null) { cachedPath = null; return; }
+        Spec spec = specFor(held, p);
+        if (spec == null) { cachedPath = null; return; }
 
-        List<Vec3> path = simulate(p, mc.level, spec);
+        long now = mc.level.getGameTime();
+        if (cachedPath == null || cachedTick != now || cachedItem != held.getItem()) {
+            cachedPath = simulate(p, mc.level, spec);
+            cachedItem = held.getItem();
+            cachedTick = now;
+            cachedColor = hitFriend ? COLOR_FRIEND : hitPlayer ? COLOR_PLAYER : COLOR_BLOCK;
+        }
+        List<Vec3> path = cachedPath;
         if (path.size() < 2) return;
 
-        int color = hitFriend ? COLOR_FRIEND : hitPlayer ? COLOR_PLAYER : COLOR_BLOCK;
+        int color = cachedColor;
 
         Camera cam = mc.gameRenderer.mainCamera();
         Vec3 camPos = cam.position();
@@ -85,17 +110,20 @@ public final class TrajectoryModule extends Module {
         AutismBufferSource src = new AutismBufferSource();
         VertexConsumer vc = src.getBuffer(AutismRenderTypes.tracerEspLines());
 
+        double cxp = camPos.x, cyp = camPos.y, czp = camPos.z;
         int spacing = Math.max(1, integer("dotSpacing"));
         for (int i = 0; i + 1 < path.size(); i += spacing) {
             int j = Math.min(i + spacing, path.size() - 1);
-            AutismWorldGeometry.line(pose, vc, path.get(i).subtract(camPos), path.get(j).subtract(camPos), color, 2.0f);
+            Vec3 a = path.get(i);
+            Vec3 b = path.get(j);
+            AutismWorldGeometry.line(pose, vc, a.x - cxp, a.y - cyp, a.z - czp, b.x - cxp, b.y - cyp, b.z - czp, color, 2.0f);
         }
 
-        Vec3 end = path.get(path.size() - 1).subtract(camPos);
-        double s = 0.15;
-        AutismWorldGeometry.line(pose, vc, end.add(-s, 0, 0), end.add(s, 0, 0), color, 2.0f);
-        AutismWorldGeometry.line(pose, vc, end.add(0, -s, 0), end.add(0, s, 0), color, 2.0f);
-        AutismWorldGeometry.line(pose, vc, end.add(0, 0, -s), end.add(0, 0, s), color, 2.0f);
+        Vec3 end = path.get(path.size() - 1);
+        double ex = end.x - cxp, ey = end.y - cyp, ez = end.z - czp, s = 0.15;
+        AutismWorldGeometry.line(pose, vc, ex - s, ey, ez, ex + s, ey, ez, color, 2.0f);
+        AutismWorldGeometry.line(pose, vc, ex, ey - s, ez, ex, ey + s, ez, color, 2.0f);
+        AutismWorldGeometry.line(pose, vc, ex, ey, ez - s, ex, ey, ez + s, color, 2.0f);
 
         src.uploadAndDraw();
     }
@@ -110,6 +138,7 @@ public final class TrajectoryModule extends Module {
         pts.add(pos);
         for (int i = 0; i < max; i++) {
             Vec3 next = pos.add(vel);
+            if (!level.getWorldBorder().isWithinBounds(next.x, next.z)) { pts.add(next); return pts; }
             BlockHitResult bhr = level.clip(
                 new ClipContext(pos, next, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
             if (bhr.getType() == HitResult.Type.BLOCK) {
@@ -144,9 +173,7 @@ public final class TrajectoryModule extends Module {
         return best;
     }
 
-    private Spec specFor(LocalPlayer p) {
-        ItemStack held = throwable(p);
-        if (held == null) return null;
+    private Spec specFor(ItemStack held, LocalPlayer p) {
         Item item = held.getItem();
         if (item instanceof BowItem) return bool("showArrow") ? new Spec(3.0 * bowCharge(p), 0.05, 0.99) : null;
         if (item instanceof CrossbowItem) return bool("showArrow") ? new Spec(3.15, 0.05, 0.99) : null;

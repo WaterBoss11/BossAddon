@@ -34,11 +34,28 @@ public final class CombatHud implements HudElementProvider {
 
     private boolean firstRenderLogged = false;
 
+    // Per-tick cache: the inventory scans + active-modules string are recomputed once per game tick
+    // (when gameTime changes) instead of on every rendered frame.
+    private long cacheTick = Long.MIN_VALUE;
+    private int cBlocks;
+    private String leftStr = "T:0  C:0  G:0  B:";
+    private String onStr = "-";
+
     @Override
     public void render(GuiGraphicsExtractor ctx, Font font, int x, int y, float alpha) {
         if (!firstRenderLogged) { firstRenderLogged = true; System.out.println("[BossPvP] HUD first render: " + id()); }
         Minecraft mc = Minecraft.getInstance();
-        if (mc == null || mc.player == null) return;
+        if (mc == null || mc.player == null || mc.level == null) return;
+
+        long now = mc.level.getGameTime();
+        if (now != cacheTick) {
+            cacheTick = now;
+            int gap = count(mc, Items.ENCHANTED_GOLDEN_APPLE) + count(mc, Items.GOLDEN_APPLE);
+            leftStr = "T:" + count(mc, Items.TOTEM_OF_UNDYING) + "  C:" + count(mc, Items.END_CRYSTAL)
+                + "  G:" + gap + "  B:";
+            cBlocks = fullCubeCount(mc);
+            onStr = activeModules();
+        }
 
         int line = y;
         LivingEntity t = (BossPvpAddon.killAura != null && BossPvpAddon.killAura.isEnabled())
@@ -51,19 +68,15 @@ public final class CombatHud implements HudElementProvider {
         }
         line += 11;
 
-        int gap = count(mc, Items.ENCHANTED_GOLDEN_APPLE) + count(mc, Items.GOLDEN_APPLE);
-        String left = "T:" + count(mc, Items.TOTEM_OF_UNDYING) + "  C:" + count(mc, Items.END_CRYSTAL)
-            + "  G:" + gap + "  B:";
-        ctx.text(font, left, x, line, 0xFFFFE066);
+        ctx.text(font, leftStr, x, line, 0xFFFFE066);
 
-        int blocks = fullCubeCount(mc);
-        boolean low = blocks < LOW_BLOCK;
+        boolean low = cBlocks < LOW_BLOCK;
         boolean blink = (System.currentTimeMillis() / 300L) % 2L == 0L;
         int bColor = (low && blink) ? 0xFFFF4040 : 0xFFFFE066;
-        ctx.text(font, Integer.toString(blocks), x + font.width(left), line, bColor);
+        ctx.text(font, Integer.toString(cBlocks), x + font.width(leftStr), line, bColor);
         line += 11;
 
-        ctx.text(font, "On: " + activeModules(), x, line, 0xFF66FF99);
+        ctx.text(font, "On: " + onStr, x, line, 0xFF66FF99);
     }
 
     private int fullCubeCount(Minecraft mc) {

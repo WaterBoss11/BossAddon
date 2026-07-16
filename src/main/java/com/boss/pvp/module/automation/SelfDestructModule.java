@@ -48,6 +48,7 @@ public final class SelfDestructModule extends Module {
     }
 
     public void tick(Minecraft mc) {
+        if (mc.player == null || mc.level == null) return;
         LocalPlayer p = mc.player;
         int key = parseKey(value("triggerKey"));
         if (key == -1 || !AutismInputGate.canRunAutismKeybinds()) { prevDown = false; return; }
