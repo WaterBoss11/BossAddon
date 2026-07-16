@@ -21,7 +21,7 @@ public final class CriticalsModule extends Module {
         super(BossPvpAddon.ID + ":criticals", "Criticals", "Always crit: packet / mini-jump / jump / no-ground.");
 
         add(new ChoiceSetting("mode", "Mode", "Packet", "Packet", "MiniJump", "Jump", "NoGround").group("General"));
-        add(new BoolSetting("onlyWithAura", "Only with aura active", true).group("General"));
+        add(new BoolSetting("onlyWithAura", "Only with aura active", false).group("General"));
         add(new BoolSetting("requireFullCharge", "Require full charge", true).group("General"));
         add(new BoolSetting("groundCheck", "Ground check", true).group("General"));
         add(new IntSetting("delay", "Min delay (ms)", 100, 0, 1000, 10).group("General"));
@@ -33,6 +33,11 @@ public final class CriticalsModule extends Module {
     public void tick(Minecraft mc) {
         LocalPlayer p = mc.player;
         if (p == null || mc.getConnection() == null || mc.gui.screen() != null) return;
+
+        // Never crit while actively breaking a block: the crit's jump/position packets make the server
+        // think the player left the block face and reject the break (block rubberbands back). Left-click
+        // is both attack and mine, so this guard is required regardless of the crit mode below.
+        if (mc.gameMode != null && mc.gameMode.isDestroying()) return;
 
         boolean attacking = mc.options != null && mc.options.keyAttack.isDown();
         boolean auraActive = BossPvpAddon.killAura != null && BossPvpAddon.killAura.isEnabled()
