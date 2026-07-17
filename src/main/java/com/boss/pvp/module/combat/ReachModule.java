@@ -42,6 +42,12 @@ public final class ReachModule extends Module {
         }
     }
 
+    /** The configured attack range. KillAura reads this while Reach is enabled so its attack gate
+     *  matches the extended reach (they were previously out of sync — KillAura capped itself at 3.5). */
+    public double getAttackRange() {
+        return decimal("attackRange");
+    }
+
     public void tick(Minecraft mc) {
         LocalPlayer p = mc.player;
         if (p == null) return;

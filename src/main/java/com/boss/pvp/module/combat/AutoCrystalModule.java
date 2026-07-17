@@ -58,8 +58,13 @@ public final class AutoCrystalModule extends Module {
     private static final EquipmentSlot[] ARMOR_SLOTS =
         { EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET };
 
+    // Keep BossPvpAddon.crystalActive (which suppresses KillAura) true for this long after the last
+    // place/break so KillAura stays out for the whole place->break->confirm cycle, not just one tick.
+    private static final long CRYSTAL_HOLD_MS = 300L;
+
     private long lastPlaceMs = 0L;
     private long lastBreakMs = 0L;
+    private long lastCrystalActMs = 0L;
     private long lastFastBreakTick = Long.MIN_VALUE;
     private int prevSlot = -1;
     private Vec3 legitAim = null;
@@ -159,6 +164,7 @@ public final class AutoCrystalModule extends Module {
     @Override
     public void onDisable() {
         forceAct = false;
+        BossPvpAddon.crystalActive = false;
         Minecraft mc = Minecraft.getInstance();
         if (mc != null && mc.player != null && prevSlot >= 0 && bool("switchBack")) {
             AutismInventoryHelper.selectHotbarSlot(mc, prevSlot);
@@ -181,12 +187,14 @@ public final class AutoCrystalModule extends Module {
         }
 
         LivingEntity target = nearestEnemy(mc, me);
-        if (target == null) { legitAim = null; HeldSlotManager.release(this); restoreSlot(mc, me); return; }
+        if (target == null) { legitAim = null; HeldSlotManager.release(this); restoreSlot(mc, me); BossPvpAddon.crystalActive = false; return; }
 
         HeldSlotManager.request(this, HeldSlotManager.PRIORITY_AUTOCRYSTAL);
         if (!HeldSlotManager.holds(this)) return;
 
         long now = System.currentTimeMillis();
+        // Expire the KillAura-suppression flag if we haven't actually placed/broken recently.
+        if (BossPvpAddon.crystalActive && now - lastCrystalActMs > CRYSTAL_HOLD_MS) BossPvpAddon.crystalActive = false;
         explosionSource = level.damageSources().explosion(null, null);
         pruneRecentlyHit(now);
         boolean force = forceAct;
@@ -215,7 +223,7 @@ public final class AutoCrystalModule extends Module {
                 lastBreakMs = now;
                 done++;
             }
-            if (done > 0) return;
+            if (done > 0) { lastCrystalActMs = now; BossPvpAddon.crystalActive = true; return; }
         }
 
         if (bool("doPlace") && (force || now - lastPlaceMs >= PvpUtil.jitterMs(integer("placeDelay")))) {
@@ -234,6 +242,8 @@ public final class AutoCrystalModule extends Module {
             }
             if (placed > 0) {
                 lastPlaceMs = now;
+                lastCrystalActMs = now;
+                BossPvpAddon.crystalActive = true;
                 if (bool("placeAlert")) AutismClientMessaging.sendPrefixed("§d[AutoCrystal] placed x" + placed);
             }
         }

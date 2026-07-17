@@ -84,6 +84,10 @@ public final class BossPvpAddon extends AutismAddon {
     public static TrajectoryModule trajectory;
     public static AutoShootModule autoShoot;
 
+    // Set by AutoCrystal while it is mid place->break cycle so KillAura defers and they don't fight
+    // over the held hotbar slot (the "spaz"). Cleared by AutoCrystal on disable / when it stops acting.
+    public static volatile boolean crystalActive = false;
+
     private static int autoTestCountdown = -1;
     private static boolean autoTestEnabled = false;
 

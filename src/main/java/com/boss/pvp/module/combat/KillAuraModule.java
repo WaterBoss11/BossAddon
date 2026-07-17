@@ -127,12 +127,20 @@ public final class KillAuraModule extends Module {
 
         if (com.boss.pvp.util.CombatManager.isCombatPaused()) { haveAim = false; return; }
 
+        // Give AutoCrystal exclusive control of the hotbar slot during its place->break cycle so the two
+        // don't rapidly swap the held item (the "spaz"). AutoCrystal clears this when its cycle ends.
+        if (BossPvpAddon.crystalActive) { haveAim = false; return; }
+
         if (bool("onlyWeapon") && !isWeapon(p.getMainHandItem())) { haveAim = false; return; }
         if (bool("pauseEat") && p.isUsingItem() && !autoBlocking) return;
         if (bool("pauseMine") && mc.gameMode != null && mc.gameMode.isDestroying()) return;
 
         Set<String> ids = PvpUtil.entityIds(list("entities"));
-        double range = decimal("range");
+        // When Reach is enabled, use its (extended) attack range so the gate matches the reach the
+        // player actually has, instead of KillAura's own 3.5-capped option. Otherwise use our own range.
+        double range = (BossPvpAddon.reach != null && BossPvpAddon.reach.isEnabled())
+            ? BossPvpAddon.reach.getAttackRange()
+            : decimal("range");
         List<LivingEntity> targets = collectTargets(mc, p, decimal("targetRange"), ids);
         if (targets.isEmpty()) { haveAim = false; return; }
 
