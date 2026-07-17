@@ -26,11 +26,9 @@ const [owner, repoName] = (GITHUB_REPOSITORY || 'WaterBoss11/boss-pvp').split('/
 const LOGO = `https://raw.githubusercontent.com/${owner}/${repoName}/master/assets/MainLogo.png`;
 
 const COLOR = {
-  main:   0x2ECC71, // green  — direct push to main/master
-  branch: 0xE67E22, // orange — feature branch
-  merge:  0x9B59B6, // purple — merge commit
-  star:   0x3498DB, // blue   — new star
-  gold:   0xF1C40F, // gold   — star milestone
+  push: 0xE74C3C, // red  — every push event (single commit, batch, merge, any branch)
+  star: 0xE74C3C, // red  — new star
+  gold: 0xF1C40F, // gold — star milestone (kept distinct for contrast on the rare event)
 };
 
 const LIM = { title: 256, desc: 4096, field: 1024, footer: 2048 };
@@ -99,7 +97,7 @@ function collectFiles(commits, files) {
 function fileCount(f) { return f.added.length + f.modified.length + f.removed.length; }
 function fileListBlock(f) {
   const lines = [];
-  const cap = 12;
+  const cap = 10;
   const push = (emoji, arr) => { for (const x of arr) { if (lines.length >= cap) return; lines.push(`${emoji} \`${x}\``); } };
   push('\u{1F7E2}', f.added);      // green circle
   push('\u{1F7E1}', f.modified);   // yellow circle
@@ -113,13 +111,11 @@ function fileListBlock(f) {
 
 async function buildPush(ev) {
   const branch = (ev.ref || '').replace('refs/heads/', '');
-  const isMain = branch === 'main' || branch === 'master';
   const commits = ev.commits || [];
   const head = ev.head_commit || commits[commits.length - 1] || {};
   const sender = ev.sender || {};
   const pusher = ev.pusher || {};
-  const isMerge = /^Merge /.test(head.message || '');
-  const color = isMerge ? COLOR.merge : isMain ? COLOR.main : COLOR.branch;
+  const color = COLOR.push;
 
   // Line stats + authoritative file list come from the compare API; fall back to the push payload.
   let stats = null, files = null;
@@ -132,8 +128,10 @@ async function buildPush(ev) {
   const author = { name: truncate(clean(sender.login || pusher.name || 'unknown'), 256), url: sender.html_url, icon_url: sender.avatar_url };
   const footer = { text: `${owner}/${repoName}`, icon_url: sender.avatar_url };
   const timestamp = head.timestamp || undefined;
+  const net = stats ? stats.additions - stats.deletions : 0;
+  const netStr = net > 0 ? `+${net}` : `${net}`; // negative sign comes for free; 0 -> "0"
   const changesField = stats
-    ? field('Changes', `\u{1F4DD} ${fileCount(f)} files · \u{1F7E2} +${stats.additions} / \u{1F534} -${stats.deletions}`, true)
+    ? field('Changes', `\u{1F4DD} ${fileCount(f)} files · \u{1F7E2} +${stats.additions} / \u{1F534} -${stats.deletions} · net ${netStr}`, true)
     : field('Files', `${fileCount(f)} changed`, true);
 
   // Batch push -> one collapsed embed, do not spam one per commit.
@@ -170,7 +168,7 @@ async function buildPush(ev) {
   if (commitAuthor && pusherName && commitAuthor !== pusherName) {
     fields.push(field('Authored by', `${commitAuthor} — pushed by ${pusherName}`, false));
   }
-  fields.push(field('Files changed', fileListBlock(f), false));
+  fields.push(field(`Files changed (${fileCount(f)})`, fileListBlock(f), false));
 
   return prune({
     author,
