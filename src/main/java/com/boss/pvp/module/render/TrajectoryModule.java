@@ -42,16 +42,18 @@ import java.util.Optional;
  */
 public final class TrajectoryModule extends Module {
 
-    private static final int COLOR_PLAYER = 0xFFFF3030; // impact marker: enemy player
-    private static final int COLOR_FRIEND = 0xFFFFE23A; // impact marker: friend
-    private static final int COLOR_MISS   = 0xFFFFFFFF; // impact marker: block / nothing
+    private static final int COLOR_GREEN  = 0xFF30FF30; // aimed at an enemy player (direct hit)
+    private static final int COLOR_YELLOW = 0xFFFFE23A; // path passes within 2 blocks of an enemy player
+    private static final int COLOR_RED    = 0xFFFF3030; // nothing / blocks / only friendlies
 
-    private boolean hitPlayer = false;
-    private boolean hitFriend = false;
+    private static final double NEAR_DIST = 2.0; // "near a player" radius in blocks
+
+    private boolean didHitPlayer = false; // the collision stop was an enemy player
+    private boolean nearPlayer = false;   // some point along the path was within NEAR_DIST of an enemy player
 
     // Per-tick simulation cache: re-simulate only when the game tick advances or the held item changes.
     private List<Vec3> cachedPath = null;
-    private int cachedMarker = COLOR_MISS;
+    private int cachedColor = COLOR_RED;
     private long cachedTick = Long.MIN_VALUE;
     private Item cachedItem = null;
 
@@ -90,8 +92,8 @@ public final class TrajectoryModule extends Module {
         cachedPath = null;
         cachedItem = null;
         cachedTick = Long.MIN_VALUE;
-        hitPlayer = false;
-        hitFriend = false;
+        didHitPlayer = false;
+        nearPlayer = false;
     }
 
     private void renderTrajectory(LevelRenderContext context) {
@@ -111,12 +113,13 @@ public final class TrajectoryModule extends Module {
             cachedPath = smooth(raw, Math.max(1, integer("smoothness")));
             cachedItem = held.getItem();
             cachedTick = now;
-            cachedMarker = hitFriend ? COLOR_FRIEND : hitPlayer ? COLOR_PLAYER : COLOR_MISS;
+            // Single color: green = aimed at an enemy, yellow = near an enemy, red = not aimed at anyone.
+            cachedColor = didHitPlayer ? COLOR_GREEN : nearPlayer ? COLOR_YELLOW : COLOR_RED;
         }
         final List<Vec3> pts = cachedPath;
         if (pts == null || pts.size() < 2) return;
 
-        final int marker = cachedMarker;
+        final int color = cachedColor;
         final float width = (float) decimal("width");
         Vec3 camPos = mc.gameRenderer.mainCamera().position();
         final double cx = camPos.x, cy = camPos.y, cz = camPos.z;
@@ -127,24 +130,31 @@ public final class TrajectoryModule extends Module {
                 int n = pts.size();
                 for (int i = 0; i + 1 < n; i++) {
                     Vec3 a = pts.get(i), b = pts.get(i + 1);
-                    int col = gradient((double) i / (n - 1));
                     AutismWorldGeometry.line(pose, vc,
-                        a.x - cx, a.y - cy, a.z - cz, b.x - cx, b.y - cy, b.z - cz, col, width);
+                        a.x - cx, a.y - cy, a.z - cz, b.x - cx, b.y - cy, b.z - cz, color, width);
                 }
-                // Impact marker: a larger 3-axis cross at the landing point.
+                // Impact marker: a larger 3-axis cross at the landing point, same color as the curve.
                 Vec3 end = pts.get(n - 1);
                 double ex = end.x - cx, ey = end.y - cy, ez = end.z - cz, s = 0.35;
-                AutismWorldGeometry.line(pose, vc, ex - s, ey, ez, ex + s, ey, ez, marker, width);
-                AutismWorldGeometry.line(pose, vc, ex, ey - s, ez, ex, ey + s, ez, marker, width);
-                AutismWorldGeometry.line(pose, vc, ex, ey, ez - s, ex, ey, ez + s, marker, width);
+                AutismWorldGeometry.line(pose, vc, ex - s, ey, ez, ex + s, ey, ez, color, width);
+                AutismWorldGeometry.line(pose, vc, ex, ey - s, ez, ex, ey + s, ez, color, width);
+                AutismWorldGeometry.line(pose, vc, ex, ey, ez - s, ex, ey, ez + s, color, width);
             });
     }
 
     // ---- physics (LiquidBounce fork) -----------------------------------------------------------
 
     private List<Vec3> simulate(LocalPlayer p, Level level, Traj tr) {
-        hitPlayer = false;
-        hitFriend = false;
+        didHitPlayer = false;
+        nearPlayer = false;
+
+        // Enemy players only: exclude self, dead/spectator, friends-list entries and team-check teammates.
+        List<Player> enemies = new ArrayList<>();
+        for (Player pl : level.players()) {
+            if (pl == p || !pl.isAlive() || pl.isSpectator()) continue;
+            if (friendly(p, pl)) continue;
+            enemies.add(pl);
+        }
 
         // Direction from yaw/pitch (roll shifts pitch for potions), scaled to the initial velocity.
         double yawR = Math.toRadians(p.getYRot());
@@ -176,18 +186,45 @@ public final class TrajectoryModule extends Module {
             if (pos.y < level.getMinY()) break;
             Vec3 next = pos.add(vel);
 
+            // Near-miss: check the whole segment (not just endpoints) against each enemy's box centre.
+            if (!nearPlayer) {
+                for (Player e : enemies) {
+                    if (distToSegmentSq(e.getBoundingBox().getCenter(), pos, next) <= NEAR_DIST * NEAR_DIST) {
+                        nearPlayer = true;
+                        break;
+                    }
+                }
+            }
+
             BlockHitResult bhr = level.clip(new ClipContext(
                 pos, next, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
             if (bhr.getType() == HitResult.Type.BLOCK) { pts.add(bhr.getLocation()); return pts; }
 
-            Vec3 eh = entityHit(level, p, pos, next, tr.hitboxRadius());
-            if (eh != null) { pts.add(eh); return pts; }
+            EHit eh = entityHit(level, p, pos, next, tr.hitboxRadius());
+            if (eh != null) {
+                // Direct hit only counts as "aimed at a player" for an enemy (friendlies -> red).
+                if (eh.entity() instanceof Player pl && !friendly(p, pl)) didHitPlayer = true;
+                pts.add(eh.pos());
+                return pts;
+            }
 
             pos = next;
             pts.add(pos);
             vel = tickVelocity(vel, pos, level, tr);
         }
         return pts;
+    }
+
+    /** A friend (friends-list) or a team-check teammate — never a green/yellow target. */
+    private boolean friendly(LocalPlayer self, Player other) {
+        return PvpUtil.isFriend(other, BossPvpAddon.friends()) || PvpUtil.isTeammate(self, other);
+    }
+
+    private static double distToSegmentSq(Vec3 pt, Vec3 a, Vec3 b) {
+        Vec3 ab = b.subtract(a);
+        double len2 = ab.lengthSqr();
+        double t = len2 < 1.0e-9 ? 0.0 : Math.max(0.0, Math.min(1.0, pt.subtract(a).dot(ab) / len2));
+        return pt.distanceToSqr(a.add(ab.scale(t)));
     }
 
     /** velocity *= drag (water-aware); velocity.y -= gravity. */
@@ -197,7 +234,9 @@ public final class TrajectoryModule extends Module {
         return vel.scale(drag).subtract(0.0, tr.gravity(), 0.0);
     }
 
-    private Vec3 entityHit(Level level, LocalPlayer self, Vec3 from, Vec3 to, double radius) {
+    private record EHit(Vec3 pos, Entity entity) {}
+
+    private EHit entityHit(Level level, LocalPlayer self, Vec3 from, Vec3 to, double radius) {
         AABB span = new AABB(from, to).inflate(1.0);
         double bestSq = Double.MAX_VALUE;
         Vec3 best = null;
@@ -209,11 +248,7 @@ public final class TrajectoryModule extends Module {
                 if (d < bestSq) { bestSq = d; best = clip.get(); bestEntity = e; }
             }
         }
-        if (bestEntity instanceof Player pl) {
-            hitPlayer = true;
-            hitFriend = PvpUtil.isFriend(pl, BossPvpAddon.friends());
-        }
-        return best;
+        return best == null ? null : new EHit(best, bestEntity);
     }
 
     // ---- render smoothing + color --------------------------------------------------------------
@@ -242,15 +277,6 @@ public final class TrajectoryModule extends Module {
             0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
             0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3),
             0.5 * ((2 * p1.z) + (-p0.z + p2.z) * t + (2 * p0.z - 5 * p1.z + 4 * p2.z - p3.z) * t2 + (-p0.z + 3 * p1.z - 3 * p2.z + p3.z) * t3));
-    }
-
-    /** Smooth green -> yellow -> red gradient by fraction along the path. */
-    private static int gradient(double f) {
-        f = Math.max(0.0, Math.min(1.0, f));
-        int r, g;
-        if (f < 0.5) { double t = f / 0.5;          r = (int) (85 + t * (255 - 85)); g = 255; }
-        else         { double t = (f - 0.5) / 0.5;  r = 255; g = (int) (255 - t * (255 - 85)); }
-        return 0xFF000000 | (r << 16) | (g << 8) | 85;
     }
 
     // ---- item -> physics mapping (LiquidBounce constants) --------------------------------------
