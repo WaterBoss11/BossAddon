@@ -5,63 +5,20 @@ on:
   watch:
     types: [started]
 
+permissions:
+  contents: read
+
 jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      # Untrusted values (commit message, actor, urls, file lists) are passed via env and assembled
-      # with jq. Never interpolate ${{ github.event.* }} straight into a shell command — a crafted
-      # commit message or file name could inject shell code and exfiltrate DISCORD_WEBHOOK. jq also
-      # keeps the JSON valid when a value contains quotes or newlines.
-      - name: Notify Discord on commit
-        if: github.event_name == 'push'
-        env:
-          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          COMMIT_MESSAGE: ${{ github.event.commits[0].message }}
-          COMMIT_ID: ${{ github.event.commits[0].id }}
-          COMMIT_URL: ${{ github.event.commits[0].url }}
-          ACTOR: ${{ github.actor }}
-          COMMIT_ADDED: ${{ join(github.event.commits[0].added, ', ') }}
-          COMMIT_MODIFIED: ${{ join(github.event.commits[0].modified, ', ') }}
-          COMMIT_REMOVED: ${{ join(github.event.commits[0].removed, ', ') }}
-        run: |
-          # Build the "Files Changed" block with REAL newlines (so Discord renders line breaks, not a
-          # literal \n). Use if/then (safe under `set -e`, unlike `[ ... ] && ...`).
-          FILES=""
-          if [ -n "$COMMIT_ADDED" ]; then FILES="${FILES}✅ Added: ${COMMIT_ADDED}"$'\n'; fi
-          if [ -n "$COMMIT_MODIFIED" ]; then FILES="${FILES}✏️ Modified: ${COMMIT_MODIFIED}"$'\n'; fi
-          if [ -n "$COMMIT_REMOVED" ]; then FILES="${FILES}❌ Removed: ${COMMIT_REMOVED}"$'\n'; fi
-          # Discord rejects an empty field value and caps it at 1024 chars.
-          if [ -z "$FILES" ]; then FILES="(no file changes reported)"; fi
-          FILES="${FILES:0:1000}"
+      - uses: actions/checkout@v4
 
-          payload=$(jq -n \
-            --arg title "New Commit — Boss's PVP" \
-            --arg msg "$COMMIT_MESSAGE" \
-            --arg actor "$ACTOR" \
-            --arg id "$COMMIT_ID" \
-            --arg url "$COMMIT_URL" \
-            --arg files "$FILES" \
-            '{embeds: [{
-               title: $title,
-               description: $msg,
-               color: 15158332,
-               fields: [
-                 {name: "Author", value: $actor, inline: true},
-                 {name: "View", value: "[\($id)](\($url))", inline: true},
-                 {name: "Files Changed", value: $files, inline: false}
-               ]
-             }]}')
-          curl -sS -H "Content-Type: application/json" -d "$payload" "$WEBHOOK"
-
-      - name: Notify Discord on star
-        if: github.event_name == 'watch'
+      # All embed building, sanitization, truncation, GitHub API calls (compare stats + star count)
+      # and error handling live in scripts/discord-notify.mjs. The script never crashes the workflow:
+      # a failed Discord call is logged and the job still exits 0. Node is preinstalled on the runner.
+      - name: Notify Discord
         env:
-          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          ACTOR: ${{ github.actor }}
-        run: |
-          payload=$(jq -n \
-            --arg title "New Star!" \
-            --arg desc "**$ACTOR** just starred Boss's PVP!" \
-            '{embeds: [{title: $title, description: $desc, color: 16766720}]}')
-          curl -sS -H "Content-Type: application/json" -d "$payload" "$WEBHOOK"
+          GITHUB_TOKEN: ${{ github.token }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: node scripts/discord-notify.mjs
