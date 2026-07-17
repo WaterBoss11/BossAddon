@@ -467,14 +467,25 @@ public final class BossPvpAddon extends AutismAddon {
         // "minecraft:player" entities list overrides our DEFAULT_COMBAT_TARGETS default. Force the
         // combat target list (and drop Surround's threat/center gates) for the test session.
         String hostileMobs = com.boss.pvp.util.pvp.PvpUtil.DEFAULT_COMBAT_TARGETS;
-        if (killAura != null)    killAura.setValue("entities", hostileMobs);
+        if (killAura != null) {
+            killAura.setValue("entities", hostileMobs);
+            // KillAura's "range" option is hard-capped at 3.5 by the module (5.0 would clamp to 3.5);
+            // targetRange (max 6.0) lets it acquire the Reach test dummy past 3 blocks. These are option
+            // values only — no module code/behavior is changed.
+            killAura.setValue("range", "3.5");
+            killAura.setValue("targetRange", "6.0");
+        }
         if (autoCrystal != null) autoCrystal.setValue("entities", hostileMobs);
+        if (reach != null) {
+            reach.setValue("attackRange", "5.0");
+            reach.setValue("interactRange", "5.0");
+        }
         if (surround != null) {
             surround.setValue("onlyWhenThreatened", "false");
             surround.setValue("centerFirst", "false");
         }
-        System.out.println("[BossPvP] forced entities=DEFAULT_COMBAT_TARGETS on KillAura + AutoCrystal; "
-            + "Surround onlyWhenThreatened=false, centerFirst=false");
+        System.out.println("[BossPvP] forced test settings: entities=DEFAULT_COMBAT_TARGETS, KillAura range=3.5/targetRange=6.0, "
+            + "Reach attackRange=5.0, Surround onlyWhenThreatened=false/centerFirst=false");
 
         autoTestEnabled = true;
         autoTestCountdown = -1;
