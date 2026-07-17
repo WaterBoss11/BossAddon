@@ -44,7 +44,12 @@ public final class ScaffoldModule extends Module {
     private static final long RETRY_MS = 150L;
     private static final int MAX_RETRIES = 5;
     private static final double FACE_JITTER = 0.15;
-    private static final int MAX_PLACE_PER_TICK = 6;
+    // Vanilla-legit placement ceiling: at most ONE block placed per client tick (20/s), the same rate a
+    // player holding right-click produces. Bursting several placements in a single tick under fast movement
+    // is exactly what trips Paper's packet-per-tick threshold and NCP/Grim block-place checks — the cause of
+    // the "too many packets too fast" kicks. Do not raise this above 1: keep the per-tick cap regardless of
+    // movement speed. (Tower places its single below-block per tick and is gated the same way.)
+    private static final int MAX_PLACE_PER_TICK = 1;
 
     private static final double CENTER_EPS_SQ = 0.01;
     private static final double INPUT_EPS = 0.02;
