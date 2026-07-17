@@ -9,10 +9,10 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      # Untrusted values (commit message, actor, urls) are passed via env and assembled with jq.
-      # Never interpolate ${{ github.event.* }} straight into a shell command — a crafted commit
-      # message could inject shell code and exfiltrate DISCORD_WEBHOOK. jq also keeps the JSON valid
-      # when a message contains quotes or newlines.
+      # Untrusted values (commit message, actor, urls, file lists) are passed via env and assembled
+      # with jq. Never interpolate ${{ github.event.* }} straight into a shell command — a crafted
+      # commit message or file name could inject shell code and exfiltrate DISCORD_WEBHOOK. jq also
+      # keeps the JSON valid when a value contains quotes or newlines.
       - name: Notify Discord on commit
         if: github.event_name == 'push'
         env:
@@ -21,20 +21,35 @@ jobs:
           COMMIT_ID: ${{ github.event.commits[0].id }}
           COMMIT_URL: ${{ github.event.commits[0].url }}
           ACTOR: ${{ github.actor }}
+          COMMIT_ADDED: ${{ join(github.event.commits[0].added, ', ') }}
+          COMMIT_MODIFIED: ${{ join(github.event.commits[0].modified, ', ') }}
+          COMMIT_REMOVED: ${{ join(github.event.commits[0].removed, ', ') }}
         run: |
+          # Build the "Files Changed" block with REAL newlines (so Discord renders line breaks, not a
+          # literal \n). Use if/then (safe under `set -e`, unlike `[ ... ] && ...`).
+          FILES=""
+          if [ -n "$COMMIT_ADDED" ]; then FILES="${FILES}✅ Added: ${COMMIT_ADDED}"$'\n'; fi
+          if [ -n "$COMMIT_MODIFIED" ]; then FILES="${FILES}✏️ Modified: ${COMMIT_MODIFIED}"$'\n'; fi
+          if [ -n "$COMMIT_REMOVED" ]; then FILES="${FILES}❌ Removed: ${COMMIT_REMOVED}"$'\n'; fi
+          # Discord rejects an empty field value and caps it at 1024 chars.
+          if [ -z "$FILES" ]; then FILES="(no file changes reported)"; fi
+          FILES="${FILES:0:1000}"
+
           payload=$(jq -n \
             --arg title "New Commit — Boss's PVP" \
             --arg msg "$COMMIT_MESSAGE" \
             --arg actor "$ACTOR" \
             --arg id "$COMMIT_ID" \
             --arg url "$COMMIT_URL" \
+            --arg files "$FILES" \
             '{embeds: [{
                title: $title,
                description: $msg,
                color: 15158332,
                fields: [
                  {name: "Author", value: $actor, inline: true},
-                 {name: "View", value: "[\($id)](\($url))", inline: true}
+                 {name: "View", value: "[\($id)](\($url))", inline: true},
+                 {name: "Files Changed", value: $files, inline: false}
                ]
              }]}')
           curl -sS -H "Content-Type: application/json" -d "$payload" "$WEBHOOK"
