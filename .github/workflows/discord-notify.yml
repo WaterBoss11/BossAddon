@@ -1,0 +1,52 @@
+name: Discord Notifications
+on:
+  push:
+    branches: [master]
+  watch:
+    types: [started]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      # Untrusted values (commit message, actor, urls) are passed via env and assembled with jq.
+      # Never interpolate ${{ github.event.* }} straight into a shell command — a crafted commit
+      # message could inject shell code and exfiltrate DISCORD_WEBHOOK. jq also keeps the JSON valid
+      # when a message contains quotes or newlines.
+      - name: Notify Discord on commit
+        if: github.event_name == 'push'
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          COMMIT_MESSAGE: ${{ github.event.commits[0].message }}
+          COMMIT_ID: ${{ github.event.commits[0].id }}
+          COMMIT_URL: ${{ github.event.commits[0].url }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          payload=$(jq -n \
+            --arg title "New Commit — Boss's PVP" \
+            --arg msg "$COMMIT_MESSAGE" \
+            --arg actor "$ACTOR" \
+            --arg id "$COMMIT_ID" \
+            --arg url "$COMMIT_URL" \
+            '{embeds: [{
+               title: $title,
+               description: $msg,
+               color: 15158332,
+               fields: [
+                 {name: "Author", value: $actor, inline: true},
+                 {name: "View", value: "[\($id)](\($url))", inline: true}
+               ]
+             }]}')
+          curl -sS -H "Content-Type: application/json" -d "$payload" "$WEBHOOK"
+
+      - name: Notify Discord on star
+        if: github.event_name == 'watch'
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          payload=$(jq -n \
+            --arg title "New Star!" \
+            --arg desc "**$ACTOR** just starred Boss's PVP!" \
+            '{embeds: [{title: $title, description: $desc, color: 16766720}]}')
+          curl -sS -H "Content-Type: application/json" -d "$payload" "$WEBHOOK"
