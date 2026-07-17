@@ -47,7 +47,7 @@ public final class KillAuraModule extends Module {
     public KillAuraModule() {
         super(BossPvpAddon.ID + ":killaura", "KillAura", "Melee kill aura with silent rotation, prediction and autoblock.");
 
-        add(RegistryListSetting.entityTypes("entities", "Entities", "minecraft:player"));
+        add(RegistryListSetting.entityTypes("entities", "Entities", PvpUtil.DEFAULT_COMBAT_TARGETS));
         add(new DoubleSetting("range", "Range", 3.0, 1.0, 3.5, 0.1)
             .description("Attack reach. Vanilla is 3.0; above is opt-in and may flag on strict anticheats."));
         add(new DoubleSetting("targetRange", "Target range", 3.0, 1.0, 6.0, 0.1)

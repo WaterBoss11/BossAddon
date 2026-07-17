@@ -76,6 +76,7 @@ public final class AutoCrystalModule extends Module {
     public AutoCrystalModule() {
         super(BossPvpAddon.ID + ":autocrystal", "AutoCrystal", "Crystal aura: LiquidBounce-style damage, placement, anti-suicide and silent rotation.");
 
+        add(RegistryListSetting.entityTypes("entities", "Entities", PvpUtil.DEFAULT_COMBAT_TARGETS).group("Target"));
         add(new DoubleSetting("range", "Target range", 6.0, 1.0, 12.0, 0.5).group("Target"));
         add(new DoubleSetting("placeRange", "Place reach", 4.5, 1.0, 6.0, 0.5).group("Target"));
         add(new DoubleSetting("breakRange", "Break reach", 4.5, 1.0, 6.0, 0.5).group("Target"));
@@ -179,7 +180,7 @@ public final class AutoCrystalModule extends Module {
             return;
         }
 
-        Player target = nearestEnemy(mc, me);
+        LivingEntity target = nearestEnemy(mc, me);
         if (target == null) { legitAim = null; HeldSlotManager.release(this); restoreSlot(mc, me); return; }
 
         HeldSlotManager.request(this, HeldSlotManager.PRIORITY_AUTOCRYSTAL);
@@ -238,7 +239,7 @@ public final class AutoCrystalModule extends Module {
         }
     }
 
-    private List<Candidate> bestBases(Minecraft mc, LocalPlayer me, Player target, int n) {
+    private List<Candidate> bestBases(Minecraft mc, LocalPlayer me, LivingEntity target, int n) {
         Level level = mc.level;
         boolean facePlace = target.getHealth() <= (float) decimal("facePlaceHealth");
         double reach = decimal("placeRange");
@@ -320,9 +321,9 @@ public final class AutoCrystalModule extends Module {
         return !hits.isEmpty();
     }
 
-    private Vec3 predicted(Player target) {
+    private Vec3 predicted(LivingEntity target) {
 
-        if (bool("physicsPredict")) return PlayerSimulation.predictPosition(target, 2);
+        if (bool("physicsPredict") && target instanceof Player pl) return PlayerSimulation.predictPosition(pl, 2);
         if (!bool("prediction")) return target.position();
         return target.position().add(target.getDeltaMovement().scale(decimal("predictionStrength")));
     }
@@ -368,15 +369,22 @@ public final class AutoCrystalModule extends Module {
         AutismRotationUtil.apply(me, AutismRotationUtil.normalizeToSensitivity(eased, cur), false);
     }
 
-    private Player nearestEnemy(Minecraft mc, LocalPlayer me) {
-        Player best = null;
-        double bestDist = decimal("range") * decimal("range");
-        for (Player pl : mc.level.players()) {
-            if (pl == me || pl.isSpectator()) continue;
-            if (pl.getName().getString().equals(me.getName().getString())) continue;
-            if (PvpUtil.isFriend(pl, BossPvpAddon.friends()) || (bool("teamCheck") && PvpUtil.isTeammate(me, pl))) continue;
-            double d = pl.distanceToSqr(me);
-            if (d < bestDist) { bestDist = d; best = pl; }
+    private LivingEntity nearestEnemy(Minecraft mc, LocalPlayer me) {
+        java.util.Set<String> ids = PvpUtil.entityIds(list("entities"));
+        double range = decimal("range");
+        double bestDist = range * range;
+        LivingEntity best = null;
+        AABB area = me.getBoundingBox().inflate(range);
+        for (LivingEntity e : mc.level.getEntitiesOfClass(LivingEntity.class, area, LivingEntity::isAlive)) {
+            if (e == me || e instanceof LocalPlayer) continue;
+            if (!PvpUtil.matchesEntity(e, ids)) continue;
+            if (e instanceof Player pl) {
+                if (pl.isSpectator()) continue;
+                if (pl.getName().getString().equals(me.getName().getString())) continue;
+                if (PvpUtil.isFriend(pl, BossPvpAddon.friends()) || (bool("teamCheck") && PvpUtil.isTeammate(me, pl))) continue;
+            }
+            double d = e.distanceToSqr(me);
+            if (d < bestDist) { bestDist = d; best = e; }
         }
         return best;
     }
@@ -404,7 +412,7 @@ public final class AutoCrystalModule extends Module {
         if (cpos.distanceToSqr(me.getEyePosition()) > breakRange * breakRange) return;
         if (!losOk(mc, me, cpos)) return;
 
-        Player target = nearestEnemy(mc, me);
+        LivingEntity target = nearestEnemy(mc, me);
         if (target == null) return;
 
         explosionSource = mc.level.damageSources().explosion(null, null);
@@ -435,8 +443,10 @@ public final class AutoCrystalModule extends Module {
     }
 
     // Approx damage to the target at its 2-tick predicted position (optimistic full exposure) for dual-damage.
-    private double predictedEnemyDamage(Player target, Vec3 crystalPos) {
-        Vec3 pp = PlayerSimulation.predictPosition(target, 2);
+    private double predictedEnemyDamage(LivingEntity target, Vec3 crystalPos) {
+        Vec3 pp = (target instanceof Player pl)
+            ? PlayerSimulation.predictPosition(pl, 2)
+            : target.position().add(target.getDeltaMovement().scale(2.0));
         if (pp == null) return 0.0;
         double raw = DamageUtil.rawExplosionDamage(1.0, pp.distanceTo(crystalPos), DamageUtil.CRYSTAL_POWER);
         if (raw <= 0.0) return 0.0;

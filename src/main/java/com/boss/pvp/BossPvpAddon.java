@@ -463,6 +463,19 @@ public final class BossPvpAddon extends AutismAddon {
                 System.out.println("[BossPvP]   - " + m.name() + ": setEnabled(true) FAILED -> " + t);
             }
         }
+        // AUTISM persists option values to disk and restores them on load, so a previously-saved
+        // "minecraft:player" entities list overrides our DEFAULT_COMBAT_TARGETS default. Force the
+        // combat target list (and drop Surround's threat/center gates) for the test session.
+        String hostileMobs = com.boss.pvp.util.pvp.PvpUtil.DEFAULT_COMBAT_TARGETS;
+        if (killAura != null)    killAura.setValue("entities", hostileMobs);
+        if (autoCrystal != null) autoCrystal.setValue("entities", hostileMobs);
+        if (surround != null) {
+            surround.setValue("onlyWhenThreatened", "false");
+            surround.setValue("centerFirst", "false");
+        }
+        System.out.println("[BossPvP] forced entities=DEFAULT_COMBAT_TARGETS on KillAura + AutoCrystal; "
+            + "Surround onlyWhenThreatened=false, centerFirst=false");
+
         autoTestEnabled = true;
         autoTestCountdown = -1;
         if (mc.player != null) {

@@ -37,6 +37,22 @@ public final class PvpUtil {
     public static final double VANILLA_REACH = 3.0;
     public static final double MAX_REACH = 3.5;
 
+    // Default target set for the combat modules: players + every vanilla hostile mob (26.2). Passive
+    // animals are left out on purpose so the aura doesn't swing at cows/villagers while you walk; the
+    // list is user-editable, so add any entity id you want. RegistryListSetting splits on '|'.
+    public static final String DEFAULT_COMBAT_TARGETS = String.join("|",
+        "minecraft:player",
+        "minecraft:zombie", "minecraft:husk", "minecraft:drowned", "minecraft:zombie_villager",
+        "minecraft:skeleton", "minecraft:stray", "minecraft:bogged", "minecraft:wither_skeleton",
+        "minecraft:creeper", "minecraft:spider", "minecraft:cave_spider", "minecraft:silverfish",
+        "minecraft:enderman", "minecraft:endermite", "minecraft:witch", "minecraft:slime",
+        "minecraft:magma_cube", "minecraft:blaze", "minecraft:ghast", "minecraft:phantom",
+        "minecraft:guardian", "minecraft:elder_guardian", "minecraft:shulker",
+        "minecraft:hoglin", "minecraft:zoglin", "minecraft:piglin", "minecraft:piglin_brute",
+        "minecraft:zombified_piglin", "minecraft:pillager", "minecraft:vindicator", "minecraft:evoker",
+        "minecraft:ravager", "minecraft:vex", "minecraft:illusioner", "minecraft:warden",
+        "minecraft:breeze", "minecraft:creaking", "minecraft:wither", "minecraft:ender_dragon");
+
     private static final Random RNG = new Random();
 
     private PvpUtil() {}
