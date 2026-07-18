@@ -5,3 +5,7 @@ run/
 
 # Local dependency drop-in: keep the folder (.gitkeep + README), never commit the jars.
 libs/*.jar
+
+# Flag-reporter webhook is a LOCAL client secret (DISCORD_WEBHOOK2), never a repo secret.
+# See flags.properties.example. Never commit the real file.
+**/boss-pvp/flags.properties

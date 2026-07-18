@@ -1,0 +1,13 @@
+# boss-pvp flag reporter — OPTIONAL local override of the shipped webhook.
+#
+# Flag reporting ships ON by default and posts to a shared boss-pvp-flags channel whose webhook is baked
+# into the addon (FlagConfig.DEFAULT_WEBHOOK). Most users never touch this file — to opt OUT, use the
+# in-game "Report crashes & kicks" toggle, not config.
+#
+# This file only matters if you want to redirect reports to your OWN (e.g. dev/private) channel. It is a
+# LOCAL CLIENT override, never committed, and is NOT a GitHub Actions secret. Precedence:
+#   1. environment variable  BOSS_PVP_FLAGS_WEBHOOK=<url>   (highest), else
+#   2. this file at  <minecraft>/config/boss-pvp/flags.properties   (dev run dir: run/config/boss-pvp/), else
+#   3. the baked-in shipped default.
+
+webhook=https://discord.com/api/webhooks/XXXXXXXXXXXX/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

@@ -83,6 +83,7 @@ public final class BossPvpAddon extends AutismAddon {
     public static SelfDestructModule selfDestruct;
     public static TrajectoryModule trajectory;
     public static AutoShootModule autoShoot;
+    public static com.boss.pvp.module.misc.FlagReportModule flagReport;
 
     // Set by AutoCrystal while it is mid place->break cycle so KillAura defers and they don't fight
     // over the held hotbar slot (the "spaz"). Cleared by AutoCrystal on disable / when it stops acting.
@@ -91,8 +92,22 @@ public final class BossPvpAddon extends AutismAddon {
     private static int autoTestCountdown = -1;
     private static boolean autoTestEnabled = false;
 
+    // Every module registered below, kept so the flag reporter can snapshot enabled-state on a kick/crash.
+    private static Module[] registeredModules;
+
     public static java.util.List<String> friends() {
         return killAura != null ? killAura.friends() : java.util.List.of();
+    }
+
+    /** "Name (Category)" for each currently-enabled boss-pvp module — the flag reporter's module snapshot. */
+    public static java.util.List<String> enabledModuleSummary() {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        if (registeredModules != null) {
+            for (Module m : registeredModules) {
+                if (m != null && m.isEnabled()) out.add(m.name() + " (" + m.category().name() + ")");
+            }
+        }
+        return out;
     }
 
     public BossPvpAddon() {
@@ -141,15 +156,21 @@ public final class BossPvpAddon extends AutismAddon {
         selfDestruct = new SelfDestructModule();
         trajectory = new TrajectoryModule();
         autoShoot = new AutoShootModule();
+        flagReport = new com.boss.pvp.module.misc.FlagReportModule();
 
         Module[] all = {
             autoPot, hitbox, autoCrystal, autoTotem, aimAssist, killAura, surround, criticals,
             offhand, shieldBreaker, autoArmor, antiKnockback, autoHook, scaffold, autoAnchor,
             bedAura, holeFiller, fastPlace, burrow, autoGap, invManager, trapper, autoXP,
             autoClutch, triggerBot, reach, autoWeapon, noSlowdown, autoLeave, noHurtCam, antiEntityPush,
-            selfDestruct, trajectory, autoShoot
+            selfDestruct, trajectory, autoShoot, flagReport
         };
         for (Module m : all) AutismAddons.modules().register(m);
+        registeredModules = all;
+
+        // Flag reporting (kick / packet-kick / crash -> boss-pvp-flags Discord). Reads its webhook from a
+        // LOCAL client config (not a repo secret) and flushes any crash report persisted before a hard crash.
+        com.boss.pvp.flag.FlagReporter.init();
 
         HudElementProvider[] huds = { new FovCircleHud(), new AutoTotemHud(), new CombatHud() };
         for (HudElementProvider h : huds) {

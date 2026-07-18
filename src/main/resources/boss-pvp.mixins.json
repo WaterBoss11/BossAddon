@@ -4,6 +4,8 @@
   "compatibilityLevel": "JAVA_25",
   "client": [
     "EntityHitboxMixin",
+    "FlagDisconnectMixin",
+    "FlagCrashMixin",
     "AutoPotSilentRotationMixin",
     "FastPlaceMixin",
     "TowerJumpMixin",
