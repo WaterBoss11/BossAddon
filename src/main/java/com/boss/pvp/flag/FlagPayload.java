@@ -11,8 +11,11 @@ import java.util.List;
  * types here so it is unit-testable in isolation — {@link FlagReporter} extracts plain strings from the
  * live client and hands them in.
  *
+ * <p>Reports the event type, reason, the reporting client's own Minecraft username, and the enabled
+ * modules — <b>never a server name or IP</b> (neither is accepted as a parameter).
+ *
  * <p>Injection safety mirrors {@code scripts/discord-notify.mjs}: every untrusted string (disconnect reason,
- * module names, server name) is put into a Gson object graph and serialized by Gson — never concatenated
+ * username, module names) is put into a Gson object graph and serialized by Gson — never concatenated
  * into hand-built JSON or a shell command. On top of that we strip control characters, neutralize
  * {@code @everyone}/{@code @here} with a zero-width space, and truncate to Discord's documented limits.
  */
@@ -77,13 +80,13 @@ public final class FlagPayload {
     }
 
     /**
-     * Build the full webhook payload JSON string. {@code reason} may be null; {@code modules} may be empty.
-     * {@code isoTimestamp} should be an ISO-8601 string (Discord renders it locally).
+     * Build the full webhook payload JSON string. {@code reason}/{@code username} may be null; {@code modules}
+     * may be empty. {@code isoTimestamp} should be an ISO-8601 string (Discord renders it locally).
      *
-     * <p>By design this reports only the event type, reason, and enabled modules — <b>no server name or IP
-     * is accepted or emitted</b> (there is no server parameter). Keep it that way.
+     * <p>{@code username} is the reporting client's own Minecraft name. There is deliberately no server
+     * parameter — <b>server name/IP is never accepted or emitted</b>. Keep it that way.
      */
-    public static String build(Type type, String reason, List<String> modules,
+    public static String build(Type type, String reason, String username, List<String> modules,
                                String isoTimestamp, String logoUrl, String repo) {
         JsonObject embed = new JsonObject();
         embed.addProperty("title", truncate("⚠ " + type.label, LIM_TITLE));
@@ -100,6 +103,7 @@ public final class FlagPayload {
 
         JsonArray fields = new JsonArray();
         fields.add(field("Event", type.label, true));
+        fields.add(field("Player", username == null || username.isBlank() ? "unknown" : username, true));
         fields.add(field("Enabled modules (" + (modules == null ? 0 : modules.size()) + ")",
                 modulesBlock(modules), false));
         embed.add("fields", fields);

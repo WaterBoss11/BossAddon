@@ -3,6 +3,7 @@ package com.boss.pvp.flag;
 import com.boss.pvp.BossPvpAddon;
 
 import net.minecraft.CrashReport;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
 import java.net.URI;
@@ -93,7 +94,7 @@ public final class FlagReporter {
         try {
             if (!reportingEnabled()) return;
             String reason = crashReason(report);
-            String json = FlagPayload.build(FlagPayload.Type.CRASH, reason,
+            String json = FlagPayload.build(FlagPayload.Type.CRASH, reason, localUsername(),
                 BossPvpAddon.enabledModuleSummary(), Instant.now().toString(), LOGO, REPO);
             writePending(json);   // survives JVM death
             postAsync(json);      // may not finish before the JVM dies — that's what the disk copy is for
@@ -115,8 +116,8 @@ public final class FlagReporter {
                 lastKey = key;
                 lastMs = now;
             }
-            String json = FlagPayload.build(type, reason, BossPvpAddon.enabledModuleSummary(),
-                Instant.now().toString(), LOGO, REPO);
+            String json = FlagPayload.build(type, reason, localUsername(),
+                BossPvpAddon.enabledModuleSummary(), Instant.now().toString(), LOGO, REPO);
             postAsync(json);
         } catch (Throwable t) {
             log("report failed: " + t);
@@ -143,6 +144,16 @@ public final class FlagReporter {
     private static String textOf(Component c) {
         try {
             return c == null ? null : c.getString();
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /** The reporting client's OWN Minecraft username (never another player's), or null if unavailable. */
+    private static String localUsername() {
+        try {
+            var user = Minecraft.getInstance().getUser();
+            return user == null ? null : user.getName();
         } catch (Throwable t) {
             return null;
         }

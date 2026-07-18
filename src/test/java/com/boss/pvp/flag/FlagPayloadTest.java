@@ -24,8 +24,14 @@ class FlagPayloadTest {
     private static final String REPO = "WaterBoss11/boss-pvp";
     private static final String ZWSP = "​";
 
+    // Most tests don't care about the username; inject a fixed one. The username-specific tests call
+    // buildParsedUser directly.
     private static JsonObject buildParsed(FlagPayload.Type type, String reason, List<String> modules) {
-        String json = FlagPayload.build(type, reason, modules, "2026-07-17T00:00:00Z", LOGO, REPO);
+        return buildParsedUser(type, reason, "TestPlayer", modules);
+    }
+
+    private static JsonObject buildParsedUser(FlagPayload.Type type, String reason, String username, List<String> modules) {
+        String json = FlagPayload.build(type, reason, username, modules, "2026-07-17T00:00:00Z", LOGO, REPO);
         return JsonParser.parseString(json).getAsJsonObject(); // throws if not valid JSON
     }
 
@@ -102,15 +108,36 @@ class FlagPayloadTest {
 
     @Test
     void noServerFieldIsEverEmitted() {
-        // Server name/IP is not collected at all — the only fields are Event and the module list.
+        // Server name/IP is not collected — the fields are Event, Player, and the module list; never Server.
         JsonObject embed = embedOf(buildParsed(FlagPayload.Type.KICK, "kicked", List.of("KillAura (COMBAT)")));
         JsonArray fields = embed.getAsJsonArray("fields");
-        assertEquals(2, fields.size());
+        assertEquals(3, fields.size());
         for (int i = 0; i < fields.size(); i++) {
             assertFalse(fields.get(i).getAsJsonObject().get("name").getAsString().equalsIgnoreCase("Server"),
                 "no Server field may be present");
         }
         assertEquals("Event", fields.get(0).getAsJsonObject().get("name").getAsString());
+    }
+
+    @Test
+    void usernameAppearsAsPlayerField() {
+        JsonObject embed = embedOf(buildParsedUser(FlagPayload.Type.KICK, "kicked", "Notch", List.of()));
+        assertEquals("Notch", fieldValue(embed, "Player"));
+    }
+
+    @Test
+    void usernameIsSanitized() {
+        // A username can't be trusted any more than a reason: mass mentions neutralized, control chars gone.
+        JsonObject embed = embedOf(buildParsedUser(FlagPayload.Type.KICK, "r", "ev@everyoneil", List.of()));
+        String player = fieldValue(embed, "Player");
+        assertFalse(player.contains("@everyone"), "raw @everyone must not survive in the username");
+        assertTrue(player.contains("@" + ZWSP + "everyone"));
+    }
+
+    @Test
+    void nullOrBlankUsernameShowsUnknown() {
+        assertEquals("unknown", fieldValue(embedOf(buildParsedUser(FlagPayload.Type.CRASH, "r", null, List.of())), "Player"));
+        assertEquals("unknown", fieldValue(embedOf(buildParsedUser(FlagPayload.Type.CRASH, "r", "  ", List.of())), "Player"));
     }
 
     // --- direct helper coverage (same-package access) ---

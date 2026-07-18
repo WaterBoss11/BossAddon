@@ -15,12 +15,13 @@ public final class FlagReportModule extends Module {
 
     public FlagReportModule() {
         super(BossPvpAddon.ID + ":flagreport", "Crash & Kick Reports",
-            "Reports kicks and crashes (event, reason, and enabled boss-pvp modules only — never a server "
-                + "name or IP) to the developer's Discord. On by default; turn off to opt out.");
+            "Reports kicks and crashes (event, reason, your Minecraft username, and the enabled boss-pvp "
+                + "modules — never a server name or IP) to the developer's Discord. On by default; turn off "
+                + "to opt out.");
         add(new BoolSetting("report", "Report crashes & kicks", true)
-            .description("Send an anonymous kick/crash report — event, reason, and the boss-pvp modules "
-                + "enabled at the time, nothing else (no server, no IP) — to the boss-pvp dev channel. "
-                + "Uncheck to opt out."));
+            .description("Send a kick/crash report — event, reason, your Minecraft username, and the "
+                + "boss-pvp modules enabled at the time (never a server name or IP) — to the boss-pvp dev "
+                + "channel. Uncheck to opt out."));
     }
 
     /** Whether reporting is currently allowed by the user's toggle (default on). */

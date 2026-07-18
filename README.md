@@ -147,13 +147,14 @@ against.
 ## Crash & kick reporting (privacy)
 
 By default this addon reports **kicks and crashes** to the developer's Discord to help fix bugs. Each report
-contains only:
+contains:
 
-- the event type (kick / packet-kick / crash) and its reason text, and
+- the event type (kick / packet-kick / crash) and its reason text,
+- **your Minecraft username** (the reporting player's own name — never anyone else's), and
 - which boss-pvp modules were enabled at that moment.
 
-It does **not** collect or send your server name, server IP, username, account, or any other personal
-information. Reports are deduplicated so a reconnect loop can't spam the channel.
+It does **not** collect or send your server name or server IP. Reports are deduplicated so a reconnect loop
+can't spam the channel.
 
 **To turn it off:** open the **Crash & Kick Reports** module and uncheck **"Report crashes & kicks"**. That
 opts you out completely.
