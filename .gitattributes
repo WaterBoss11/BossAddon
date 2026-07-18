@@ -1,0 +1,2 @@
+# Shell hook scripts must stay LF — a CRLF shebang breaks them on checkout (core.autocrlf=true).
+.githooks/** text eol=lf
