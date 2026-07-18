@@ -3,6 +3,7 @@ package com.boss.pvp.module.combat;
 import com.boss.pvp.BossPvpAddon;
 import com.boss.pvp.util.pvp.PvpUtil;
 import com.boss.pvp.util.pvp.PlayerSimulation;
+import com.boss.pvp.util.pvp.Gcd;
 
 import autismclient.modules.Module;
 import autismclient.api.module.*;
@@ -73,6 +74,8 @@ public final class AimAssistModule extends Module {
         add(new DoubleSetting("turnSpeed", "Turn speed (deg/s)", 420.0, 30.0, 1200.0, 10.0).group("Smoothing"));
         add(new DoubleSetting("sigSteepness", "Sigmoid steepness", 10.0, 0.0, 20.0, 0.5).group("Smoothing"));
         add(new DoubleSetting("sigMidpoint", "Sigmoid midpoint", 0.3, 0.0, 1.0, 0.05).group("Smoothing"));
+        add(new BoolSetting("gcd", "GCD (legit rotations)", true)
+            .description("Snap the applied rotation onto the mouse-sensitivity grid each frame so aim moves in mouse-sized steps (defeats rotation-analysis anti-cheat). Off = raw floating-point aim.").group("Smoothing"));
 
         add(new BoolSetting("sticky", "Sticky target", true).group("Extras"));
         add(new IntSetting("switchDelay", "Switch delay (ms)", 400, 0, 2000, 10).group("Extras"));
@@ -235,7 +238,11 @@ public final class AimAssistModule extends Module {
         String axis = choice("axis");
         float finalYaw = "Vertical".equals(axis) ? p.getYRot() : Mth.wrapDegrees(yaw);
         float finalPitch = "Horizontal".equals(axis) ? p.getXRot() : Mth.clamp(pitch, -90.0f, 90.0f);
-        AutismRotationUtil.apply(p, new AutismRotationUtil.Rotation(finalYaw, finalPitch), false);
+        AutismRotationUtil.Rotation rot = new AutismRotationUtil.Rotation(finalYaw, finalPitch);
+        // GCD: snap this frame's rotation onto the mouse-sensitivity grid, relative to where the camera
+        // currently points, so the real view moves in mouse-sized steps rather than raw floats.
+        if (bool("gcd")) rot = Gcd.normalize(AutismRotationUtil.playerRotation(p), rot);
+        AutismRotationUtil.apply(p, rot, false);
     }
 
     private LivingEntity selectTarget(Minecraft mc, LocalPlayer me) {

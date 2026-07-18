@@ -4,6 +4,7 @@ import com.boss.pvp.BossPvpAddon;
 import com.boss.pvp.util.pvp.PvpUtil;
 import com.boss.pvp.util.pvp.RotationManager;
 import com.boss.pvp.util.pvp.PlayerSimulation;
+import com.boss.pvp.util.pvp.Gcd;
 
 import autismclient.modules.Module;
 import autismclient.api.module.*;
@@ -74,6 +75,8 @@ public final class KillAuraModule extends Module {
         add(new ChoiceSetting("secondarySort", "Secondary sort", "None", "None", "Distance", "Health", "HurtTime", "Age", "Direction").group("Targeting"));
         add(new ChoiceSetting("rotationTiming", "Rotation timing", "Always", "Always", "OnTick")
             .description("OnTick = only rotate on the tick we actually attack (look freely between hits).").group("Targeting"));
+        add(new BoolSetting("gcd", "GCD (legit rotations)", true)
+            .description("Snap sent rotations onto the mouse-sensitivity grid so aim looks mouse-produced (defeats rotation-analysis anti-cheat). Off = raw rotations.").group("Targeting"));
         add(new BoolSetting("ignoreOnShieldBreak", "Ignore cooldown on shield-break", false)
             .description("Skip the CPS delay while ShieldBreaker is breaking the current target.").group("Targeting"));
         add(new IntSetting("maxTargets", "Max targets", 1, 1, 5, 1).group("Targeting"));
@@ -183,7 +186,9 @@ public final class KillAuraModule extends Module {
         if (BossPvpAddon.autoWeapon != null && BossPvpAddon.autoWeapon.isEnabled()) BossPvpAddon.autoWeapon.selectBestWeapon(primary);
 
         if (onTick) {
-            AutismRotationUtil.Rotation snap = AutismRotationUtil.normalizeToSensitivity(wanted, AutismRotationUtil.playerRotation(p));
+            AutismRotationUtil.Rotation snap = bool("gcd")
+                ? Gcd.normalize(AutismRotationUtil.playerRotation(p), wanted)
+                : wanted;
             var conn = mc.getConnection();
             if (conn != null) conn.send(new ServerboundMovePlayerPacket.Rot(snap.yaw(), snap.pitch(), p.onGround(), p.horizontalCollision));
         }
@@ -319,11 +324,12 @@ public final class KillAuraModule extends Module {
                        && Math.abs(wanted.pitch() - aimPitch) <= 2.0f;
 
         boolean silent = !"Real".equals(mode);
-        RotationManager.submit(aimYaw, aimPitch, RotationManager.PRIORITY_KILLAURA, silent);
+        boolean gcd = bool("gcd");
+        RotationManager.submit(aimYaw, aimPitch, RotationManager.PRIORITY_KILLAURA, silent, gcd);
         if (!silent) {
             AutismRotationUtil.Rotation cur = AutismRotationUtil.playerRotation(p);
-            AutismRotationUtil.apply(p, AutismRotationUtil.normalizeToSensitivity(
-                new AutismRotationUtil.Rotation(aimYaw, aimPitch), cur), false);
+            AutismRotationUtil.Rotation want = new AutismRotationUtil.Rotation(aimYaw, aimPitch);
+            AutismRotationUtil.apply(p, gcd ? Gcd.normalize(cur, want) : want, false);
         }
     }
 
