@@ -37,7 +37,11 @@ public final class KillAuraModule extends Module {
     private long lastAttackMs = 0L;
     private long nextDelayMs = 0L;
     private LivingEntity currentTarget;
+    private LivingEntity lockedTarget;   // committed target, persists across ticks (see pickPrimary)
     private boolean autoBlocking = false;
+
+    // Smart-sort threat weights (lower total score = higher priority).
+    private static final double W_DIST = 4.0, W_HP = 1.0, W_ANGLE = 0.1, W_HURT = 3.0;
 
     private float aimYaw, aimPitch;
     private boolean haveAim = false;
@@ -71,7 +75,10 @@ public final class KillAuraModule extends Module {
         add(new IntSetting("rotationSpeed", "Rotation speed", 180, 1, 180, 1)
             .formatter(v -> v + "°/t")
             .description("Max degrees the aim turns per tick toward the target. 180 = instant snap; lower = smooth, legit glide (attack waits until aligned).").group("Targeting"));
-        add(new ChoiceSetting("targetSort", "Sort", "Distance", "Distance", "Health", "HurtTime", "Age", "Direction", "Angle", "Type", "LowestHpThenDistance").group("Targeting"));
+        add(new BoolSetting("smoothAim", "Smooth aim (ease-out)", false)
+            .description("Human accel/decel rotation curve toward the target (Rotation speed is the cap) instead of a constant per-tick step. Off = the previous linear glide.").group("Targeting"));
+        add(new ChoiceSetting("targetSort", "Sort", "Smart", "Smart", "Distance", "Health", "HurtTime", "Age", "Direction", "Angle", "Type", "LowestHpThenDistance")
+            .description("Smart = weighted threat priority (closeness + low effective HP incl. armour + in-view + hittable-now).").group("Targeting"));
         add(new ChoiceSetting("secondarySort", "Secondary sort", "None", "None", "Distance", "Health", "HurtTime", "Age", "Direction").group("Targeting"));
         add(new ChoiceSetting("rotationTiming", "Rotation timing", "Always", "Always", "OnTick")
             .description("OnTick = only rotate on the tick we actually attack (look freely between hits).").group("Targeting"));
@@ -80,6 +87,11 @@ public final class KillAuraModule extends Module {
         add(new BoolSetting("ignoreOnShieldBreak", "Ignore cooldown on shield-break", false)
             .description("Skip the CPS delay while ShieldBreaker is breaking the current target.").group("Targeting"));
         add(new IntSetting("maxTargets", "Max targets", 1, 1, 5, 1).group("Targeting"));
+        add(new BoolSetting("targetLock", "Target commitment", true)
+            .description("Commit to the current target across ticks; only switch when it dies/leaves reach or another scores clearly better. Stops aim flip-flopping between similar targets.").group("Targeting"));
+        add(new DoubleSetting("switchMargin", "Switch margin", 0.20, 0.0, 1.0, 0.05)
+            .description("How much better (relative) a new target must score before commitment switches to it. Higher = stickier.")
+            .visibleWhen(() -> bool("targetLock")).group("Targeting"));
         add(new BoolSetting("rotateOnly", "Rotate only (no auto-attack)", false).group("Targeting"));
         add(new ChoiceSetting("aimPart", "Aim at", "Body", "Body", "Head", "Feet", "Nearest").group("Targeting"));
         add(new BoolSetting("prediction", "Prediction", true).group("Targeting"));
@@ -110,6 +122,7 @@ public final class KillAuraModule extends Module {
     @Override
     public void onDisable() {
         currentTarget = null;
+        lockedTarget = null;
         haveAim = false;
 
         if (autoBlocking) {
@@ -145,9 +158,9 @@ public final class KillAuraModule extends Module {
             ? BossPvpAddon.reach.getAttackRange()
             : decimal("range");
         List<LivingEntity> targets = collectTargets(mc, p, decimal("targetRange"), ids);
-        if (targets.isEmpty()) { haveAim = false; return; }
+        if (targets.isEmpty()) { haveAim = false; lockedTarget = null; return; }
 
-        LivingEntity primary = targets.get(0);
+        LivingEntity primary = pickPrimary(p, targets);
         currentTarget = primary;
 
         Vec3 eyes = p.getEyePosition();
@@ -270,6 +283,7 @@ public final class KillAuraModule extends Module {
 
     private double score(LocalPlayer p, LivingEntity e, String sort) {
         return switch (sort) {
+            case "Smart" -> smartScore(p, e);
             case "Health" -> e.getHealth() + e.getAbsorptionAmount();
             case "Angle", "Direction" -> PvpUtil.angleTo(p, e);
             case "HurtTime" -> e.hurtTime;
@@ -279,6 +293,42 @@ public final class KillAuraModule extends Module {
             case "LowestHpThenDistance" -> (e.getHealth() + e.getAbsorptionAmount()) * 10000.0 + Math.sqrt(e.distanceToSqr(p));
             default -> e.distanceToSqr(p);
         };
+    }
+
+    // Weighted threat priority (lower = focus first): closeness, low effective HP (armour makes a target
+    // tankier so it ranks lower-priority), how far off-crosshair it is, and whether it's hittable right now
+    // (hurtTime = temporary invulnerability after a hit). This is how a real player picks who to burst down.
+    private double smartScore(LocalPlayer p, LivingEntity e) {
+        double dist = Math.sqrt(e.distanceToSqr(p));
+        double effHp = e.getHealth() + e.getAbsorptionAmount() + e.getArmorValue() * 0.5;
+        double angle = PvpUtil.angleTo(p, e);
+        return smartScoreOf(dist, effHp, angle, e.hurtTime);
+    }
+
+    /** Pure weighting for {@link #smartScore} (unit-tested). Lower total = higher priority. */
+    public static double smartScoreOf(double dist, double effHp, double angle, double hurt) {
+        return dist * W_DIST + effHp * W_HP + angle * W_ANGLE + hurt * W_HURT;
+    }
+
+    // Target commitment: keep the locked target across ticks (no flip-flopping) while it's still a valid
+    // candidate, and only switch when a fresh candidate scores meaningfully better (relative switch margin).
+    private LivingEntity pickPrimary(LocalPlayer p, List<LivingEntity> targets) {
+        LivingEntity best = targets.get(0);
+        if (!bool("targetLock")) { lockedTarget = best; return best; }
+
+        if (lockedTarget != null && targets.contains(lockedTarget)) {
+            if (best != lockedTarget) {
+                String sort = choice("targetSort");
+                double bestScore = score(p, best, sort);
+                double lockScore = score(p, lockedTarget, sort);
+                double margin = decimal("switchMargin");
+                // all sorts are "lower = better"; require a clear relative improvement to switch
+                if (bestScore < lockScore - Math.abs(lockScore) * margin) lockedTarget = best;
+            }
+        } else {
+            lockedTarget = best;
+        }
+        return lockedTarget;
     }
 
     private int typeWeight(LivingEntity e) {
@@ -318,8 +368,16 @@ public final class KillAuraModule extends Module {
         float speed = integer("rotationSpeed");
         float dYaw = Mth.wrapDegrees(wanted.yaw() - aimYaw);
         float dPitch = wanted.pitch() - aimPitch;
-        aimYaw = Mth.wrapDegrees(aimYaw + Mth.clamp(dYaw, -speed, speed));
-        aimPitch = Mth.clamp(aimPitch + Mth.clamp(dPitch, -speed, speed), -90.0f, 90.0f);
+        float stepYaw, stepPitch;
+        if (bool("smoothAim")) {
+            stepYaw = easeStep(dYaw, speed);
+            stepPitch = easeStep(dPitch, speed);
+        } else {
+            stepYaw = Mth.clamp(dYaw, -speed, speed);
+            stepPitch = Mth.clamp(dPitch, -speed, speed);
+        }
+        aimYaw = Mth.wrapDegrees(aimYaw + stepYaw);
+        aimPitch = Mth.clamp(aimPitch + stepPitch, -90.0f, 90.0f);
         rotationArrived = Math.abs(Mth.wrapDegrees(wanted.yaw() - aimYaw)) <= 2.0f
                        && Math.abs(wanted.pitch() - aimPitch) <= 2.0f;
 
@@ -331,6 +389,14 @@ public final class KillAuraModule extends Module {
             AutismRotationUtil.Rotation want = new AutismRotationUtil.Rotation(aimYaw, aimPitch);
             AutismRotationUtil.apply(p, gcd ? Gcd.normalize(cur, want) : want, false);
         }
+    }
+
+    // Human ease-out step: proportional to the remaining angle (accelerate far, decelerate near), capped at
+    // maxStep, with a 1° floor so it converges instead of crawling forever near the target.
+    private float easeStep(float delta, float maxStep) {
+        float step = Mth.clamp(delta * 0.45f, -maxStep, maxStep);
+        if (Math.abs(step) < 1.0f && delta != 0f) step = Math.signum(delta) * Math.min(1.0f, Math.abs(delta));
+        return step;
     }
 
     private void autoBlock(Minecraft mc, LocalPlayer p, boolean betweenHits) {
