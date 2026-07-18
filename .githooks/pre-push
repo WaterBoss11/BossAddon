@@ -1,0 +1,27 @@
+#!/bin/sh
+# Reject a push if ANY commit being pushed has a non-project author/committer identity.
+# Backstop for pre-commit: catches identities introduced by rebase, cherry-pick, `git commit -c ...`,
+# GIT_AUTHOR_* env, or commits pulled from elsewhere. Activate with: git config core.hooksPath .githooks
+exp="WaterBoss11 <esadbulbul11@gmail.com>"
+zero="0000000000000000000000000000000000000000"
+status=0
+
+while read local_ref local_sha remote_ref remote_sha; do
+  [ "$local_sha" = "$zero" ] && continue           # deleting a ref: nothing to check
+  if [ "$remote_sha" = "$zero" ]; then
+    commits=$(git rev-list "$local_sha" --not --remotes)   # new remote ref: commits not already pushed
+  else
+    commits=$(git rev-list "$remote_sha..$local_sha")
+  fi
+  for c in $commits; do
+    ident=$(git show -s --format='%an <%ae>|%cn <%ce>' "$c")
+    a=${ident%%|*}
+    cm=${ident#*|}
+    if [ "$a" != "$exp" ] || [ "$cm" != "$exp" ]; then
+      echo "PUSH REJECTED: commit $c" >&2
+      echo "  author='$a' committer='$cm' (expected '$exp')" >&2
+      status=1
+    fi
+  done
+done
+exit $status

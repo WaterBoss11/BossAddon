@@ -1,0 +1,19 @@
+#!/bin/sh
+# Reject any commit whose author OR committer identity is not the project pseudonym.
+# Guards against a global/default git identity (e.g. an AI/tool account) silently authoring commits
+# when the repo-local identity is unset. Activate with:  git config core.hooksPath .githooks
+exp_name="WaterBoss11"
+exp_email="esadbulbul11@gmail.com"
+exp="$exp_name <$exp_email>"
+
+strip_ts() { sed -E 's/ [0-9][0-9]* [-+][0-9][0-9]*$//'; }
+author=$(git var GIT_AUTHOR_IDENT | strip_ts)
+committer=$(git var GIT_COMMITTER_IDENT | strip_ts)
+
+if [ "$author" != "$exp" ] || [ "$committer" != "$exp" ]; then
+  echo "COMMIT REJECTED: identity must be '$exp'." >&2
+  echo "  author    = $author" >&2
+  echo "  committer = $committer" >&2
+  echo "  Fix: git config user.name '$exp_name' && git config user.email '$exp_email'" >&2
+  exit 1
+fi
