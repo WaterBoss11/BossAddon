@@ -181,6 +181,10 @@ public final class BossPvpAddon extends AutismAddon {
         // this build is behind the latest release. Fire-and-forget; opt out via the "Update Checker" toggle.
         com.boss.pvp.update.UpdateChecker.init();
 
+        // Chat relay (closed pilot). Inert unless relay.url + relay.invite are configured — a default install
+        // never connects and shows no relay UI. See com.boss.pvp.relay.
+        com.boss.pvp.relay.RelayManager.get().init();
+
         HudElementProvider[] huds = { new FovCircleHud(), new AutoTotemHud(), new CombatHud(), new com.boss.pvp.client.hud.UpdateHud() };
         for (HudElementProvider h : huds) {
             boolean ok = AutismAddons.hud().register(h);
@@ -219,6 +223,7 @@ public final class BossPvpAddon extends AutismAddon {
             if (mc.player == null || mc.level == null) return;
 
             com.boss.pvp.update.UpdateChecker.tick(mc);   // one-time "update available" chat notice, once in-world
+            com.boss.pvp.relay.RelayManager.get().tick(mc);   // keep the relay's notion of your current server current
 
             if (autoTestCountdown > 0 && --autoTestCountdown == 0) enableTestModules();
             com.boss.pvp.command.BossAutoTestCommand.tickClient();

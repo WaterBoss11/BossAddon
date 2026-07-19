@@ -3,6 +3,7 @@
   "package": "com.boss.pvp.client.mixin",
   "compatibilityLevel": "JAVA_25",
   "client": [
+    "ChatScreenMixin",
     "EntityHitboxMixin",
     "CrystalHideMixin",
     "FlagDisconnectMixin",
