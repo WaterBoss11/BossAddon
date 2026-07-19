@@ -12,7 +12,8 @@
     "TowerJumpMixin",
     "NoSlowdownMixin",
     "NoHurtCamMixin",
-    "AntiEntityPushMixin"
+    "AntiEntityPushMixin",
+    "VelocityMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -43,6 +43,7 @@ import com.boss.pvp.module.render.TrajectoryModule;
 import com.boss.pvp.module.combat.AutoShootModule;
 import com.boss.pvp.module.combat.AntiEntityPushModule;
 import com.boss.pvp.module.combat.ReachModule;
+import com.boss.pvp.module.combat.VelocityModule;
 
 import net.minecraft.client.Minecraft;
 
@@ -83,6 +84,7 @@ public final class BossPvpAddon extends AutismAddon {
     public static SelfDestructModule selfDestruct;
     public static TrajectoryModule trajectory;
     public static AutoShootModule autoShoot;
+    public static VelocityModule velocity;
     public static com.boss.pvp.module.misc.FlagReportModule flagReport;
     public static com.boss.pvp.module.misc.UpdateCheckModule updateCheck;
 
@@ -157,6 +159,7 @@ public final class BossPvpAddon extends AutismAddon {
         selfDestruct = new SelfDestructModule();
         trajectory = new TrajectoryModule();
         autoShoot = new AutoShootModule();
+        velocity = new VelocityModule();
         flagReport = new com.boss.pvp.module.misc.FlagReportModule();
         updateCheck = new com.boss.pvp.module.misc.UpdateCheckModule();
 
@@ -165,7 +168,7 @@ public final class BossPvpAddon extends AutismAddon {
             offhand, shieldBreaker, autoArmor, antiKnockback, autoHook, scaffold, autoAnchor,
             bedAura, holeFiller, fastPlace, burrow, autoGap, invManager, trapper, autoXP,
             autoClutch, triggerBot, reach, autoWeapon, noSlowdown, autoLeave, noHurtCam, antiEntityPush,
-            selfDestruct, trajectory, autoShoot, flagReport, updateCheck
+            selfDestruct, trajectory, autoShoot, velocity, flagReport, updateCheck
         };
         for (Module m : all) AutismAddons.modules().register(m);
         registeredModules = all;
@@ -249,6 +252,7 @@ public final class BossPvpAddon extends AutismAddon {
             if (autoLeave.isEnabled())     autoLeave.tick(mc);
             if (selfDestruct.isEnabled())  selfDestruct.tick(mc);
             if (autoShoot.isEnabled())     autoShoot.tick(mc);
+            if (velocity.isEnabled())      velocity.tick(mc);
 
             com.boss.pvp.util.pvp.RotationManager.endTickCommit();
 
