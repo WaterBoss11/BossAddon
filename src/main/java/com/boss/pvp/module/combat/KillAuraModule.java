@@ -2,6 +2,7 @@ package com.boss.pvp.module.combat;
 
 import com.boss.pvp.BossPvpAddon;
 import com.boss.pvp.util.pvp.PvpUtil;
+import com.boss.pvp.util.pvp.RetaliationTracker;
 import com.boss.pvp.util.pvp.RotationManager;
 import com.boss.pvp.util.pvp.PlayerSimulation;
 import com.boss.pvp.util.pvp.Gcd;
@@ -49,6 +50,10 @@ public final class KillAuraModule extends Module {
     private boolean butterflyFast = false;
     private final java.util.Random rng = new java.util.Random();
 
+    // Retaliation mode: which mobs have hit the player recently (see updateRetaliation / collectTargets).
+    private final RetaliationTracker retaliation = new RetaliationTracker();
+    private int prevHurtTime = 0;
+
     public KillAuraModule() {
         super(BossPvpAddon.ID + ":killaura", "KillAura", "Melee kill aura with silent rotation, prediction and autoblock.");
 
@@ -71,6 +76,15 @@ public final class KillAuraModule extends Module {
         add(new BoolSetting("fullCharge", "Full charge only", true).group("Attack"));
         add(new IntSetting("hitChance", "Hit chance", 100, 0, 100, 1).formatter(v -> v + "%").group("Attack"));
 
+        add(new ChoiceSetting("activationMode", "Activation", "Always", "Always", "Retaliation")
+            .description("Retaliation = only target a mob AFTER it has attacked you (kept in the pool for the "
+                + "memory window so it doesn't drop mid-fight). Players are unaffected. Always = current behavior.")
+            .group("Targeting"));
+        add(new IntSetting("retaliationMemory", "Retaliation memory", 10, 1, 60, 1)
+            .formatter(v -> v + "s")
+            .description("How long an attacking mob stays targetable after its last hit on you.")
+            .visibleWhen(() -> "Retaliation".equals(choice("activationMode")))
+            .group("Targeting"));
         add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real", "None").group("Targeting"));
         add(new IntSetting("rotationSpeed", "Rotation speed", 180, 1, 180, 1)
             .formatter(v -> v + "°/t")
@@ -124,6 +138,8 @@ public final class KillAuraModule extends Module {
         currentTarget = null;
         lockedTarget = null;
         haveAim = false;
+        retaliation.clear();
+        prevHurtTime = 0;
 
         if (autoBlocking) {
             Minecraft mc = Minecraft.getInstance();
@@ -140,6 +156,10 @@ public final class KillAuraModule extends Module {
         currentTarget = null;
         LocalPlayer p = mc.player;
         if (p == null || mc.level == null || mc.gameMode == null || mc.gui.screen() != null) { haveAim = false; return; }
+
+        // Record incoming mob hits BEFORE any pause/defer early-outs so Retaliation memory doesn't miss
+        // hits taken while eating, mining, or during a crystal cycle.
+        updateRetaliation(p);
 
         if (com.boss.pvp.util.CombatManager.isCombatPaused()) { haveAim = false; return; }
 
@@ -255,6 +275,27 @@ public final class KillAuraModule extends Module {
         };
     }
 
+    /**
+     * Retaliation memory upkeep, called every tick. A fresh hurt is detected by {@code hurtTime} rising
+     * versus last tick (a new hit resets it to ~10); attribution comes from {@code getLastHurtByMob()},
+     * which the client populates from the damage-event packet's attacker id. Only mobs are recorded —
+     * Retaliation never restricts (or tracks) players.
+     */
+    private void updateRetaliation(LocalPlayer p) {
+        boolean freshHurt = p.hurtTime > prevHurtTime;
+        prevHurtTime = p.hurtTime;
+        if (!freshHurt) return;
+        LivingEntity attacker = p.getLastHurtByMob();
+        if (attacker == null || attacker instanceof Player || attacker.isRemoved()) return;
+        long now = System.currentTimeMillis();
+        retaliation.record(attacker.getId(), now);
+        retaliation.prune(now, retaliationWindowMs());   // piggyback cleanup on the (rare) hurt event
+    }
+
+    private long retaliationWindowMs() {
+        return integer("retaliationMemory") * 1000L;
+    }
+
     private List<LivingEntity> collectTargets(Minecraft mc, LocalPlayer p, double range, Set<String> ids) {
         boolean los = bool("raytrace");
         double fov = integer("fov");
@@ -266,6 +307,10 @@ public final class KillAuraModule extends Module {
         double rangeSq = range * range;
         List<LivingEntity> all = new ArrayList<>();
 
+        boolean retaliationMode = "Retaliation".equals(choice("activationMode"));
+        long nowMs = System.currentTimeMillis();
+        long windowMs = retaliationWindowMs();
+
         AABB area = p.getBoundingBox().inflate(range);
         for (LivingEntity living : mc.level.getEntitiesOfClass(LivingEntity.class, area,
                 e -> e != p && !e.isRemoved() && e.isAlive())) {
@@ -273,6 +318,8 @@ public final class KillAuraModule extends Module {
             if (!PvpUtil.matchesEntity(living, ids)) continue;
             if (living instanceof Player pl && (PvpUtil.isFriend(pl, friends())
                     || (bool("teamCheck") && PvpUtil.isTeammate(p, pl)))) continue;
+            if (!RetaliationTracker.shouldTarget(retaliationMode, living instanceof Player,
+                    retaliation.isActive(living.getId(), nowMs, windowMs))) continue;
             if (living.distanceToSqr(p) > rangeSq) continue;
             if (fov < 180.0 && PvpUtil.angleTo(p, living) > fov) continue;
             if (los && !PvpUtil.canSeeEntity(mc, p, living)) continue;
