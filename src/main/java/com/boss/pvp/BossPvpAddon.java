@@ -84,6 +84,7 @@ public final class BossPvpAddon extends AutismAddon {
     public static TrajectoryModule trajectory;
     public static AutoShootModule autoShoot;
     public static com.boss.pvp.module.misc.FlagReportModule flagReport;
+    public static com.boss.pvp.module.misc.UpdateCheckModule updateCheck;
 
     // Set by AutoCrystal while it is mid place->break cycle so KillAura defers and they don't fight
     // over the held hotbar slot (the "spaz"). Cleared by AutoCrystal on disable / when it stops acting.
@@ -157,13 +158,14 @@ public final class BossPvpAddon extends AutismAddon {
         trajectory = new TrajectoryModule();
         autoShoot = new AutoShootModule();
         flagReport = new com.boss.pvp.module.misc.FlagReportModule();
+        updateCheck = new com.boss.pvp.module.misc.UpdateCheckModule();
 
         Module[] all = {
             autoPot, hitbox, autoCrystal, autoTotem, aimAssist, killAura, surround, criticals,
             offhand, shieldBreaker, autoArmor, antiKnockback, autoHook, scaffold, autoAnchor,
             bedAura, holeFiller, fastPlace, burrow, autoGap, invManager, trapper, autoXP,
             autoClutch, triggerBot, reach, autoWeapon, noSlowdown, autoLeave, noHurtCam, antiEntityPush,
-            selfDestruct, trajectory, autoShoot, flagReport
+            selfDestruct, trajectory, autoShoot, flagReport, updateCheck
         };
         for (Module m : all) AutismAddons.modules().register(m);
         registeredModules = all;
@@ -172,7 +174,11 @@ public final class BossPvpAddon extends AutismAddon {
         // LOCAL client config (not a repo secret) and flushes any crash report persisted before a hard crash.
         com.boss.pvp.flag.FlagReporter.init();
 
-        HudElementProvider[] huds = { new FovCircleHud(), new AutoTotemHud(), new CombatHud() };
+        // Launch-time, read-only update check: one async GitHub Releases GET, notifies via chat + HUD if
+        // this build is behind the latest release. Fire-and-forget; opt out via the "Update Checker" toggle.
+        com.boss.pvp.update.UpdateChecker.init();
+
+        HudElementProvider[] huds = { new FovCircleHud(), new AutoTotemHud(), new CombatHud(), new com.boss.pvp.client.hud.UpdateHud() };
         for (HudElementProvider h : huds) {
             boolean ok = AutismAddons.hud().register(h);
             System.out.println("[BossPvP] HUD register '" + h.id() + "' (" + h.label() + ") -> " + ok);
@@ -208,6 +214,8 @@ public final class BossPvpAddon extends AutismAddon {
 
         AutismAddons.events().onTick(mc -> {
             if (mc.player == null || mc.level == null) return;
+
+            com.boss.pvp.update.UpdateChecker.tick(mc);   // one-time "update available" chat notice, once in-world
 
             if (autoTestCountdown > 0 && --autoTestCountdown == 0) enableTestModules();
             com.boss.pvp.command.BossAutoTestCommand.tickClient();

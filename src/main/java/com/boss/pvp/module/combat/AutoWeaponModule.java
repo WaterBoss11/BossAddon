@@ -1,6 +1,7 @@
 package com.boss.pvp.module.combat;
 
 import com.boss.pvp.BossPvpAddon;
+import com.boss.pvp.util.pvp.AttackCharge;
 
 import autismclient.modules.Module;
 import autismclient.api.module.*;
@@ -51,17 +52,67 @@ public final class AutoWeaponModule extends Module {
         if (p == null) return;
 
         int cur = p.getInventory().getSelectedSlot();
+        int best = bestWeaponSlot(target, p);
+        if (best != cur) {
+            if (!switchedPending) prevSlot = cur;
+            AutismInventoryHelper.selectHotbarSlot(mc, best);
+            switchedPending = true;
+        }
+    }
+
+    /**
+     * Hotbar slot (0-8) of the highest-scoring weapon for {@code target}, defaulting to the currently selected
+     * slot on a tie. This is the exact weapon {@link #selectBestWeapon} would swap to, shared so the charge gate
+     * ({@link #chargeReadyForBestWeapon}) reasons about the same choice.
+     */
+    private int bestWeaponSlot(Entity target, LocalPlayer p) {
+        int cur = p.getInventory().getSelectedSlot();
         int best = cur;
         double bestScore = scoreWeapon(p.getInventory().getItem(cur), target, p);
         for (int i = 0; i <= 8; i++) {
             double sc = scoreWeapon(p.getInventory().getItem(i), target, p);
             if (sc > bestScore) { bestScore = sc; best = i; }
         }
-        if (best != cur) {
-            if (!switchedPending) prevSlot = cur;
-            AutismInventoryHelper.selectHotbarSlot(mc, best);
-            switchedPending = true;
-        }
+        return best;
+    }
+
+    /**
+     * Is the weapon this module would swap to for {@code target} fully charged right now?
+     *
+     * <p>KillAura's full-charge gate historically read {@code getAttackStrengthScale} of the <i>currently held</i>
+     * item, then swapped weapons on the same tick — so swapping to a slower weapon (e.g. sword -&gt; axe) let an
+     * under-charged swing through. This computes the gate against the weapon {@link #selectBestWeapon} will
+     * actually pick, using vanilla's shared attack-strength ticker (recovered from the current item's charge
+     * scale). See {@link AttackCharge}.
+     *
+     * <p>Falls back to the currently held item's charge when this module is disabled or a target is unavailable.
+     */
+    public boolean chargeReadyForBestWeapon(Entity target) {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer p = mc == null ? null : mc.player;
+        if (p == null) return false;
+
+        double currentScale = p.getAttackStrengthScale(0.0f);
+        if (!isEnabled() || target == null) return currentScale >= 1.0;
+
+        double currentDelay = AttackCharge.attackSpeedToDelay(p.getAttributeValue(Attributes.ATTACK_SPEED));
+
+        ItemStack bestStack = p.getInventory().getItem(bestWeaponSlot(target, p));
+        double bestDelay = AttackCharge.attackSpeedToDelay(weaponAttackSpeed(bestStack, p));
+
+        return AttackCharge.bestWeaponCharged(currentScale, currentDelay, bestDelay);
+    }
+
+    /**
+     * ATTACK_SPEED attribute value the player would have holding {@code stack} in the main hand, mirroring
+     * {@link #attackDamage} but for attack speed. Bare hand / no modifiers falls back to the player's base speed.
+     */
+    private double weaponAttackSpeed(ItemStack stack, LocalPlayer p) {
+        double base = p.getAttributeBaseValue(Attributes.ATTACK_SPEED);
+        if (stack == null || stack.isEmpty()) return base;
+        ItemAttributeModifiers mods = stack.get(DataComponents.ATTRIBUTE_MODIFIERS);
+        if (mods == null) return base;
+        return mods.compute(Attributes.ATTACK_SPEED, base, EquipmentSlot.MAINHAND);
     }
 
     public void tick(Minecraft mc) {

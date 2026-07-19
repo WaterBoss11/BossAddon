@@ -1,6 +1,11 @@
 # Mirror these versions with the AUTISM Client release you are building against.
 [versions]
-mod-version = "1.0.0"
+# mod-version is baked into the jar (fabric.mod.json) and the jar filename, and is what the in-game
+# UpdateChecker compares against the latest GitHub release tag. It MUST track the release tag: every
+# release bumps this and the git tag together (e.g. tag v1.9.1 <-> mod-version 1.9.1). The old "jar stays
+# at 1.0.0 while tags advance" convention is dropped — it made the UpdateChecker report a permanent false
+# "outdated" notice. This 1.9.1 ships the UpdateChecker feature on top of the v1.9.0 release.
+mod-version = "1.9.1"
 
 minecraft = "26.2"
 fabric-loader = "0.19.3"

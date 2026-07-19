@@ -183,7 +183,14 @@ public final class KillAuraModule extends Module {
 
         long now = System.currentTimeMillis();
         if (!shieldBreakBypass && now - lastAttackMs < nextDelayMs) { autoBlock(mc, p, false); return; }
-        if (bool("fullCharge") && !PvpUtil.fullCharge(p)) { autoBlock(mc, p, true); return; }
+        if (bool("fullCharge")) {
+            // Gate on the weapon AutoWeapon will swap to on this same tick (below), not the currently held item —
+            // otherwise a sword->axe swap slips an under-charged swing past a current-item charge check.
+            boolean charged = (BossPvpAddon.autoWeapon != null && BossPvpAddon.autoWeapon.isEnabled())
+                ? BossPvpAddon.autoWeapon.chargeReadyForBestWeapon(primary)
+                : PvpUtil.fullCharge(p);
+            if (!charged) { autoBlock(mc, p, true); return; }
+        }
         if (!PvpUtil.roll(integer("hitChance"))) { lastAttackMs = now; nextDelayMs = patternDelay(); return; }
 
         if (autoBlocking) { mc.gameMode.releaseUsingItem(p); autoBlocking = false; }
