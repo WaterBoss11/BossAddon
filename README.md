@@ -149,15 +149,31 @@ against.
 By default this addon reports **kicks and crashes** to the developer's Discord to help fix bugs. Each report
 contains:
 
-- the event type (kick / packet-kick / crash) and its reason text,
-- **your Minecraft username** (the reporting player's own name — never anyone else's), and
-- which boss-pvp modules were enabled at that moment.
+- the event type and its reason text — disconnects are labelled by what actually happened: **Server rejected
+  connection** (VPN/proxy block, wrong loader, whitelist, ban), **Kicked** (kicked mid-game), **Timed out**,
+  **Disconnected**, or **Crash**,
+- **your Minecraft username** (the reporting player's own name — never anyone else's),
+- which boss-pvp modules were enabled at that moment, and
+- **a short excerpt of your client log from around the event** (roughly the last ~10–15 seconds plus a few
+  seconds after), attached as a downloadable `flag-log-<timestamp>.txt` file, to help debugging.
 
-It does **not** collect or send your server name or server IP. Reports are deduplicated so a reconnect loop
+It does **not** collect or send your server name or server IP.
+
+**About the log excerpt — please read.** The excerpt is delivered as a **sanitized `.txt` attachment** on the
+report (not pasted into the message). Before it leaves your client it is run through a sanitizer that strips IP
+addresses (IPv4/IPv6), server connect targets and common web domains, your Windows username in file paths
+(`C:\Users\<name>\…`), and player names in the standard Minecraft log formats — chat `<name>`, join/leave,
+disconnect, advancements, `Setting user`, and the `name[/address]` connection line — plus every remaining exact
+occurrence of **your own** username (it's already sent as the Player field). **We still cannot guarantee 100%
+removal:** log text is freeform, so **other players'** names in server-custom chat formats, or in a self-hosted
+(singleplayer/LAN) world's command output (e.g. `/give … to <name>`, `Teleported <name>`), may slip through —
+those aren't reliably distinguishable from ordinary log text, and we deliberately avoid blanket rules that would
+shred legitimate logs. Treat the file as "scrubbed, not guaranteed clean." If both boss-pvp and BossUtility are
+installed, the same excerpt rides on the single combined report. Reports are deduplicated so a reconnect loop
 can't spam the channel.
 
 **To turn it off:** open the **Crash & Kick Reports** module and uncheck **"Report crashes & kicks"**. That
-opts you out completely.
+opts you out completely — no report, and no log file, goes out.
 
 ---
 

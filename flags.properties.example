@@ -11,3 +11,8 @@
 #   3. the baked-in shipped default.
 
 webhook=https://discord.com/api/webhooks/XXXXXXXXXXXX/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+# Combined channel used ONLY when both boss-pvp and BossUtility are installed (boss-pvp reports one merged
+# embed for both addons here instead of to the channel above). Override via env BOSS_PVP_FLAGS_DUAL_WEBHOOK
+# or the key below; otherwise the baked-in default is used.
+# dualWebhook=https://discord.com/api/webhooks/XXXXXXXXXXXX/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

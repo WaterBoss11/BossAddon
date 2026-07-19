@@ -33,12 +33,20 @@ public final class FlagConfig {
     static final String DEFAULT_WEBHOOK =
         "https://discord.com/api/webhooks/1527840817845375197/_F72OBVwgvrivOxA_EGjTotDPm0Th9aRSzMU1n42UtpzlxOQlVzbVufvbdQMTRpo_urb";
 
+    // Combined "Boss Utility+PVP Flags" channel — used ONLY when both boss-pvp and BossUtility are installed,
+    // where boss-pvp reports one merged embed here instead of to its own channel. Same placeholder rule.
+    static final String DUAL_WEBHOOK =
+        "https://discord.com/api/webhooks/1527909302906523809/k19JESighYZlMVchIeu-ZTuZqbSQiMsgzs4P8cZeAW5hXGzwOUVX3PBNGsEKAbK6cuhZ";
+
     private static final String PLACEHOLDER_MARKER = "REPLACE_ME";
     private static final String ENV_KEY = "BOSS_PVP_FLAGS_WEBHOOK";
+    private static final String DUAL_ENV_KEY = "BOSS_PVP_FLAGS_DUAL_WEBHOOK";
     private static final String CONFIG_REL = "boss-pvp/flags.properties";
 
     private static volatile boolean loaded = false;
     private static volatile String webhook = null;
+    private static volatile boolean dualLoaded = false;
+    private static volatile String dualWebhook = null;
 
     /** The resolved webhook URL, or {@code null} if not configured. Cached after first resolution. */
     public static String webhook() {
@@ -50,6 +58,16 @@ public final class FlagConfig {
         return webhook() != null;
     }
 
+    /** The combined-channel webhook (both addons installed), or null if not configured. */
+    public static String dualWebhook() {
+        if (!dualLoaded) resolveDual();
+        return dualWebhook;
+    }
+
+    public static boolean isDualConfigured() {
+        return dualWebhook() != null;
+    }
+
     /** The path a local override lives at (for logging/help text). */
     public static Path configPath() {
         return FabricLoader.getInstance().getConfigDir().resolve(CONFIG_REL);
@@ -58,7 +76,7 @@ public final class FlagConfig {
     private static synchronized void resolve() {
         if (loaded) return;
         try {
-            String override = resolveOverride();
+            String override = resolveOverride(ENV_KEY, "webhook");
             webhook = usable(override != null ? override : DEFAULT_WEBHOOK);
         } catch (Exception e) {
             webhook = null;
@@ -67,9 +85,21 @@ public final class FlagConfig {
         }
     }
 
-    private static String resolveOverride() {
+    private static synchronized void resolveDual() {
+        if (dualLoaded) return;
         try {
-            String env = System.getenv(ENV_KEY);
+            String override = resolveOverride(DUAL_ENV_KEY, "dualWebhook");
+            dualWebhook = usable(override != null ? override : DUAL_WEBHOOK);
+        } catch (Exception e) {
+            dualWebhook = null;
+        } finally {
+            dualLoaded = true;
+        }
+    }
+
+    private static String resolveOverride(String envKey, String propKey) {
+        try {
+            String env = System.getenv(envKey);
             if (env != null && !env.isBlank()) return env.trim();
             Path p = configPath();
             if (Files.isRegularFile(p)) {
@@ -77,7 +107,7 @@ public final class FlagConfig {
                 try (var in = Files.newInputStream(p)) {
                     props.load(in);
                 }
-                String w = props.getProperty("webhook");
+                String w = props.getProperty(propKey);
                 if (w != null && !w.isBlank()) return w.trim();
             }
         } catch (Exception ignored) {

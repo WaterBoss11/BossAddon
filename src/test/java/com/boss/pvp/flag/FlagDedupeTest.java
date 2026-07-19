@@ -30,7 +30,7 @@ class FlagDedupeTest {
 
     @Test
     void differentTypeSameReasonIsNotDuplicate() {
-        assertFalse(FlagReporter.isDuplicate("KICK|lag", 1_000L, "PACKET_KICK|lag", 1_500L, WINDOW));
+        assertFalse(FlagReporter.isDuplicate("KICKED|lag", 1_000L, "SERVER_REJECTED|lag", 1_500L, WINDOW));
     }
 
     @Test
