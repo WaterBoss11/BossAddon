@@ -100,4 +100,24 @@ public final class DamageUtil {
     public static boolean wouldSelfKill(double selfDamage, double health, double absorption) {
         return selfDamage >= health + absorption;
     }
+
+    // --- Melee-hit gate (HCsCR-style client-side crystal removal) --------------------------------------
+    // An end crystal is destroyed by ANY damage > 0, so a melee break only fails to register when the
+    // swing itself deals nothing — which in practice means Weakness has cancelled the attack damage. If we
+    // remove the crystal client-side on a swing the server ignores, it "ghosts" (gone locally, alive on the
+    // server). These helpers gate that removal.
+
+    /** Vanilla melee attack damage after the Strength/Weakness effect modifiers on {@code ATTACK_DAMAGE}:
+     *  +3 per Strength level, -4 per Weakness level, clamped at 0. Levels are 1-based (0 = effect absent).
+     *  The live {@code getAttributeValue(ATTACK_DAMAGE)} already folds these in; this is the same math made
+     *  explicit for prediction and testing. */
+    public static double effectiveMeleeDamage(double weaponAttackDamage, int weaknessLevel, int strengthLevel) {
+        return Math.max(0.0, weaponAttackDamage + 3.0 * strengthLevel - 4.0 * weaknessLevel);
+    }
+
+    /** Whether a melee swing dealing {@code effectiveAttackDamage} would register on the server (i.e. break
+     *  the crystal). Any positive value breaks it; 0 (Weakness-cancelled) or less does not. */
+    public static boolean meleeRegistersHit(double effectiveAttackDamage) {
+        return effectiveAttackDamage > 0.0;
+    }
 }

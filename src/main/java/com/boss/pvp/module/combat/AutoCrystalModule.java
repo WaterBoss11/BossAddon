@@ -3,6 +3,9 @@ package com.boss.pvp.module.combat;
 import com.boss.pvp.BossPvpAddon;
 import com.boss.pvp.util.pvp.PvpUtil;
 import com.boss.pvp.util.pvp.DamageUtil;
+import com.boss.pvp.util.pvp.CrystalHideManager;
+import com.boss.pvp.util.pvp.CrystalActions;
+import com.boss.pvp.util.pvp.ActionRateLimiter;
 import com.boss.pvp.util.pvp.PlayerSimulation;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents;
@@ -65,11 +68,12 @@ public final class AutoCrystalModule extends Module {
     private long lastPlaceMs = 0L;
     private long lastBreakMs = 0L;
     private long lastCrystalActMs = 0L;
-    private long lastFastBreakTick = Long.MIN_VALUE;
     private int prevSlot = -1;
     private Vec3 legitAim = null;
 
     private final Map<Integer, Long> recentlyHit = new HashMap<>();
+    // One shared per-second cap across the tick-loop break and the crystal-spawn fast-break path.
+    private final ActionRateLimiter breakRate = new ActionRateLimiter();
 
     // Set by the packet triggers (network thread) to make the next client tick act without waiting out the delay.
     private volatile boolean forceAct = false;
@@ -93,10 +97,21 @@ public final class AutoCrystalModule extends Module {
         add(new ChoiceSetting("breakMode", "Break mode", "Normal", "Normal", "Packet").group("Actions"));
         add(new IntSetting("placeDelay", "Place delay (ms)", 100, 0, 1000, 10).group("Actions"));
         add(new IntSetting("breakDelay", "Break delay (ms)", 80, 0, 1000, 10).group("Actions"));
-        add(new BoolSetting("fastBreak", "Fast break", false)
-            .description("Break a crystal the instant it spawns (entity-load hook), rate-limited to 1 per 2 ticks. Off = unchanged.").group("Actions"));
+        add(new BoolSetting("fastBreak", "Fast break", true)
+            .description("Break a crystal the instant it spawns (entity-load hook), capped by Max breaks/sec. Raises cycle rate.").group("Actions"));
+        add(new IntSetting("maxBps", "Max breaks / sec", 20, 1, 40, 1)
+            .description("Upper bound on break attempts per second, shared by the normal loop and Fast break. Higher = faster cycle, but more suspicious to anticheat.").group("Actions"));
         add(new BoolSetting("setDead", "Instant break (setDead)", true)
             .description("Don't re-attack a crystal we just hit until the server confirms it (LiquidBounce SetDead).").group("Actions"));
+        add(new BoolSetting("hideOnHit", "Client-side hide (HCsCR)", false)
+            .description("The instant we hit a crystal (before the server confirms), drop its hitbox client-side so the spot frees for the next placement — the corrected obstruction check re-places there without waiting for the server. Reappears if the server never confirms (see Resync window). Prototype — verify per server.").group("Actions"));
+        add(new IntSetting("resyncTicks", "Resync window", 4, 1, 50, 1)
+            .formatter(v -> v + "t")
+            .description("How long a hidden crystal stays hidden before its hitbox reappears if the server hasn't confirmed the kill. Default 4 is a safe match to server cadence; lower = safer against ghosts, higher = holds the spot clear longer.")
+            .visibleWhen(() -> bool("hideOnHit")).group("Actions"));
+        add(new BoolSetting("effectGate", "Effect-aware hit gate", true)
+            .description("Skip the client-side hide when the swing wouldn't register (e.g. Weakness has cancelled the attack), so a nullified hit can't leave a ghost crystal.")
+            .visibleWhen(() -> bool("hideOnHit")).group("Actions"));
 
         add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real").group("Targeting"));
         add(new DoubleSetting("legitEase", "Legit ease speed", 0.25, 0.05, 1.0, 0.05)
@@ -172,12 +187,21 @@ public final class AutoCrystalModule extends Module {
         prevSlot = -1;
         legitAim = null;
         recentlyHit.clear();
+        breakRate.clear();
+        CrystalHideManager.clear();
         HeldSlotManager.clear(this);
     }
 
     public void tick(Minecraft mc) {
         LocalPlayer me = mc.player;
         Level level = mc.level;
+        // Advance the resync windows every tick (even with a menu open) so hidden crystals reappear on time.
+        if (level != null && CrystalHideManager.hiddenCount() > 0) {
+            CrystalHideManager.tick(id -> {
+                Entity e = level.getEntity(id);
+                return e == null || !e.isAlive();
+            });
+        }
         if (me == null || level == null || mc.gameMode == null || mc.gui.screen() != null) return;
 
         if (!HeldSlotManager.holds(this) && prevSlot >= 0) {
@@ -205,7 +229,7 @@ public final class AutoCrystalModule extends Module {
 
         if (realRot) easeLegit(me); else legitAim = null;
 
-        if (bool("doBreak") && (force || now - lastBreakMs >= PvpUtil.jitterMs(integer("breakDelay")))) {
+        if (bool("doBreak") && CrystalActions.gateOpen(force, now, lastBreakMs, PvpUtil.jitterMs(integer("breakDelay")))) {
             int done = 0;
             for (EndCrystal crystal : crystalsNear(mc, target.position(), decimal("breakRange"))) {
                 if (done >= budget) break;
@@ -216,17 +240,21 @@ public final class AutoCrystalModule extends Module {
                 if (!safeToAct(me, selfDmg, enemyDmg, decimal("minBreakDamage"), false)) continue;
                 if (bool("dualDamage") && predictedEnemyDamage(target, cpos) < decimal("minBreakDamage")) continue;
                 if (!losOk(mc, me, cpos)) continue;
+                if (!breakRate.tryAcquire(now, integer("maxBps"))) break;   // per-second cap reached this tick
 
                 PvpUtil.ghostSafeAttack(mc, me, crystal, cpos, !"Packet".equals(choice("breakMode")));
                 if (bool("setDead")) recentlyHit.put(crystal.getId(), now);
+                maybeHideCrystal(me, crystal);
                 if (realRot) legitAim = cpos;
                 lastBreakMs = now;
                 done++;
             }
-            if (done > 0) { lastCrystalActMs = now; BossPvpAddon.crystalActive = true; return; }
+            // Place-after-break: a successful break no longer forfeits the place phase this tick (improvement
+            // #1) — fall through so a freed spot (incl. a just-hidden crystal's) is re-placed in the same tick.
+            if (done > 0) { lastCrystalActMs = now; BossPvpAddon.crystalActive = true; }
         }
 
-        if (bool("doPlace") && (force || now - lastPlaceMs >= PvpUtil.jitterMs(integer("placeDelay")))) {
+        if (bool("doPlace") && CrystalActions.gateOpen(force, now, lastPlaceMs, PvpUtil.jitterMs(integer("placeDelay")))) {
             List<Candidate> bases = bestBases(mc, me, target, integer("maxPlace"));
             if (bases.isEmpty()) return;
             boolean useOffhand = bool("offhandCrystal") && me.getOffhandItem().is(Items.END_CRYSTAL);
@@ -325,9 +353,15 @@ public final class AutoCrystalModule extends Module {
         return true;
     }
 
+    // Vanilla EndCrystalItem.useOn rejects a placement if ANY entity occupies the 1x2x1 space above the base
+    // (not just living entities — a live crystal, item, or player's upper body all count). The old check used
+    // a 1x1x1 box against LivingEntity only, so it never saw crystals and we placed into occupied spots. This
+    // also makes CrystalHide pay off: a hidden crystal is treated as absent, so its spot re-places immediately.
     private boolean crystalBoxObstructed(Level level, BlockPos base) {
-        AABB box = new AABB(base.above());
-        List<LivingEntity> hits = level.getEntitiesOfClass(LivingEntity.class, box, e -> e.isAlive());
+        AABB box = CrystalActions.placementBox(base);
+        List<Entity> hits = level.getEntitiesOfClass(Entity.class, box, e ->
+            CrystalActions.blocks(e.isRemoved(), e instanceof EndCrystal,
+                e instanceof EndCrystal ec && CrystalHideManager.isHidden(ec.getId())));
         return !hits.isEmpty();
     }
 
@@ -412,10 +446,7 @@ public final class AutoCrystalModule extends Module {
         LocalPlayer me = mc.player;
         if (me == null || mc.level == null || mc.gameMode == null || world != mc.level) return;
 
-        long gt = mc.level.getGameTime();
-        if (gt - lastFastBreakTick < 2) return;
         if (recentlyHit.containsKey(crystal.getId())) return;
-        if (System.currentTimeMillis() - lastPlaceMs < 60) return;
 
         Vec3 cpos = crystal.position();
         double breakRange = decimal("breakRange");
@@ -432,9 +463,32 @@ public final class AutoCrystalModule extends Module {
         if (selfDmg > decimal("maxSelfDamage")) return;
         if (enemyDmg < decimal("minBreakDamage")) return;
 
+        long now = System.currentTimeMillis();
+        if (!breakRate.tryAcquire(now, integer("maxBps"))) return;   // shared per-second cap with the tick loop
+
         PvpUtil.ghostSafeAttack(mc, me, crystal, cpos, !"Packet".equals(choice("breakMode")));
-        if (bool("setDead")) recentlyHit.put(crystal.getId(), System.currentTimeMillis());
-        lastFastBreakTick = gt;
+        if (bool("setDead")) recentlyHit.put(crystal.getId(), now);
+        maybeHideCrystal(me, crystal);
+    }
+
+    // HCsCR-style client-side removal: after a break, drop the crystal's hitbox for a resync window so the
+    // spot frees for the next raytrace/placement before the server's removal round-trips. The effect gate
+    // skips the hide when the swing wouldn't register (Weakness cancelled it), so a nullified hit can't
+    // leave a ghost. The resync window (CrystalHideManager.tick) reappears it if the server never confirms.
+    private void maybeHideCrystal(LocalPlayer me, EndCrystal crystal) {
+        if (!bool("hideOnHit")) return;
+        if (bool("effectGate") && !breakWillRegister(me)) return;
+        CrystalHideManager.hide(crystal.getId(), integer("resyncTicks"));
+    }
+
+    // Recompute the melee attack damage with active effects and check it still lands. Vanilla folds
+    // Weakness/Strength into ATTACK_DAMAGE (and clamps at 0); we strip the effect modifiers back out and
+    // re-apply them explicitly so the gate is auditable and survives the attribute's clamp.
+    private boolean breakWillRegister(LocalPlayer me) {
+        int weak = me.hasEffect(MobEffects.WEAKNESS) ? me.getEffect(MobEffects.WEAKNESS).getAmplifier() + 1 : 0;
+        int str = me.hasEffect(MobEffects.STRENGTH) ? me.getEffect(MobEffects.STRENGTH).getAmplifier() + 1 : 0;
+        double weaponBase = me.getAttributeValue(Attributes.ATTACK_DAMAGE) - 3.0 * str + 4.0 * weak;
+        return DamageUtil.meleeRegistersHit(DamageUtil.effectiveMeleeDamage(weaponBase, weak, str));
     }
 
     private void pruneRecentlyHit(long now) {
