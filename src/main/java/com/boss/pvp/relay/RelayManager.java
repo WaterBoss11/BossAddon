@@ -51,6 +51,7 @@ public final class RelayManager implements RelayClient.Handler {
     private volatile RelayClient client;
     private volatile Mode mode = Mode.OFF;
     private volatile boolean authed = false;
+    private volatile boolean myVerified = true;   // whether OUR connection authenticated via Mojang
     private volatile boolean fatal = false;          // rejected (invite/allowlist/auth) — stop auto-retry until manual reconnect
     private volatile String status = "off";
     private volatile String lastServer = null;
@@ -60,6 +61,7 @@ public final class RelayManager implements RelayClient.Handler {
 
     /** Call once on addon init. No-op unless the pilot gate is configured. */
     public void init() {
+        RelayConfig.autoPopulateDefaults();   // pilot builds seed relay.url/relay.invite on first launch; no-op otherwise
         if (!RelayConfig.isConfigured()) {
             status = "disabled (no pilot invite configured)";
             return;
@@ -109,8 +111,8 @@ public final class RelayManager implements RelayClient.Handler {
             String t = str(o, "t");
             if (t == null) return;
             switch (t) {
-                case "hello"  -> onHello(str(o, "serverId"));
-                case "authok" -> onAuthOk();
+                case "hello"  -> onHello(str(o, "serverId"), bool(o, "allowUnverified", false));
+                case "authok" -> onAuthOk(bool(o, "verified", true));
                 case "msg"    -> onInboundMessage(o);
                 case "system" -> display("§7[Relay] " + str(o, "text"));
                 case "error"  -> onError(str(o, "reason"));
@@ -123,7 +125,7 @@ public final class RelayManager implements RelayClient.Handler {
 
     // ---- handshake -----------------------------------------------------------------------------------
 
-    private void onHello(String serverId) {
+    private void onHello(String serverId, boolean allowUnverified) {
         if (serverId == null) return;
         status = "authenticating";
         sched.execute(() -> {
@@ -134,34 +136,58 @@ public final class RelayManager implements RelayClient.Handler {
                 String uuid = user.getProfileId() == null ? "" : user.getProfileId().toString();
                 String token = user.getAccessToken();
 
-                boolean ok = MojangAuth.joinServer(token, uuid, serverId);
-                if (!ok) {
-                    display("§c[Relay] Mojang session auth failed — not connecting.");
-                    closeQuietly();
-                    return;
-                }
-                JsonObject auth = new JsonObject();
-                auth.addProperty("t", "auth");
-                auth.addProperty("username", name);
-                auth.addProperty("uuid", uuid);
-                auth.addProperty("invite", RelayConfig.invite());
-                auth.addProperty("server", currentServerId());
+                // Verified first: try the Mojang handshake unless the user forced offline. If it succeeds we
+                // authenticate as a verified (premium) account. If it fails — offline/non-premium account, or a
+                // transient Mojang error — fall back to an unverified (self-reported) identity, but ONLY if the
+                // relay allows it. This never silently "downgrades" a premium user on a verified-only relay.
+                boolean joined = !RelayConfig.forceOffline()
+                    && MojangAuth.joinServer(token, uuid, serverId);
+
                 RelayClient c = client;
-                if (c != null) c.send(auth.toString());
+                if (c == null) return;
+
+                if (joined) {
+                    JsonObject auth = new JsonObject();
+                    auth.addProperty("t", "auth");
+                    auth.addProperty("username", name);
+                    auth.addProperty("uuid", uuid);
+                    auth.addProperty("invite", RelayConfig.invite());
+                    auth.addProperty("server", currentServerId());
+                    c.send(auth.toString());
+                } else if (allowUnverified) {
+                    JsonObject auth = new JsonObject();
+                    auth.addProperty("t", "auth");
+                    auth.addProperty("offline", true);
+                    auth.addProperty("username", name);
+                    auth.addProperty("invite", RelayConfig.invite());
+                    auth.addProperty("server", currentServerId());
+                    c.send(auth.toString());
+                    display("§e[Relay] Connecting as UNVERIFIED (offline) — your messages will be marked "
+                        + "§8(Unverified)§e to everyone.");
+                } else {
+                    display(RelayConfig.forceOffline()
+                        ? "§c[Relay] This relay is verified-only — it does not allow offline accounts."
+                        : "§c[Relay] Mojang session auth failed and this relay is verified-only — not connecting.");
+                    fatal = true;   // won't fix on retry; user must /bossrelay reconnect
+                    closeQuietly();
+                }
             } catch (Throwable t) {
                 closeQuietly();
             }
         });
     }
 
-    private void onAuthOk() {
+    private void onAuthOk(boolean verified) {
         authed = true;
+        myVerified = verified;
         fatal = false;
         backoffAttempt.set(0);
-        status = "connected";
+        status = verified ? "connected" : "connected (unverified)";
         lastServer = null;
         reportServer(true);
-        display("§a[Relay] Connected. Type in chat while relay is on, or use §f/bossrelay§a.");
+        display(verified
+            ? "§a[Relay] Connected (verified). Type in chat while relay is on, or use §f/bossrelay§a."
+            : "§a[Relay] Connected as §8(Unverified)§a. Others see your messages marked unverified.");
     }
 
     private void onError(String reason) {
@@ -272,24 +298,32 @@ public final class RelayManager implements RelayClient.Handler {
         String from = str(o, "from");
         String text = str(o, "text");
         if (from == null || text == null) return;
+        boolean fromVerified = bool(o, "verified", true);   // default true for an old server
         // Sanitize again on display — never render raw wire text into chat.
         String safe = RelaySanitizer.sanitize(text);
         if (safe.isEmpty()) return;
+        String who = markName(from, fromVerified);
         String line = switch (scope == null ? "" : scope) {
-            case "server" -> "§a[Relay·server] §f" + from + "§7: §f" + safe;
-            case "dm" -> "§d[Relay·DM] §f" + from + " §7→ you: §f" + safe;
-            default -> "§b[Relay] §f" + from + "§7: §f" + safe;
+            case "server" -> "§a[Relay·server] " + who + "§7: §f" + safe;
+            case "dm" -> "§d[Relay·DM] " + who + " §7→ you: §f" + safe;
+            default -> "§b[Relay] " + who + "§7: §f" + safe;
         };
         display(line);
     }
 
     private void echoLocal(String scope, String to, String text) {
+        String me = myVerified ? "§7you" : "§8(Unverified)§7 you";
         String line = switch (scope) {
-            case "server" -> "§a[Relay·server] §7you: §f" + text;
-            case "dm" -> "§d[Relay·DM] §7you → §f" + to + "§7: §f" + text;
-            default -> "§b[Relay] §7you: §f" + text;
+            case "server" -> "§a[Relay·server] " + me + ": §f" + text;
+            case "dm" -> "§d[Relay·DM] " + me + " → §f" + to + "§7: §f" + text;
+            default -> "§b[Relay] " + me + ": §f" + text;
         };
         display(line);
+    }
+
+    /** Render a sender name with the unverified marker so it is never visually identical to a verified one. */
+    private static String markName(String name, boolean verified) {
+        return verified ? "§f" + name : "§8(Unverified)§f " + name;
     }
 
     private void display(String s) {
@@ -312,6 +346,14 @@ public final class RelayManager implements RelayClient.Handler {
             return o.has(key) && o.get(key).isJsonPrimitive() ? o.get(key).getAsString() : null;
         } catch (Throwable t) {
             return null;
+        }
+    }
+
+    private static boolean bool(JsonObject o, String key, boolean def) {
+        try {
+            return o.has(key) && o.get(key).isJsonPrimitive() ? o.get(key).getAsBoolean() : def;
+        } catch (Throwable t) {
+            return def;
         }
     }
 }
