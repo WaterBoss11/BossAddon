@@ -2,6 +2,7 @@ package com.boss.pvp.module.automation;
 
 import com.boss.pvp.BossPvpAddon;
 import com.boss.pvp.util.pvp.PvpUtil;
+import com.boss.pvp.util.MenuMode;
 
 import autismclient.modules.Module;
 import autismclient.api.module.*;
@@ -25,7 +26,7 @@ public final class TriggerBotModule extends Module {
 
     public TriggerBotModule() {
         super(BossPvpAddon.ID + ":triggerbot", "TriggerBot",
-            "Attacks whatever your crosshair is pointing at — you aim, it clicks.");
+            "Attacks whatever your crosshair points at.");
 
         add(RegistryListSetting.entityTypes("entities", "Targets", "minecraft:player"));
         add(new DoubleSetting("range", "Range", 3.0, 1.0, 3.5, 0.1)
@@ -33,13 +34,13 @@ public final class TriggerBotModule extends Module {
         add(new IntSetting("delay", "Delay (ms)", 100, 0, 1000, 10)
             .description("Time between hits. Varies slightly on its own (+-25%) so the click rate doesn't look robotic."));
         add(new IntSetting("hurtTime", "Hurt time", 10, 0, 10, 1)
-            .description("How faded the target's red damage flash must be before hitting again. 10 = hit as soon as possible; lower = wait longer."));
+            .description("How faded the target's red damage flash must be before hitting again. 10 = hit as soon as possible; lower = wait longer.").visibleWhen(MenuMode::advanced));
         add(new BoolSetting("fullCharge", "Require full charge", true)
-            .description("Waits for your attack bar to fully charge so every hit does full damage."));
-        add(new BoolSetting("onlyWhileWeapon", "Only while holding a weapon", false));
-        add(new BoolSetting("swing", "Swing arm", true));
+            .description("Waits for your attack bar to fully charge so every hit does full damage.").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("onlyWhileWeapon", "Only while holding a weapon", false).visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("swing", "Swing arm", true).visibleWhen(MenuMode::advanced));
         add(new BoolSetting("teamCheck", "Team check", false)
-            .description("Skips players wearing leather armor dyed the same color as yours (likely teammates).").group("Team"));
+            .description("Skips players wearing leather armor dyed the same color as yours (likely teammates).").group("Team").visibleWhen(MenuMode::advanced));
     }
 
     public void tick(Minecraft mc) {

@@ -4,6 +4,7 @@ import com.boss.pvp.BossPvpAddon;
 import com.boss.pvp.util.pvp.PvpUtil;
 import com.boss.pvp.util.pvp.RotationManager;
 import com.boss.pvp.util.input.HeldSlotManager;
+import com.boss.pvp.util.MenuMode;
 
 import autismclient.modules.Module;
 import autismclient.api.module.*;
@@ -38,23 +39,23 @@ public final class AutoHookModule extends Module {
     private LivingEntity victim;
 
     public AutoHookModule() {
-        super(BossPvpAddon.ID + ":autohook", "AutoHook", "Cast a fishing rod at an attacker to break their combo.");
+        super(BossPvpAddon.ID + ":autohook", "AutoHook", "Casts a fishing rod at attackers.");
 
         add(RegistryListSetting.entityTypes("entities", "Targets", "minecraft:player"));
         add(new IntSetting("hits", "Hits to trigger", 3, 1, 10, 1).group("Trigger"));
-        add(new IntSetting("window", "Combo window (ms)", 1500, 100, 5000, 50).group("Trigger"));
-        add(new IntSetting("cooldown", "Cooldown (ms)", 1000, 0, 5000, 50).group("Trigger"));
-        add(new ChoiceSetting("triggerMode", "Trigger mode", "Combo", "Combo", "On-attack").group("Trigger"));
+        add(new IntSetting("window", "Combo window (ms)", 1500, 100, 5000, 50).group("Trigger").visibleWhen(MenuMode::advanced));
+        add(new IntSetting("cooldown", "Cooldown (ms)", 1000, 0, 5000, 50).group("Trigger").visibleWhen(MenuMode::advanced));
+        add(new ChoiceSetting("triggerMode", "Trigger mode", "Combo", "Combo", "On-attack").group("Trigger").visibleWhen(MenuMode::advanced));
 
         add(new DoubleSetting("range", "Range", 4.0, 1.0, 6.0, 0.1).group("Targeting")
             .description("How close the attacker must be. The default matches normal reach; higher may be flagged by anticheat."));
-        add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real", "None").group("Targeting"));
-        add(new ChoiceSetting("targetPriority", "Target priority", "Closest", "Closest", "Lowest HP").group("Targeting"));
-        add(new BoolSetting("raytrace", "Only targets you can see", true).group("Targeting"));
+        add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real", "None").group("Targeting").visibleWhen(MenuMode::advanced));
+        add(new ChoiceSetting("targetPriority", "Target priority", "Closest", "Closest", "Lowest HP").group("Targeting").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("raytrace", "Only targets you can see", true).group("Targeting").visibleWhen(MenuMode::advanced));
 
-        add(new BoolSetting("reelAfterCast", "Reel after cast", true).group("Actions"));
-        add(new BoolSetting("pullMode", "Pull (reel immediately)", false).group("Actions"));
-        add(new BoolSetting("switchBack", "Switch back to previous item", true).group("Actions"));
+        add(new BoolSetting("reelAfterCast", "Reel after cast", true).group("Actions").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("pullMode", "Pull (reel immediately)", false).group("Actions").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("switchBack", "Switch back to previous item", true).group("Actions").visibleWhen(MenuMode::advanced));
     }
 
     @Override

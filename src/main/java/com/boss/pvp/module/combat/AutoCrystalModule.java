@@ -1,6 +1,7 @@
 package com.boss.pvp.module.combat;
 
 import com.boss.pvp.BossPvpAddon;
+import com.boss.pvp.util.MenuMode;
 import com.boss.pvp.util.pvp.PvpUtil;
 import com.boss.pvp.util.pvp.DamageUtil;
 import com.boss.pvp.util.pvp.CrystalHideManager;
@@ -83,75 +84,75 @@ public final class AutoCrystalModule extends Module {
     private record Candidate(BlockPos base, double enemyDmg, double selfDmg, double distSq) {}
 
     public AutoCrystalModule() {
-        super(BossPvpAddon.ID + ":autocrystal", "AutoCrystal", "Automatically places and breaks end crystals to damage nearby enemies.");
+        super(BossPvpAddon.ID + ":autocrystal", "AutoCrystal", "Places and breaks crystals to damage enemies.");
 
         add(RegistryListSetting.entityTypes("entities", "Targets", PvpUtil.DEFAULT_COMBAT_TARGETS).group("Target"));
         add(new DoubleSetting("range", "Target range", 6.0, 1.0, 12.0, 0.5).group("Target"));
-        add(new DoubleSetting("placeRange", "Place reach", 4.5, 1.0, 6.0, 0.5).group("Target"));
-        add(new DoubleSetting("breakRange", "Break reach", 4.5, 1.0, 6.0, 0.5).group("Target"));
+        add(new DoubleSetting("placeRange", "Place reach", 4.5, 1.0, 6.0, 0.5).visibleWhen(MenuMode::advanced).group("Target"));
+        add(new DoubleSetting("breakRange", "Break reach", 4.5, 1.0, 6.0, 0.5).visibleWhen(MenuMode::advanced).group("Target"));
 
         add(new BoolSetting("doPlace", "Place crystals", true).group("Actions"));
         add(new BoolSetting("doBreak", "Break crystals", true).group("Actions"));
-        add(new IntSetting("maxPerTick", "Max breaks per tick", 1, 1, 4, 1).group("Actions"));
-        add(new IntSetting("maxPlace", "Max places per tick", 1, 1, 4, 1).group("Actions"));
-        add(new ChoiceSetting("breakMode", "Break mode", "Normal", "Normal", "Packet").group("Actions"));
-        add(new IntSetting("placeDelay", "Place delay (ms)", 100, 0, 1000, 10).group("Actions"));
-        add(new IntSetting("breakDelay", "Break delay (ms)", 80, 0, 1000, 10).group("Actions"));
+        add(new IntSetting("maxPerTick", "Max breaks per tick", 1, 1, 4, 1).visibleWhen(MenuMode::advanced).group("Actions"));
+        add(new IntSetting("maxPlace", "Max places per tick", 1, 1, 4, 1).visibleWhen(MenuMode::advanced).group("Actions"));
+        add(new ChoiceSetting("breakMode", "Break mode", "Normal", "Normal", "Packet").visibleWhen(MenuMode::advanced).group("Actions"));
+        add(new IntSetting("placeDelay", "Place delay (ms)", 100, 0, 1000, 10).visibleWhen(MenuMode::advanced).group("Actions"));
+        add(new IntSetting("breakDelay", "Break delay (ms)", 80, 0, 1000, 10).visibleWhen(MenuMode::advanced).group("Actions"));
         add(new BoolSetting("fastBreak", "Fast break", true)
-            .description("Break crystals the instant they appear, for a faster place-break cycle (still capped by Max breaks/sec).").group("Actions"));
+            .description("Break crystals the instant they appear, for a faster place-break cycle (still capped by Max breaks/sec).").visibleWhen(MenuMode::advanced).group("Actions"));
         add(new IntSetting("maxBps", "Max breaks per second", 20, 1, 40, 1)
-            .description("Hard cap on break attempts per second. Higher = faster, but more suspicious to anticheat.").group("Actions"));
+            .description("Hard cap on break attempts per second. Higher = faster, but more suspicious to anticheat.").visibleWhen(MenuMode::advanced).group("Actions"));
         add(new BoolSetting("setDead", "No double-hits", true)
-            .description("After hitting a crystal, don't hit it again until the server confirms it broke (avoids wasted clicks).").group("Actions"));
+            .description("After hitting a crystal, don't hit it again until the server confirms it broke (avoids wasted clicks).").visibleWhen(MenuMode::advanced).group("Actions"));
         add(new BoolSetting("hideOnHit", "Hide crystal on hit", false)
-            .description("Hide a crystal on your screen the moment you hit it so a new one can be placed there right away. It reappears if the server never confirms the break. Experimental — test on your server.").group("Actions"));
+            .description("Hide a crystal on your screen the moment you hit it so a new one can be placed there right away. It reappears if the server never confirms the break. Experimental — test on your server.").visibleWhen(MenuMode::advanced).group("Actions"));
         add(new IntSetting("resyncTicks", "Resync window", 4, 1, 50, 1)
             .formatter(v -> v + "t")
             .description("How long a hidden crystal stays hidden before it reappears if the server never confirmed the break. Default 4 is a safe choice; higher holds the spot open longer.")
-            .visibleWhen(() -> bool("hideOnHit")).group("Actions"));
+            .visibleWhen(() -> MenuMode.advanced() && (bool("hideOnHit"))).group("Actions"));
         add(new BoolSetting("effectGate", "Skip hide on blocked hits", true)
             .description("Don't hide a crystal when your hit wouldn't actually count (e.g. you have Weakness), so you never see ghost crystals.")
-            .visibleWhen(() -> bool("hideOnHit")).group("Actions"));
+            .visibleWhen(() -> MenuMode.advanced() && (bool("hideOnHit"))).group("Actions"));
 
-        add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real").group("Targeting"));
+        add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real").visibleWhen(MenuMode::advanced).group("Targeting"));
         add(new DoubleSetting("legitEase", "Camera turn speed", 0.25, 0.05, 1.0, 0.05)
-            .description("How fast your camera turns to the place/break spot in Real rotation mode (higher = snappier).").group("Targeting"));
-        add(new ChoiceSetting("targetMode", "Placement priority", "Highest damage", "Highest damage", "Closest", "Safest").group("Targeting"));
-        add(new BoolSetting("prediction", "Predict movement", true).group("Targeting"));
+            .description("How fast your camera turns to the place/break spot in Real rotation mode (higher = snappier).").visibleWhen(MenuMode::advanced).group("Targeting"));
+        add(new ChoiceSetting("targetMode", "Placement priority", "Highest damage", "Highest damage", "Closest", "Safest").visibleWhen(MenuMode::advanced).group("Targeting"));
+        add(new BoolSetting("prediction", "Predict movement", true).visibleWhen(MenuMode::advanced).group("Targeting"));
         add(new BoolSetting("physicsPredict", "Physics prediction", false)
-            .description("Use a more accurate physics-based prediction of where the target is about to move.").group("Targeting"));
-        add(new DoubleSetting("predictionStrength", "Prediction strength", 0.5, 0.0, 3.0, 0.1).group("Targeting"));
-        add(new BoolSetting("raytrace", "Only visible spots", true).group("Targeting"));
+            .description("Use a more accurate physics-based prediction of where the target is about to move.").visibleWhen(MenuMode::advanced).group("Targeting"));
+        add(new DoubleSetting("predictionStrength", "Prediction strength", 0.5, 0.0, 3.0, 0.1).visibleWhen(MenuMode::advanced).group("Targeting"));
+        add(new BoolSetting("raytrace", "Only visible spots", true).visibleWhen(MenuMode::advanced).group("Targeting"));
 
         add(new BoolSetting("antiSuicide", "Anti-suicide", true)
-            .description("Never place or break a crystal that could kill you.").group("Safety"));
-        add(new DoubleSetting("maxSelfDamage", "Max self damage", 8.0, 0.0, 20.0, 0.5).group("Safety"));
-        add(new DoubleSetting("minEnemyDamage", "Min damage to place", 4.0, 0.0, 20.0, 0.5).group("Safety"));
-        add(new DoubleSetting("minBreakDamage", "Min damage to break", 4.0, 0.0, 20.0, 0.5).group("Safety"));
+            .description("Never place or break a crystal that could kill you.").visibleWhen(MenuMode::advanced).group("Safety"));
+        add(new DoubleSetting("maxSelfDamage", "Max self damage", 8.0, 0.0, 20.0, 0.5).visibleWhen(MenuMode::advanced).group("Safety"));
+        add(new DoubleSetting("minEnemyDamage", "Min damage to place", 4.0, 0.0, 20.0, 0.5).visibleWhen(MenuMode::advanced).group("Safety"));
+        add(new DoubleSetting("minBreakDamage", "Min damage to break", 4.0, 0.0, 20.0, 0.5).visibleWhen(MenuMode::advanced).group("Safety"));
         add(new BoolSetting("efficient", "Only worthwhile trades", true)
-            .description("Only act when the crystal hurts the enemy more than it hurts you.").group("Safety"));
+            .description("Only act when the crystal hurts the enemy more than it hurts you.").visibleWhen(MenuMode::advanced).group("Safety"));
         add(new DoubleSetting("facePlaceHealth", "Finish enemies below HP", 8.0, 0.0, 36.0, 1.0)
-            .description("When the enemy's health is below this, place crystals even if the damage is small, to finish them off.").group("Safety"));
+            .description("When the enemy's health is below this, place crystals even if the damage is small, to finish them off.").visibleWhen(MenuMode::advanced).group("Safety"));
 
-        add(new BoolSetting("autoSwitch", "Switch to crystal", true).group("Switch"));
-        add(new BoolSetting("switchBack", "Switch back after", true).group("Switch"));
-        add(new BoolSetting("placeAlert", "Chat message on place", false).group("Switch"));
+        add(new BoolSetting("autoSwitch", "Switch to crystal", true).visibleWhen(MenuMode::advanced).group("Switch"));
+        add(new BoolSetting("switchBack", "Switch back after", true).visibleWhen(MenuMode::advanced).group("Switch"));
+        add(new BoolSetting("placeAlert", "Chat message on place", false).visibleWhen(MenuMode::advanced).group("Switch"));
 
         add(new BoolSetting("teamCheck", "Ignore teammates", false)
-            .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").group("Team"));
+            .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").visibleWhen(MenuMode::advanced).group("Team"));
 
         add(new BoolSetting("onBlockChange", "Trigger on block change", false)
-            .description("Act immediately (skip the delay) when a block near the target changes.").group("Triggers"));
+            .description("Act immediately (skip the delay) when a block near the target changes.").visibleWhen(MenuMode::advanced).group("Triggers"));
         add(new BoolSetting("onExplodeSound", "Trigger on explode sound", false)
-            .description("Act immediately when an explosion sound plays.").group("Triggers"));
+            .description("Act immediately when an explosion sound plays.").visibleWhen(MenuMode::advanced).group("Triggers"));
         add(new BoolSetting("onEntityTeleport", "Trigger on target teleport", false)
-            .description("Act immediately when an entity teleports.").group("Triggers"));
+            .description("Act immediately when an entity teleports.").visibleWhen(MenuMode::advanced).group("Triggers"));
         add(new BoolSetting("dualDamage", "Double-check damage", false)
-            .description("Only act if the crystal would still hit the target both where it is now and where it's about to be.").group("Safety"));
+            .description("Only act if the crystal would still hit the target both where it is now and where it's about to be.").visibleWhen(MenuMode::advanced).group("Safety"));
         add(new DoubleSetting("wallsRange", "Through-wall range", 0.0, 0.0, 6.0, 0.5)
-            .description("Allow acting through walls within this distance (0 = only what you can see).").group("Targeting"));
+            .description("Allow acting through walls within this distance (0 = only what you can see).").visibleWhen(MenuMode::advanced).group("Targeting"));
         add(new BoolSetting("offhandCrystal", "Use offhand crystals", false)
-            .description("Place from the offhand if it holds end crystals (no hotbar switch).").group("Switch"));
+            .description("Place from the offhand if it holds end crystals (no hotbar switch).").visibleWhen(MenuMode::advanced).group("Switch"));
 
         ClientEntityEvents.ENTITY_LOAD.register(this::onCrystalSpawn);
     }

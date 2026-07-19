@@ -4,6 +4,7 @@ import com.boss.pvp.BossPvpAddon;
 
 import com.boss.pvp.util.pvp.RotationManager;
 import com.boss.pvp.util.input.HeldSlotManager;
+import com.boss.pvp.util.MenuMode;
 
 import autismclient.modules.Module;
 import autismclient.api.module.*;
@@ -38,17 +39,17 @@ public final class AutoPotModule extends Module {
     private boolean rotHold = false;
 
     public AutoPotModule() {
-        super(BossPvpAddon.ID + ":autopot", "AutoPot", "Throws a splash heal potion when you get low.");
+        super(BossPvpAddon.ID + ":autopot", "AutoPot", "Throws a splash heal potion when low.");
 
         add(new DoubleSetting("health", "Pot below health", 12.0, 1.0, 19.0, 0.5).group("General"));
-        add(new BoolSetting("absorptionAware", "Count absorption (yellow) hearts", false).group("General"));
-        add(new IntSetting("delay", "Delay (ms)", 800, 100, 5000, 50).group("General"));
+        add(new BoolSetting("absorptionAware", "Count absorption (yellow) hearts", false).group("General").visibleWhen(MenuMode::advanced));
+        add(new IntSetting("delay", "Delay (ms)", 800, 100, 5000, 50).group("General").visibleWhen(MenuMode::advanced));
         add(new BoolSetting("rotate", "Look down to throw", true).group("General"));
-        add(new DoubleSetting("throwPitch", "Throw angle", 85.0, 70.0, 90.0, 1.0).group("General"));
-        add(new BoolSetting("silentRotation", "Silent rotation (camera doesn't move)", true).group("General"));
-        add(new BoolSetting("mainhandOnly", "Main hand only", false).group("General"));
+        add(new DoubleSetting("throwPitch", "Throw angle", 85.0, 70.0, 90.0, 1.0).group("General").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("silentRotation", "Silent rotation (camera doesn't move)", true).group("General").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("mainhandOnly", "Main hand only", false).group("General").visibleWhen(MenuMode::advanced));
         add(new BoolSetting("switchToPot", "Auto-switch to a potion", true).group("Switch"));
-        add(new BoolSetting("switchBack", "Switch back to previous item", true).group("Switch"));
+        add(new BoolSetting("switchBack", "Switch back to previous item", true).group("Switch").visibleWhen(MenuMode::advanced));
     }
 
     @Override

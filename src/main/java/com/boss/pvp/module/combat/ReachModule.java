@@ -1,6 +1,7 @@
 package com.boss.pvp.module.combat;
 
 import com.boss.pvp.BossPvpAddon;
+import com.boss.pvp.util.MenuMode;
 
 import autismclient.modules.Module;
 import autismclient.api.module.*;
@@ -20,9 +21,7 @@ public final class ReachModule extends Module {
 
     public ReachModule() {
         super(BossPvpAddon.ID + ":reach", "Reach",
-            "Lets you attack and reach blocks from farther away. "
-          + "Only works on servers without anticheat — on protected servers it "
-          + "silently fails or gets you flagged.");
+            "Attack and reach blocks from farther away.");
 
         add(new DoubleSetting("attackRange", "Attack range", 3.0, 3.0, 6.0, 0.1)
             .description("How far you can hit players and mobs. Vanilla is 3.0.").group("General"));
@@ -30,6 +29,7 @@ public final class ReachModule extends Module {
             .description("How far you can place, break, and use blocks. Vanilla is 4.5.").group("General"));
         add(new BoolSetting("onlyInCombat", "Only in combat", false)
             .description("Only extend reach while KillAura has a target or you attacked in the last second.")
+            .visibleWhen(MenuMode::advanced)
             .group("General"));
     }
 

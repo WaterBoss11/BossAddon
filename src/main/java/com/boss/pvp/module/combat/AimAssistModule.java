@@ -1,6 +1,7 @@
 package com.boss.pvp.module.combat;
 
 import com.boss.pvp.BossPvpAddon;
+import com.boss.pvp.util.MenuMode;
 import com.boss.pvp.util.pvp.PvpUtil;
 import com.boss.pvp.util.pvp.PlayerSimulation;
 import com.boss.pvp.util.pvp.Gcd;
@@ -58,42 +59,43 @@ public final class AimAssistModule extends Module {
         add(RegistryListSetting.entityTypes("entities", "Targets", "minecraft:player"));
         add(new DoubleSetting("range", "Range", 4.2, 1.0, 8.0, 0.1));
         add(new IntSetting("fov", "FOV", 180, 0, 180, 1));
-        add(new ChoiceSetting("target-point", "Aim at", "Center", "Nearest", "Center", "Head", "Body", "Feet"));
-        add(new ChoiceSetting("priority", "Target priority", "Direction", "Direction", "Type", "Health", "Distance", "HurtTime", "Age"));
-        add(new ChoiceSetting("axis", "Aim axis", "Both", "Both", "Horizontal", "Vertical"));
-        add(new IntSetting("hurt-time", "Hurt Time", 10, 0, 10, 1));
+        add(new ChoiceSetting("target-point", "Aim at", "Center", "Nearest", "Center", "Head", "Body", "Feet").visibleWhen(MenuMode::advanced));
+        add(new ChoiceSetting("priority", "Target priority", "Direction", "Direction", "Type", "Health", "Distance", "HurtTime", "Age").visibleWhen(MenuMode::advanced));
+        add(new ChoiceSetting("axis", "Aim axis", "Both", "Both", "Horizontal", "Vertical").visibleWhen(MenuMode::advanced));
+        add(new IntSetting("hurt-time", "Hurt Time", 10, 0, 10, 1).visibleWhen(MenuMode::advanced));
 
-        add(new ChoiceSetting("smooth-mode", "Smoothing mode", "Interpolation", "Interpolation", "Instant", "Linear", "Sigmoid").group("Smoothing"));
+        add(new ChoiceSetting("smooth-mode", "Smoothing mode", "Interpolation", "Interpolation", "Instant", "Linear", "Sigmoid").visibleWhen(MenuMode::advanced).group("Smoothing"));
         add(new IntSetting("smoothness", "Smoothness", 35, 0, 100, 1)
-            .visibleWhen(() -> usesSmoothing(this)).group("Smoothing"));
+            .visibleWhen(() -> MenuMode.advanced() && (usesSmoothing(this))).group("Smoothing"));
         add(new IntSetting("horizontal-speed", "Horizontal speed", 100, 1, 100, 1)
-            .formatter(v -> v + "%").visibleWhen(() -> usesSmoothing(this)).group("Smoothing"));
+            .formatter(v -> v + "%").visibleWhen(() -> MenuMode.advanced() && (usesSmoothing(this))).group("Smoothing"));
         add(new IntSetting("vertical-speed", "Vertical speed", 100, 1, 100, 1)
-            .formatter(v -> v + "%").visibleWhen(() -> usesSmoothing(this)).group("Smoothing"));
+            .formatter(v -> v + "%").visibleWhen(() -> MenuMode.advanced() && (usesSmoothing(this))).group("Smoothing"));
 
-        add(new DoubleSetting("turnSpeed", "Turn speed (deg/s)", 420.0, 30.0, 1200.0, 10.0).group("Smoothing"));
-        add(new DoubleSetting("sigSteepness", "Sigmoid steepness", 10.0, 0.0, 20.0, 0.5).group("Smoothing"));
-        add(new DoubleSetting("sigMidpoint", "Sigmoid midpoint", 0.3, 0.0, 1.0, 0.05).group("Smoothing"));
+        add(new DoubleSetting("turnSpeed", "Turn speed (deg/s)", 420.0, 30.0, 1200.0, 10.0).visibleWhen(MenuMode::advanced).group("Smoothing"));
+        add(new DoubleSetting("sigSteepness", "Sigmoid steepness", 10.0, 0.0, 20.0, 0.5).visibleWhen(MenuMode::advanced).group("Smoothing"));
+        add(new DoubleSetting("sigMidpoint", "Sigmoid midpoint", 0.3, 0.0, 1.0, 0.05).visibleWhen(MenuMode::advanced).group("Smoothing"));
         add(new BoolSetting("gcd", "Mouse-like aim (GCD)", true)
-            .description("Moves your aim in the same small steps a real mouse makes, so rotations look human to anticheat. Recommended: on.").group("Smoothing"));
+            .description("Moves your aim in the same small steps a real mouse makes, so rotations look human to anticheat. Recommended: on.").visibleWhen(MenuMode::advanced).group("Smoothing"));
 
-        add(new BoolSetting("sticky", "Sticky target", true).group("Extras"));
-        add(new IntSetting("switchDelay", "Switch delay (ms)", 400, 0, 2000, 10).group("Extras"));
-        add(new BoolSetting("prediction", "Predict movement", true).group("Extras"));
+        add(new BoolSetting("sticky", "Sticky target", true).visibleWhen(MenuMode::advanced).group("Extras"));
+        add(new IntSetting("switchDelay", "Switch delay (ms)", 400, 0, 2000, 10).visibleWhen(MenuMode::advanced).group("Extras"));
+        add(new BoolSetting("prediction", "Predict movement", true).visibleWhen(MenuMode::advanced).group("Extras"));
         add(new BoolSetting("physicsPredict", "Physics prediction", false)
-            .description("Aims slightly ahead of where the target is about to move, for a more accurate lead.").group("Extras"));
-        add(new DoubleSetting("predictionStrength", "Prediction strength", 1.0, 0.0, 3.0, 0.1).group("Extras"));
-        add(new BoolSetting("requireLineOfSight", "Require line of sight", true).group("Extras"));
-        add(new BoolSetting("onlyWhileAttacking", "Only while attacking", false).group("Extras"));
+            .description("Aims slightly ahead of where the target is about to move, for a more accurate lead.").visibleWhen(MenuMode::advanced).group("Extras"));
+        add(new DoubleSetting("predictionStrength", "Prediction strength", 1.0, 0.0, 3.0, 0.1).visibleWhen(MenuMode::advanced).group("Extras"));
+        add(new BoolSetting("requireLineOfSight", "Require line of sight", true).visibleWhen(MenuMode::advanced).group("Extras"));
+        add(new BoolSetting("onlyWhileAttacking", "Only while attacking", false).visibleWhen(MenuMode::advanced).group("Extras"));
 
-        add(new BoolSetting("showCircle", "Show aim circle", true).group("Circle"));
+        add(new BoolSetting("showCircle", "Show aim circle", true).visibleWhen(MenuMode::advanced).group("Circle"));
         add(new BoolSetting("teamCheck", "Ignore teammates", false)
-            .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").group("Team"));
-        add(new IntSetting("circleRadius", "Circle radius", 60, 10, 300, 1).group("Circle"));
-        add(new IntSetting("circleThickness", "Circle thickness", 2, 1, 6, 1).group("Circle"));
-        add(new BoolSetting("filled", "Fill circle", false).group("Circle"));
+            .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").visibleWhen(MenuMode::advanced).group("Team"));
+        add(new IntSetting("circleRadius", "Circle radius", 60, 10, 300, 1).visibleWhen(MenuMode::advanced).group("Circle"));
+        add(new IntSetting("circleThickness", "Circle thickness", 2, 1, 6, 1).visibleWhen(MenuMode::advanced).group("Circle"));
+        add(new BoolSetting("filled", "Fill circle", false).visibleWhen(MenuMode::advanced).group("Circle"));
         add(new BoolSetting("releaseOnLeave", "Release when target leaves circle", false)
             .description("Drop the locked target as soon as it leaves the circle. Off = keep aiming at it once locked.")
+            .visibleWhen(MenuMode::advanced)
             .group("Circle"));
     }
 

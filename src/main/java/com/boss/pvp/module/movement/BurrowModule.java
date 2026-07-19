@@ -1,6 +1,7 @@
 package com.boss.pvp.module.movement;
 
 import com.boss.pvp.BossPvpAddon;
+import com.boss.pvp.util.MenuMode;
 import com.boss.pvp.util.pvp.PvpUtil;
 import com.boss.pvp.util.input.HeldSlotManager;
 
@@ -65,11 +66,11 @@ public final class BurrowModule extends Module {
         add(new BoolSetting("centerFirst", "Walk to block center first", true)
             .description("Walks you to the middle of your block before placing (no teleporting). Off = place from wherever you stand.").group("General"));
         add(new BoolSetting("topCap", "Cover above your head", true).group("General"));
-        add(new BoolSetting("doubleBurrow", "Double walls (2 blocks thick)", false).group("General"));
-        add(new IntSetting("blocksPerTick", "Blocks placed per tick", 2, 1, 6, 1).group("General"));
-        add(new IntSetting("delay", "Delay between placements (ms)", 50, 0, 1000, 10).group("General"));
-        add(new BoolSetting("disableWhenDone", "Turn off when fully boxed in", false).group("General"));
-        add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real").group("General"));
+        add(new BoolSetting("doubleBurrow", "Double walls (2 blocks thick)", false).group("General").visibleWhen(MenuMode::advanced));
+        add(new IntSetting("blocksPerTick", "Blocks placed per tick", 2, 1, 6, 1).group("General").visibleWhen(MenuMode::advanced));
+        add(new IntSetting("delay", "Delay between placements (ms)", 50, 0, 1000, 10).group("General").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("disableWhenDone", "Turn off when fully boxed in", false).group("General").visibleWhen(MenuMode::advanced));
+        add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real").group("General").visibleWhen(MenuMode::advanced));
     }
 
     @Override

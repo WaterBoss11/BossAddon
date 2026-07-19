@@ -3,6 +3,7 @@ package com.boss.pvp.module.automation;
 import com.boss.pvp.BossPvpAddon;
 import com.boss.pvp.util.pvp.PvpUtil;
 import com.boss.pvp.util.input.HeldSlotManager;
+import com.boss.pvp.util.MenuMode;
 
 import autismclient.modules.Module;
 import autismclient.api.module.*;
@@ -25,13 +26,13 @@ public final class AutoXPModule extends Module {
     private int prevSlot = -1;
 
     public AutoXPModule() {
-        super(BossPvpAddon.ID + ":autoxp", "AutoXP", "Throw XP bottles to mend damaged gear in a fight.");
+        super(BossPvpAddon.ID + ":autoxp", "AutoXP", "Throws XP bottles to mend damaged gear.");
 
         add(new IntSetting("threshold", "Mend below durability", 50, 1, 100, 1).formatter(v -> v + "%").group("General"));
         add(new IntSetting("burst", "Throws per burst", 3, 1, 16, 1).group("General"));
-        add(new IntSetting("delay", "Throw delay (ms)", 150, 0, 1000, 10).group("General"));
-        add(new IntSetting("cooldown", "Burst cooldown (ms)", 2000, 0, 10000, 100).group("General"));
-        add(new BoolSetting("switchBack", "Switch back to previous item", true).group("General"));
+        add(new IntSetting("delay", "Throw delay (ms)", 150, 0, 1000, 10).group("General").visibleWhen(MenuMode::advanced));
+        add(new IntSetting("cooldown", "Burst cooldown (ms)", 2000, 0, 10000, 100).group("General").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("switchBack", "Switch back to previous item", true).group("General").visibleWhen(MenuMode::advanced));
     }
 
     @Override

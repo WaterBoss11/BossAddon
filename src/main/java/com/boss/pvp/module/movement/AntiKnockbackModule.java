@@ -1,6 +1,7 @@
 package com.boss.pvp.module.movement;
 
 import com.boss.pvp.BossPvpAddon;
+import com.boss.pvp.util.MenuMode;
 import com.boss.pvp.util.pvp.PvpUtil;
 
 import autismclient.modules.Module;
@@ -26,25 +27,25 @@ public final class AntiKnockbackModule extends Module {
     private long prevKaAttackMs = 0L;
 
     public AntiKnockbackModule() {
-        super(BossPvpAddon.ID + ":antiknockback", "Anti-Knockback", "Reduces or cancels the knockback you take when hit. Defaults are safe for most servers.");
+        super(BossPvpAddon.ID + ":antiknockback", "Anti-Knockback", "Reduces or cancels knockback when you're hit.");
 
         add(new ChoiceSetting("mode", "Mode", "Reduce", "Reduce", "Cancel", "JumpReset").group("General"));
         add(new IntSetting("horizontal", "Horizontal reduction", 50, 0, 100, 1).formatter(v -> v + "%").group("General"));
         add(new IntSetting("vertical", "Vertical reduction", 30, 0, 100, 1).formatter(v -> v + "%").group("General"));
-        add(new IntSetting("chance", "Chance to apply", 100, 0, 100, 1).formatter(v -> v + "%").group("General"));
-        add(new BoolSetting("onlyWhileAttacking", "Only while attacking", false).group("General"));
-        add(new BoolSetting("onlyPlayers", "Only when a player is near", false).group("General"));
-        add(new BoolSetting("reduceWhileSprinting", "Reduce while sprinting", true).group("General"));
+        add(new IntSetting("chance", "Chance to apply", 100, 0, 100, 1).formatter(v -> v + "%").group("General").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("onlyWhileAttacking", "Only while attacking", false).group("General").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("onlyPlayers", "Only when a player is near", false).group("General").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("reduceWhileSprinting", "Reduce while sprinting", true).group("General").visibleWhen(MenuMode::advanced));
 
-        add(new BoolSetting("wtap", "W-tap (sprint reset)", false).group("W-tap"));
+        add(new BoolSetting("wtap", "W-tap (sprint reset)", false).group("W-tap").visibleWhen(MenuMode::advanced));
         add(new ChoiceSetting("wtapTrigger", "Trigger", "On hit", "On hit", "On hurt", "Both")
-            .description("On hit = right after you attack someone. On hurt = when you get knocked back. Both = either one.").group("W-tap"));
+            .description("On hit = right after you attack someone. On hurt = when you get knocked back. Both = either one.").group("W-tap").visibleWhen(MenuMode::advanced));
         add(new IntSetting("tapTicks", "Tap length", 1, 1, 3, 1)
-            .description("How long to let go of W before pressing it again (in game ticks). 1 is usually best.").group("W-tap"));
+            .description("How long to let go of W before pressing it again (in game ticks). 1 is usually best.").group("W-tap").visibleWhen(MenuMode::advanced));
         add(new BoolSetting("wtapOnlyForward", "Only while moving forward", true)
-            .description("Skips the W-tap when you aren't holding W (there is nothing to reset).").group("W-tap"));
+            .description("Skips the W-tap when you aren't holding W (there is nothing to reset).").group("W-tap").visibleWhen(MenuMode::advanced));
         add(new BoolSetting("superKb", "Super knockback (W-tap every hit)", false)
-            .description("Briefly releases W on every attack so your hits knock enemies back further. Works even if W-tap is off.").group("W-tap"));
+            .description("Briefly releases W on every attack so your hits knock enemies back further. Works even if W-tap is off.").group("W-tap").visibleWhen(MenuMode::advanced));
     }
 
     @Override

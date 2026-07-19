@@ -2,6 +2,7 @@ package com.boss.pvp.module.automation;
 
 import com.boss.pvp.BossPvpAddon;
 import com.boss.pvp.util.input.HeldSlotManager;
+import com.boss.pvp.util.MenuMode;
 
 import autismclient.modules.Module;
 import autismclient.api.module.*;
@@ -27,14 +28,14 @@ public final class AutoGapModule extends Module {
     private boolean switched = false;
 
     public AutoGapModule() {
-        super(BossPvpAddon.ID + ":autogap", "AutoGap", "Automatically eats golden apples or food when your health or hunger gets low.");
+        super(BossPvpAddon.ID + ":autogap", "AutoGap", "Eats gapples or food when low.");
 
         add(new DoubleSetting("health", "Eat below HP", 14.0, 1.0, 19.5, 0.5).group("General"));
         add(new IntSetting("hunger", "Eat below hunger", 16, 0, 20, 1).group("General"));
-        add(new BoolSetting("preferGapInCombat", "Prefer gapple in combat", true).group("General"));
+        add(new BoolSetting("preferGapInCombat", "Prefer gapple in combat", true).group("General").visibleWhen(MenuMode::advanced));
         add(new BoolSetting("eatNormalFood", "Eat normal food too", true).group("General"));
-        add(new BoolSetting("pauseOnMove", "Pause while moving", false).group("General"));
-        add(new BoolSetting("reEquip", "Switch back to previous item", true).group("General"));
+        add(new BoolSetting("pauseOnMove", "Pause while moving", false).group("General").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("reEquip", "Switch back to previous item", true).group("General").visibleWhen(MenuMode::advanced));
     }
 
     @Override

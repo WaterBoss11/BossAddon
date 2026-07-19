@@ -1,6 +1,7 @@
 package com.boss.pvp.module.combat;
 
 import com.boss.pvp.BossPvpAddon;
+import com.boss.pvp.util.MenuMode;
 import com.boss.pvp.util.pvp.PvpUtil;
 import com.boss.pvp.util.input.HeldSlotManager;
 
@@ -25,15 +26,15 @@ public final class ShieldBreakerModule extends Module {
     private LivingEntity victim;
 
     public ShieldBreakerModule() {
-        super(BossPvpAddon.ID + ":shieldbreaker", "ShieldBreaker", "Automatically switches to an axe to disable a blocking enemy's shield, then switches back.");
+        super(BossPvpAddon.ID + ":shieldbreaker", "ShieldBreaker", "Switches to an axe to break shields.");
 
         add(new DoubleSetting("range", "Range", 3.0, 1.0, 3.5, 0.1)
             .description("Attack reach. Vanilla is 3.0; higher may flag on anticheat."));
         add(new BoolSetting("onlyWhenBlocking", "Only when target is blocking", true).group("General"));
         add(new BoolSetting("teamCheck", "Ignore teammates", false)
-            .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").group("Team"));
-        add(new BoolSetting("switchBack", "Switch back after", true).group("General"));
-        add(new IntSetting("delay", "Delay (ms)", 250, 0, 2000, 10).group("General"));
+            .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").visibleWhen(MenuMode::advanced).group("Team"));
+        add(new BoolSetting("switchBack", "Switch back after", true).visibleWhen(MenuMode::advanced).group("General"));
+        add(new IntSetting("delay", "Delay (ms)", 250, 0, 2000, 10).visibleWhen(MenuMode::advanced).group("General"));
     }
 
     @Override public void onDisable() {

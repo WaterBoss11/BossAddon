@@ -161,6 +161,21 @@ opts you out completely.
 
 ---
 
+## Update check
+
+On launch the addon checks whether a newer version has been released and, if so, tells you — with a one-time
+chat notice (including a link to the release page) and a small HUD badge. Unlike crash & kick reporting above,
+this is a **fixed, always-on behavior of the addon, not a configurable setting** — there is no toggle to
+disable it.
+
+It is **read-only** and carries **no personal information**. The only thing that leaves your client is a
+single plain HTTPS `GET` to the public GitHub Releases API for this repo — exactly the request your browser
+makes when you open the releases page. Nothing is ever downloaded, extracted, or installed: the check only
+reads the latest release tag and compares it to the version baked into your build. It is fire-and-forget, so
+if GitHub is unreachable or the check fails for any reason it fails silently and never blocks startup.
+
+---
+
 ## License
 
 GPL-3.0 — see [LICENSE](LICENSE).

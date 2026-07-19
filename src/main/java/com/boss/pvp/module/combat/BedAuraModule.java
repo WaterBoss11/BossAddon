@@ -1,6 +1,7 @@
 package com.boss.pvp.module.combat;
 
 import com.boss.pvp.BossPvpAddon;
+import com.boss.pvp.util.MenuMode;
 import com.boss.pvp.util.pvp.PvpUtil;
 import com.boss.pvp.util.input.HeldSlotManager;
 
@@ -32,26 +33,26 @@ public final class BedAuraModule extends Module {
     private Vec3 legitAim = null;
 
     public BedAuraModule() {
-        super(BossPvpAddon.ID + ":bedaura", "BedAura", "Places and detonates exploding beds on enemies (works in the Nether and End).");
+        super(BossPvpAddon.ID + ":bedaura", "BedAura", "Places and detonates exploding beds on enemies.");
 
         add(new DoubleSetting("range", "Target range", 6.0, 1.0, 12.0, 0.5).group("Target"));
         add(new DoubleSetting("placeRange", "Place reach", 4.5, 1.0, 6.0, 0.5).group("Target"));
-        add(new IntSetting("delay", "Action delay (ms)", 150, 0, 1000, 10).group("Actions"));
+        add(new IntSetting("delay", "Action delay (ms)", 150, 0, 1000, 10).visibleWhen(MenuMode::advanced).group("Actions"));
 
-        add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real").group("Targeting"));
+        add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real").visibleWhen(MenuMode::advanced).group("Targeting"));
         add(new DoubleSetting("legitEase", "Camera turn speed", 0.25, 0.05, 1.0, 0.05)
-            .description("How fast your camera turns to the place/detonate spot in Real rotation mode (higher = snappier).").group("Targeting"));
-        add(new ChoiceSetting("targetMode", "Placement priority", "Highest damage", "Highest damage", "Closest", "Safest").group("Targeting"));
-        add(new BoolSetting("raytrace", "Only visible spots", true).group("Targeting"));
+            .description("How fast your camera turns to the place/detonate spot in Real rotation mode (higher = snappier).").visibleWhen(MenuMode::advanced).group("Targeting"));
+        add(new ChoiceSetting("targetMode", "Placement priority", "Highest damage", "Highest damage", "Closest", "Safest").visibleWhen(MenuMode::advanced).group("Targeting"));
+        add(new BoolSetting("raytrace", "Only visible spots", true).visibleWhen(MenuMode::advanced).group("Targeting"));
 
-        add(new BoolSetting("antiSuicide", "Anti-suicide", true).group("Safety"));
-        add(new DoubleSetting("maxSelfDamage", "Max self damage", 8.0, 0.0, 20.0, 0.5).group("Safety"));
-        add(new DoubleSetting("minEnemyDamage", "Min enemy damage", 4.0, 0.0, 20.0, 0.5).group("Safety"));
+        add(new BoolSetting("antiSuicide", "Anti-suicide", true).visibleWhen(MenuMode::advanced).group("Safety"));
+        add(new DoubleSetting("maxSelfDamage", "Max self damage", 8.0, 0.0, 20.0, 0.5).visibleWhen(MenuMode::advanced).group("Safety"));
+        add(new DoubleSetting("minEnemyDamage", "Min enemy damage", 4.0, 0.0, 20.0, 0.5).visibleWhen(MenuMode::advanced).group("Safety"));
 
-        add(new BoolSetting("switchBack", "Switch back after", true).group("Switch"));
+        add(new BoolSetting("switchBack", "Switch back after", true).visibleWhen(MenuMode::advanced).group("Switch"));
 
         add(new BoolSetting("teamCheck", "Ignore teammates", false)
-            .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").group("Team"));
+            .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").visibleWhen(MenuMode::advanced).group("Team"));
     }
 
     @Override

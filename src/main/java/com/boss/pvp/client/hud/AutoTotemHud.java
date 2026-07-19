@@ -13,7 +13,7 @@ public final class AutoTotemHud implements HudElementProvider {
 
     @Override public String id() { return BossPvpAddon.ID + ":totem-pops"; }
     @Override public String label() { return "Totem Pops"; }
-    @Override public String description() { return "Shows how many totems you have left and how many have popped."; }
+    @Override public String description() { return "Shows totems left and totems popped."; }
 
     @Override public int width() { return 120; }
     @Override public int height() { return 10; }

@@ -1,6 +1,7 @@
 package com.boss.pvp.module.combat;
 
 import com.boss.pvp.BossPvpAddon;
+import com.boss.pvp.util.MenuMode;
 import com.boss.pvp.util.pvp.PvpUtil;
 
 import autismclient.modules.Module;
@@ -20,13 +21,13 @@ public final class AutoShootModule extends Module {
     private int prevSlot = -1;
 
     public AutoShootModule() {
-        super(BossPvpAddon.ID + ":autoshoot", "AutoShoot", "Automatically throws snowballs, eggs, or pearls at the player you're looking at.");
+        super(BossPvpAddon.ID + ":autoshoot", "AutoShoot", "Throws snowballs, eggs, or pearls at targets.");
         add(new BoolSetting("snowball", "Snowball", true).group("Projectiles"));
         add(new BoolSetting("egg", "Egg", false).group("Projectiles"));
         add(new BoolSetting("pearl", "Ender pearl", false).group("Projectiles"));
-        add(new IntSetting("delay", "Delay (ms)", 500, 0, 3000, 10).group("General"));
-        add(new BoolSetting("onlyVisible", "Only visible targets", true).group("General"));
-        add(new BoolSetting("switchBack", "Switch back after", true).group("General"));
+        add(new IntSetting("delay", "Delay (ms)", 500, 0, 3000, 10).visibleWhen(MenuMode::advanced).group("General"));
+        add(new BoolSetting("onlyVisible", "Only visible targets", true).visibleWhen(MenuMode::advanced).group("General"));
+        add(new BoolSetting("switchBack", "Switch back after", true).visibleWhen(MenuMode::advanced).group("General"));
     }
 
     @Override

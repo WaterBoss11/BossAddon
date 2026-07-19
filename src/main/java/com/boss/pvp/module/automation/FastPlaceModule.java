@@ -13,7 +13,7 @@ import net.minecraft.world.item.Items;
 public final class FastPlaceModule extends Module {
 
     public FastPlaceModule() {
-        super(BossPvpAddon.ID + ":fastplace", "FastPlace", "Lets you place blocks and use items faster by removing the right-click delay.");
+        super(BossPvpAddon.ID + ":fastplace", "FastPlace", "Places blocks and uses items faster.");
 
         add(new IntSetting("placeRate", "Delay between placements (ticks)", 0, 0, 4, 1)
             .description("0 = fastest (every tick). The normal game uses 4.").group("General"));

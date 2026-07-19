@@ -1,6 +1,7 @@
 package com.boss.pvp.module.render;
 
 import com.boss.pvp.BossPvpAddon;
+import com.boss.pvp.util.MenuMode;
 import com.boss.pvp.util.pvp.PvpUtil;
 
 import autismclient.modules.Module;
@@ -59,7 +60,7 @@ public final class TrajectoryModule extends Module {
 
     public TrajectoryModule() {
         super(BossPvpAddon.ID + ":trajectory", "Trajectory",
-            "Shows where your arrow, pearl, or other projectile will land before you throw it.");
+            "Shows where your projectile will land before throwing.");
         add(new BoolSetting("showArrow", "Bow / crossbow", true).group("Projectiles"));
         add(new BoolSetting("showTrident", "Trident", true).group("Projectiles"));
         add(new BoolSetting("showPearl", "Ender pearl", true).group("Projectiles"));
@@ -69,10 +70,10 @@ public final class TrajectoryModule extends Module {
         add(new BoolSetting("showPotion", "Splash / lingering potion", true).group("Projectiles"));
 
         add(new IntSetting("maxTicks", "Prediction length", 200, 20, 200, 1)
-            .description("How far ahead to predict the flight (in game ticks). Higher = longer path shown.").group("Display"));
+            .description("How far ahead to predict the flight (in game ticks). Higher = longer path shown.").group("Display").visibleWhen(MenuMode::advanced));
         add(new IntSetting("smoothness", "Line smoothness", 10, 1, 16, 1)
-            .description("How smooth the drawn line looks. 1 = jagged segments; higher = smoother curve.").group("Display"));
-        add(new DoubleSetting("width", "Line width", 2.5, 1.0, 6.0, 0.5).group("Display"));
+            .description("How smooth the drawn line looks. 1 = jagged segments; higher = smoother curve.").group("Display").visibleWhen(MenuMode::advanced));
+        add(new DoubleSetting("width", "Line width", 2.5, 1.0, 6.0, 0.5).group("Display").visibleWhen(MenuMode::advanced));
 
         // World-space geometry must be drawn from Fabric's level-render event (correct pose + buffer).
         LevelRenderEvents.COLLECT_SUBMITS.register(this::renderTrajectory);

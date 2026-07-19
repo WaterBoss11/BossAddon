@@ -20,7 +20,7 @@ public final class AutoLeaveModule extends Module {
     private boolean left = false;
 
     public AutoLeaveModule() {
-        super(BossPvpAddon.ID + ":autoleave", "AutoLeave", "Disconnects from the server before you die, when your health gets too low.");
+        super(BossPvpAddon.ID + ":autoleave", "AutoLeave", "Disconnects when your health gets too low.");
         add(new DoubleSetting("healthThreshold", "Leave below health", 4.0, 1.0, 10.0, 0.5)
             .description("Leave when health drops to/below this. This is HP, not hearts — 4 HP = 2 hearts.").group("General"));
         add(new BoolSetting("onlyInCombat", "Only in combat", true)

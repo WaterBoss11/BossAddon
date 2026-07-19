@@ -2,6 +2,7 @@ package com.boss.pvp.module.automation;
 
 import com.boss.pvp.BossPvpAddon;
 import com.boss.pvp.util.input.OffhandManager;
+import com.boss.pvp.util.MenuMode;
 
 import autismclient.modules.Module;
 import autismclient.api.module.*;
@@ -27,17 +28,17 @@ public final class AutoTotemModule extends Module {
     private int popCount = 0;
 
     public AutoTotemModule() {
-        super(BossPvpAddon.ID + ":autototem", "AutoTotem", "Keeps a totem in your offhand and replaces it right after it pops.");
+        super(BossPvpAddon.ID + ":autototem", "AutoTotem", "Keeps a totem in your offhand.");
 
-        add(new IntSetting("delay", "Delay (ms)", 100, 0, 1000, 10).group("General"));
+        add(new IntSetting("delay", "Delay (ms)", 100, 0, 1000, 10).group("General").visibleWhen(MenuMode::advanced));
         add(new BoolSetting("pauseInGuis", "Pause in containers", true).group("General"));
 
         add(new ChoiceSetting("mode", "Mode", "Always", "Always", "Smart").group("General"));
         add(new DoubleSetting("health", "Smart: totem below HP", 12.0, 1.0, 19.0, 0.5).group("General"));
-        add(new BoolSetting("instantRetotem", "Instant re-totem", true).group("General"));
-        add(new BoolSetting("mainhandFallback", "Use main hand if offhand has a shield", true).group("General"));
-        add(new BoolSetting("popAlert", "Chat alert on pop", true).group("General"));
-        add(new BoolSetting("predictCrystal", "Smart: re-totem if crystal nearby", false).group("General"));
+        add(new BoolSetting("instantRetotem", "Instant re-totem", true).group("General").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("mainhandFallback", "Use main hand if offhand has a shield", true).group("General").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("popAlert", "Chat alert on pop", true).group("General").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("predictCrystal", "Smart: re-totem if crystal nearby", false).group("General").visibleWhen(MenuMode::advanced));
     }
 
     @Override

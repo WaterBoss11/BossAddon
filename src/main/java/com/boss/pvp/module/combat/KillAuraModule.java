@@ -1,6 +1,7 @@
 package com.boss.pvp.module.combat;
 
 import com.boss.pvp.BossPvpAddon;
+import com.boss.pvp.util.MenuMode;
 import com.boss.pvp.util.pvp.PvpUtil;
 import com.boss.pvp.util.pvp.RetaliationTracker;
 import com.boss.pvp.util.pvp.RotationManager;
@@ -61,72 +62,73 @@ public final class KillAuraModule extends Module {
         add(new DoubleSetting("range", "Range", 3.0, 1.0, 3.5, 0.1)
             .description("Attack reach. Vanilla is 3.0; higher may flag on anticheat."));
         add(new DoubleSetting("targetRange", "Target range", 3.0, 1.0, 6.0, 0.1)
-            .description("How far to look for / aim at a target. The hit still only lands within Range."));
-        add(new IntSetting("fov", "FOV", 180, 0, 180, 1));
-        add(new IntSetting("hurtTime", "Hurt Time", 10, 0, 10, 1));
-        add(new BoolSetting("swing", "Swing arm", true));
-        add(new BoolSetting("raytrace", "Only visible targets", true));
+            .description("How far to look for / aim at a target. The hit still only lands within Range.").visibleWhen(MenuMode::advanced));
+        add(new IntSetting("fov", "FOV", 180, 0, 180, 1).visibleWhen(MenuMode::advanced));
+        add(new IntSetting("hurtTime", "Hurt Time", 10, 0, 10, 1).visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("swing", "Swing arm", true).visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("raytrace", "Only visible targets", true).visibleWhen(MenuMode::advanced));
 
         add(new IntSetting("minCps", "Min CPS", 8, 1, 20, 1).group("Attack"));
         add(new IntSetting("maxCps", "Max CPS", 12, 1, 20, 1).group("Attack"));
         add(new ChoiceSetting("clickPattern", "Click pattern", "Stabilized", "Stabilized", "NormalDistribution", "Butterfly", "Drag")
-            .description("Human-like attack timing. Stabilized = steady, even clicking.").group("Attack"));
+            .description("Human-like attack timing. Stabilized = steady, even clicking.").visibleWhen(MenuMode::advanced).group("Attack"));
         add(new BoolSetting("noMissCooldown", "No-miss cooldown", false)
-            .description("Don't waste the attack cooldown when nothing is in reach.").group("Attack"));
-        add(new BoolSetting("fullCharge", "Full charge only", true).group("Attack"));
-        add(new IntSetting("hitChance", "Hit chance", 100, 0, 100, 1).formatter(v -> v + "%").group("Attack"));
+            .description("Don't waste the attack cooldown when nothing is in reach.").visibleWhen(MenuMode::advanced).group("Attack"));
+        add(new BoolSetting("fullCharge", "Full charge only", true).visibleWhen(MenuMode::advanced).group("Attack"));
+        add(new IntSetting("hitChance", "Hit chance", 100, 0, 100, 1).formatter(v -> v + "%").visibleWhen(MenuMode::advanced).group("Attack"));
 
         add(new ChoiceSetting("activationMode", "Activation", "Always", "Always", "Retaliation")
             .description("Retaliation = only fight mobs that attacked you first. Players are always targetable. "
                 + "Always = attack any valid target.")
+            .visibleWhen(MenuMode::advanced)
             .group("Targeting"));
         add(new IntSetting("retaliationMemory", "Retaliation memory", 10, 1, 60, 1)
             .formatter(v -> v + "s")
             .description("How long an attacking mob stays targetable after its last hit on you.")
-            .visibleWhen(() -> "Retaliation".equals(choice("activationMode")))
+            .visibleWhen(() -> MenuMode.advanced() && ("Retaliation".equals(choice("activationMode"))))
             .group("Targeting"));
-        add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real", "None").group("Targeting"));
+        add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real", "None").visibleWhen(MenuMode::advanced).group("Targeting"));
         add(new IntSetting("rotationSpeed", "Rotation speed", 180, 1, 180, 1)
             .formatter(v -> v + "°/t")
-            .description("How many degrees your aim can turn per tick. 180 = instant snap; lower = smoother, more human (attacks wait until aimed).").group("Targeting"));
+            .description("How many degrees your aim can turn per tick. 180 = instant snap; lower = smoother, more human (attacks wait until aimed).").visibleWhen(MenuMode::advanced).group("Targeting"));
         add(new BoolSetting("smoothAim", "Smooth aim (ease-out)", false)
-            .description("Speeds up and slows down the aim like a human hand instead of turning at a constant rate.").group("Targeting"));
+            .description("Speeds up and slows down the aim like a human hand instead of turning at a constant rate.").visibleWhen(MenuMode::advanced).group("Targeting"));
         add(new ChoiceSetting("targetSort", "Target priority", "Smart", "Smart", "Distance", "Health", "HurtTime", "Age", "Direction", "Angle", "Type", "LowestHpThenDistance")
-            .description("Smart = picks the biggest threat (close, low health, in view, hittable right now).").group("Targeting"));
-        add(new ChoiceSetting("secondarySort", "Priority tiebreaker", "None", "None", "Distance", "Health", "HurtTime", "Age", "Direction").group("Targeting"));
+            .description("Smart = picks the biggest threat (close, low health, in view, hittable right now).").visibleWhen(MenuMode::advanced).group("Targeting"));
+        add(new ChoiceSetting("secondarySort", "Priority tiebreaker", "None", "None", "Distance", "Health", "HurtTime", "Age", "Direction").visibleWhen(MenuMode::advanced).group("Targeting"));
         add(new ChoiceSetting("rotationTiming", "Rotation timing", "Always", "Always", "OnTick")
-            .description("OnTick = only aim at the target on the exact tick you attack, so you can look around freely between hits.").group("Targeting"));
+            .description("OnTick = only aim at the target on the exact tick you attack, so you can look around freely between hits.").visibleWhen(MenuMode::advanced).group("Targeting"));
         add(new BoolSetting("gcd", "Mouse-like aim (GCD)", true)
-            .description("Moves your aim in the same small steps a real mouse makes, so rotations look human to anticheat. Recommended: on.").group("Targeting"));
+            .description("Moves your aim in the same small steps a real mouse makes, so rotations look human to anticheat. Recommended: on.").visibleWhen(MenuMode::advanced).group("Targeting"));
         add(new BoolSetting("ignoreOnShieldBreak", "Ignore cooldown on shield-break", false)
-            .description("Attack without delay while ShieldBreaker is breaking the current target's shield.").group("Targeting"));
-        add(new IntSetting("maxTargets", "Max targets", 1, 1, 5, 1).group("Targeting"));
+            .description("Attack without delay while ShieldBreaker is breaking the current target's shield.").visibleWhen(MenuMode::advanced).group("Targeting"));
+        add(new IntSetting("maxTargets", "Max targets", 1, 1, 5, 1).visibleWhen(MenuMode::advanced).group("Targeting"));
         add(new BoolSetting("targetLock", "Stick to one target", true)
-            .description("Stay on your current target instead of hopping between similar ones; only switch when another is clearly better.").group("Targeting"));
+            .description("Stay on your current target instead of hopping between similar ones; only switch when another is clearly better.").visibleWhen(MenuMode::advanced).group("Targeting"));
         add(new DoubleSetting("switchMargin", "Switch margin", 0.20, 0.0, 1.0, 0.05)
             .description("How much better a new target must be before switching to it. Higher = stickier.")
-            .visibleWhen(() -> bool("targetLock")).group("Targeting"));
-        add(new BoolSetting("rotateOnly", "Rotate only (no auto-attack)", false).group("Targeting"));
-        add(new ChoiceSetting("aimPart", "Aim at", "Body", "Body", "Head", "Feet", "Nearest").group("Targeting"));
-        add(new BoolSetting("prediction", "Predict movement", true).group("Targeting"));
-        add(new DoubleSetting("predictionStrength", "Prediction strength", 0.5, 0.0, 3.0, 0.1).group("Targeting"));
-        add(new BoolSetting("onlyWeapon", "Only while holding weapon", false).group("Targeting"));
-        add(new BoolSetting("pauseEat", "Pause while eating", true).group("Targeting"));
-        add(new BoolSetting("pauseMine", "Pause while mining", true).group("Targeting"));
-        add(new BoolSetting("keepSprint", "Keep sprint on hit", true).group("Targeting"));
+            .visibleWhen(() -> MenuMode.advanced() && (bool("targetLock"))).group("Targeting"));
+        add(new BoolSetting("rotateOnly", "Rotate only (no auto-attack)", false).visibleWhen(MenuMode::advanced).group("Targeting"));
+        add(new ChoiceSetting("aimPart", "Aim at", "Body", "Body", "Head", "Feet", "Nearest").visibleWhen(MenuMode::advanced).group("Targeting"));
+        add(new BoolSetting("prediction", "Predict movement", true).visibleWhen(MenuMode::advanced).group("Targeting"));
+        add(new DoubleSetting("predictionStrength", "Prediction strength", 0.5, 0.0, 3.0, 0.1).visibleWhen(MenuMode::advanced).group("Targeting"));
+        add(new BoolSetting("onlyWeapon", "Only while holding weapon", false).visibleWhen(MenuMode::advanced).group("Targeting"));
+        add(new BoolSetting("pauseEat", "Pause while eating", true).visibleWhen(MenuMode::advanced).group("Targeting"));
+        add(new BoolSetting("pauseMine", "Pause while mining", true).visibleWhen(MenuMode::advanced).group("Targeting"));
+        add(new BoolSetting("keepSprint", "Keep sprint on hit", true).visibleWhen(MenuMode::advanced).group("Targeting"));
         add(new BoolSetting("physicsPredict", "Physics prediction", false)
-            .description("Also hit a target whose very-next-moment position will be in reach (slightly more hits land).").group("Targeting"));
+            .description("Also hit a target whose very-next-moment position will be in reach (slightly more hits land).").visibleWhen(MenuMode::advanced).group("Targeting"));
         add(new BoolSetting("sprintReset", "Sprint reset (crit W-tap)", false)
-            .description("Briefly stop sprinting right before the hit so it can land as a critical; re-sprints afterwards.").group("Targeting"));
+            .description("Briefly stop sprinting right before the hit so it can land as a critical; re-sprints afterwards.").visibleWhen(MenuMode::advanced).group("Targeting"));
 
-        add(new BoolSetting("autoBlock", "Auto-block with shield", false).group("AutoBlock"));
+        add(new BoolSetting("autoBlock", "Auto-block with shield", false).visibleWhen(MenuMode::advanced).group("AutoBlock"));
 
         add(new BoolSetting("teamCheck", "Ignore teammates", false)
-            .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").group("Team"));
+            .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").visibleWhen(MenuMode::advanced).group("Team"));
         add(new StringListSetting("friends", "Friends list", java.util.List.<String>of())
-            .description("Whitelisted player names, case-insensitive. Skipped by all combat modules whenever this list has entries.").group("Team"));
+            .description("Whitelisted player names, case-insensitive. Skipped by all combat modules whenever this list has entries.").visibleWhen(MenuMode::advanced).group("Team"));
         add(new KeybindSetting("addFriendKey", "Add target to friends", -1)
-            .description("Adds your current KillAura or crosshair target to the friends list.").group("Team"));
+            .description("Adds your current KillAura or crosshair target to the friends list.").visibleWhen(MenuMode::advanced).group("Team"));
     }
 
     private boolean prevAddFriendDown = false;

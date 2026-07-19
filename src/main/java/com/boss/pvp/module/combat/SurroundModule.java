@@ -1,6 +1,7 @@
 package com.boss.pvp.module.combat;
 
 import com.boss.pvp.BossPvpAddon;
+import com.boss.pvp.util.MenuMode;
 import com.boss.pvp.util.pvp.PvpUtil;
 import com.boss.pvp.util.input.HeldSlotManager;
 
@@ -42,21 +43,21 @@ public final class SurroundModule extends Module {
     private final boolean[] myKeys = new boolean[4];
 
     public SurroundModule() {
-        super(BossPvpAddon.ID + ":surround", "Surround", "Surround your feet with obsidian to block crystal damage.");
+        super(BossPvpAddon.ID + ":surround", "Surround", "Surrounds your feet with obsidian for protection.");
 
         add(new ChoiceSetting("block", "Block", "Obsidian", "Obsidian", "Crying Obsidian", "Cobblestone").group("General"));
         add(new ChoiceSetting("expand", "Coverage", "Sides", "Sides", "Sides + Under", "Two High").group("General"));
         add(new BoolSetting("onlyWhenThreatened", "Only when threatened", true).group("General"));
-        add(new BoolSetting("autoDisableOnMove", "Pause while moving", false).group("General"));
-        add(new BoolSetting("replaceMined", "Replace mined blocks", true).group("General"));
-        add(new IntSetting("blocksPerTick", "Blocks per tick", 1, 1, 4, 1).group("General"));
-        add(new IntSetting("delay", "Delay (ms)", 50, 0, 1000, 10).group("General"));
-        add(new BoolSetting("centerFirst", "Walk to block center first", true).group("General"));
+        add(new BoolSetting("autoDisableOnMove", "Pause while moving", false).visibleWhen(MenuMode::advanced).group("General"));
+        add(new BoolSetting("replaceMined", "Replace mined blocks", true).visibleWhen(MenuMode::advanced).group("General"));
+        add(new IntSetting("blocksPerTick", "Blocks per tick", 1, 1, 4, 1).visibleWhen(MenuMode::advanced).group("General"));
+        add(new IntSetting("delay", "Delay (ms)", 50, 0, 1000, 10).visibleWhen(MenuMode::advanced).group("General"));
+        add(new BoolSetting("centerFirst", "Walk to block center first", true).visibleWhen(MenuMode::advanced).group("General"));
         add(new BoolSetting("teamCheck", "Ignore teammates", false)
-            .description("Don't treat players wearing leather armour dyed your colour as a threat (teammates).").group("Team"));
-        add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real").group("General"));
+            .description("Don't treat players wearing leather armour dyed your colour as a threat (teammates).").visibleWhen(MenuMode::advanced).group("Team"));
+        add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real").visibleWhen(MenuMode::advanced).group("General"));
         add(new DoubleSetting("legitEase", "Camera turn speed", 0.25, 0.05, 1.0, 0.05)
-            .description("How fast your camera turns to the place spot in Real rotation mode (higher = snappier).").group("General"));
+            .description("How fast your camera turns to the place spot in Real rotation mode (higher = snappier).").visibleWhen(MenuMode::advanced).group("General"));
     }
 
     @Override public void onDisable() {

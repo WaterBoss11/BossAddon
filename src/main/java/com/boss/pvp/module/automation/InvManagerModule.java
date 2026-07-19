@@ -2,6 +2,7 @@ package com.boss.pvp.module.automation;
 
 import com.boss.pvp.BossPvpAddon;
 import com.boss.pvp.util.pvp.PvpUtil;
+import com.boss.pvp.util.MenuMode;
 
 import autismclient.modules.Module;
 import autismclient.api.module.*;
@@ -24,14 +25,14 @@ public final class InvManagerModule extends Module {
     private long lastCheckMs = 0L;
 
     public InvManagerModule() {
-        super(BossPvpAddon.ID + ":invmanager", "InvManager", "Refill the hotbar from your inventory mid-fight so you never run dry.");
+        super(BossPvpAddon.ID + ":invmanager", "InvManager", "Refills your hotbar from inventory mid-fight.");
 
         add(new BoolSetting("crystals", "Restock crystals", true).group("Items"));
         add(new BoolSetting("totems", "Restock totems", true).group("Items"));
         add(new BoolSetting("gapples", "Restock gapples", true).group("Items"));
         add(new BoolSetting("blocks", "Restock obsidian", true).group("Items"));
-        add(new IntSetting("delay", "Delay (ms)", 150, 0, 1000, 10).group("General"));
-        add(new BoolSetting("pauseInGuis", "Pause in containers", true).group("General"));
+        add(new IntSetting("delay", "Delay (ms)", 150, 0, 1000, 10).group("General").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("pauseInGuis", "Pause in containers", true).group("General").visibleWhen(MenuMode::advanced));
     }
 
     public void tick(Minecraft mc) {

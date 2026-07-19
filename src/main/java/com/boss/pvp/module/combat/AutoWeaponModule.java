@@ -29,7 +29,7 @@ public final class AutoWeaponModule extends Module {
     private boolean switchedPending = false;
 
     public AutoWeaponModule() {
-        super(BossPvpAddon.ID + ":autoweapon", "AutoWeapon", "Switch to the best weapon before each KillAura hit, then switch back.");
+        super(BossPvpAddon.ID + ":autoweapon", "AutoWeapon", "Switches to the best weapon before hitting.");
         add(new BoolSetting("switchBack", "Switch back after hit", true).group("General"));
         add(new BoolSetting("onlyHotbar", "Only hotbar slots", true)
             .description("Only pick weapons from your hotbar (switching from the rest of the inventory is not supported).").group("General"));

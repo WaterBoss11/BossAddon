@@ -1,6 +1,5 @@
 package com.boss.pvp.update;
 
-import com.boss.pvp.BossPvpAddon;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
@@ -49,16 +48,12 @@ public final class UpdateChecker {
     private static void log(String m) { System.out.println("[boss-pvp/update] " + m); }
 
     /**
-     * Call once on addon init, after modules are registered (so the opt-out toggle is readable). Reads the
-     * baked version and, if the toggle is on, fires the async check. Never throws.
+     * Call once on addon init. Reads the baked version and fires the async check. The launch update check is a
+     * fixed, always-on behavior with no opt-out. Never throws.
      */
     public static void init() {
         try {
             currentVersion = readModVersion();
-            if (!toggleOn()) {
-                log("update check disabled by toggle — no GitHub request made.");
-                return;
-            }
             fireAsync();
         } catch (Throwable t) {
             log("init failed (ignored): " + t);   // must never block startup
@@ -129,15 +124,6 @@ public final class UpdateChecker {
     public static boolean isOutdated() { return outdated; }
     public static String currentVersion() { return currentVersion; }
     public static String latestVersion() { return latestVersion; }
-
-    /** The opt-out toggle; fail-open (default is to check) since the module is registered before init runs. */
-    private static boolean toggleOn() {
-        try {
-            return BossPvpAddon.updateCheck == null || BossPvpAddon.updateCheck.checkEnabled();
-        } catch (Throwable t) {
-            return true;
-        }
-    }
 
     /** The version baked into this build (from fabric.mod.json / mod-version), normalized, or "" if unknown. */
     private static String readModVersion() {

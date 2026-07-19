@@ -1,6 +1,7 @@
 package com.boss.pvp.module.movement;
 
 import com.boss.pvp.BossPvpAddon;
+import com.boss.pvp.util.MenuMode;
 import com.boss.pvp.util.pvp.PvpUtil;
 import com.boss.pvp.util.input.HeldSlotManager;
 
@@ -81,44 +82,44 @@ public final class ScaffoldModule extends Module {
     private record Hit(BlockPos neighbor, Direction face, Vec3 vec) {}
 
     public ScaffoldModule() {
-        super(BossPvpAddon.ID + ":scaffold", "Scaffold", "Automatically places blocks under you as you walk, so you can bridge without looking down.");
+        super(BossPvpAddon.ID + ":scaffold", "Scaffold", "Places blocks under you as you walk.");
 
         add(new ChoiceSetting("mode", "Mode", "Normal", "Normal", "Fast", "Legit").group("General"));
         add(new BoolSetting("silentRotation", "Silent rotation", true)
-            .description("On: your camera never visibly turns toward placements. Off: in Legit mode the camera really turns.").group("General"));
-        add(new DoubleSetting("lookahead", "Place ahead (ticks)", 1.5, 0.0, 4.0, 0.1).group("General"));
+            .description("On: your camera never visibly turns toward placements. Off: in Legit mode the camera really turns.").group("General").visibleWhen(MenuMode::advanced));
+        add(new DoubleSetting("lookahead", "Place ahead (ticks)", 1.5, 0.0, 4.0, 0.1).group("General").visibleWhen(MenuMode::advanced));
         add(new BoolSetting("keepY", "Stay at same height", true)
-            .description("Keeps the bridge flat at one height instead of following where you look.").group("General"));
+            .description("Keeps the bridge flat at one height instead of following where you look.").group("General").visibleWhen(MenuMode::advanced));
         add(new BoolSetting("down", "Bridge downward", false)
-            .description("Places blocks one level lower so you descend as you walk.").group("General"));
-        add(new BoolSetting("speedScaling", "Place further when moving fast", true).group("General"));
+            .description("Places blocks one level lower so you descend as you walk.").group("General").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("speedScaling", "Place further when moving fast", true).group("General").visibleWhen(MenuMode::advanced));
         add(new ChoiceSetting("width", "Bridge width", "1", "1", "3").group("General"));
-        add(new BoolSetting("airPlace", "Place in mid-air (no support needed)", false).group("General"));
+        add(new BoolSetting("airPlace", "Place in mid-air (no support needed)", false).group("General").visibleWhen(MenuMode::advanced));
 
-        add(new ChoiceSetting("safewalk", "Edge protection (SafeWalk)", "OnEdge", "None", "Safe", "OnEdge").group("Movement"));
-        add(new ChoiceSetting("zitter", "Zitter (side-to-side wiggle)", "Off", "Off", "Teleport", "Smooth").group("Movement"));
-        add(new BoolSetting("eagle", "Auto-sneak at edges (Eagle)", false).group("Movement"));
+        add(new ChoiceSetting("safewalk", "Edge protection (SafeWalk)", "OnEdge", "None", "Safe", "OnEdge").group("Movement").visibleWhen(MenuMode::advanced));
+        add(new ChoiceSetting("zitter", "Zitter (side-to-side wiggle)", "Off", "Off", "Teleport", "Smooth").group("Movement").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("eagle", "Auto-sneak at edges (Eagle)", false).group("Movement").visibleWhen(MenuMode::advanced));
         add(new BoolSetting("stabilize", "Keep bridge straight", true)
-            .description("Removes sideways drift so you bridge in a straight line (turned off while Zitter is on).").group("Movement"));
-        add(new BoolSetting("slow", "Limit walking speed", false).group("Movement"));
-        add(new DoubleSetting("speedLimit", "Speed limit", 0.11, 0.01, 0.40, 0.01).group("Movement"));
+            .description("Removes sideways drift so you bridge in a straight line (turned off while Zitter is on).").group("Movement").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("slow", "Limit walking speed", false).group("Movement").visibleWhen(MenuMode::advanced));
+        add(new DoubleSetting("speedLimit", "Speed limit", 0.11, 0.01, 0.40, 0.01).group("Movement").visibleWhen(MenuMode::advanced));
 
-        add(new BoolSetting("advancedRotation", "Randomize aim point", false).group("Rotation"));
-        add(new DoubleSetting("rangeX", "Randomness: X", 0.15, 0.0, 0.5, 0.01).group("Rotation"));
-        add(new DoubleSetting("rangeY", "Randomness: Y", 0.15, 0.0, 0.5, 0.01).group("Rotation"));
-        add(new DoubleSetting("rangeZ", "Randomness: Z", 0.15, 0.0, 0.5, 0.01).group("Rotation"));
+        add(new BoolSetting("advancedRotation", "Randomize aim point", false).group("Rotation").visibleWhen(MenuMode::advanced));
+        add(new DoubleSetting("rangeX", "Randomness: X", 0.15, 0.0, 0.5, 0.01).group("Rotation").visibleWhen(MenuMode::advanced));
+        add(new DoubleSetting("rangeY", "Randomness: Y", 0.15, 0.0, 0.5, 0.01).group("Rotation").visibleWhen(MenuMode::advanced));
+        add(new DoubleSetting("rangeZ", "Randomness: Z", 0.15, 0.0, 0.5, 0.01).group("Rotation").visibleWhen(MenuMode::advanced));
         add(new BoolSetting("simulatePlacements", "Fake swings on failed placements", false)
-            .description("Swings your arm when a block can't be placed, so it looks more natural to others.").group("Rotation"));
+            .description("Swings your arm when a block can't be placed, so it looks more natural to others.").group("Rotation").visibleWhen(MenuMode::advanced));
 
         add(new BoolSetting("tower", "Tower up (hold jump)", true).group("Tower"));
-        add(new DoubleSetting("towerSpeed", "Tower climb speed", 0.5, 0.1, 1.0, 0.01).group("Tower"));
+        add(new DoubleSetting("towerSpeed", "Tower climb speed", 0.5, 0.1, 1.0, 0.01).group("Tower").visibleWhen(MenuMode::advanced));
         add(new BoolSetting("whileMoving", "Tower while moving", false)
-            .description("Off = only tower when standing still (recommended).").group("Tower"));
-        add(new BoolSetting("centerFirst", "Center on block before towering", true).group("Tower"));
+            .description("Off = only tower when standing still (recommended).").group("Tower").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("centerFirst", "Center on block before towering", true).group("Tower").visibleWhen(MenuMode::advanced));
 
         add(new BoolSetting("preferObsidian", "Prefer obsidian", true).group("Blocks"));
-        add(new BoolSetting("allowNonFull", "Allow partial blocks (slabs etc.)", false).group("Blocks"));
-        add(new BoolSetting("switchBack", "Switch back to previous item", true).group("Blocks"));
+        add(new BoolSetting("allowNonFull", "Allow partial blocks (slabs etc.)", false).group("Blocks").visibleWhen(MenuMode::advanced));
+        add(new BoolSetting("switchBack", "Switch back to previous item", true).group("Blocks").visibleWhen(MenuMode::advanced));
     }
 
     @Override

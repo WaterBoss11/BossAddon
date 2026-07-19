@@ -1,6 +1,7 @@
 package com.boss.pvp.module.combat;
 
 import com.boss.pvp.BossPvpAddon;
+import com.boss.pvp.util.MenuMode;
 import com.boss.pvp.util.pvp.PvpUtil;
 import com.boss.pvp.util.input.HeldSlotManager;
 
@@ -32,20 +33,20 @@ public final class TrapperModule extends Module {
     private Vec3 legitAim = null;
 
     public TrapperModule() {
-        super(BossPvpAddon.ID + ":trapper", "Trapper", "Wall a nearby enemy in with obsidian to trap them.");
+        super(BossPvpAddon.ID + ":trapper", "Trapper", "Walls a nearby enemy in with obsidian.");
 
         add(new DoubleSetting("range", "Target range", 5.0, 1.0, 8.0, 0.5).group("General"));
         add(new DoubleSetting("placeRange", "Place reach", 4.5, 1.0, 6.0, 0.5).group("General"));
         add(new ChoiceSetting("block", "Block", "Obsidian", "Obsidian", "Crying Obsidian", "Cobblestone").group("General"));
-        add(new BoolSetting("headRing", "Also wall the head", true).group("General"));
-        add(new BoolSetting("onlyKillAuraTarget", "Only KillAura's target", false).group("General"));
+        add(new BoolSetting("headRing", "Also wall the head", true).visibleWhen(MenuMode::advanced).group("General"));
+        add(new BoolSetting("onlyKillAuraTarget", "Only KillAura's target", false).visibleWhen(MenuMode::advanced).group("General"));
         add(new BoolSetting("teamCheck", "Ignore teammates", false)
-            .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").group("Team"));
-        add(new IntSetting("blocksPerTick", "Blocks per tick", 1, 1, 4, 1).group("General"));
-        add(new IntSetting("delay", "Delay (ms)", 60, 0, 1000, 10).group("General"));
-        add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real").group("General"));
+            .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").visibleWhen(MenuMode::advanced).group("Team"));
+        add(new IntSetting("blocksPerTick", "Blocks per tick", 1, 1, 4, 1).visibleWhen(MenuMode::advanced).group("General"));
+        add(new IntSetting("delay", "Delay (ms)", 60, 0, 1000, 10).visibleWhen(MenuMode::advanced).group("General"));
+        add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real").visibleWhen(MenuMode::advanced).group("General"));
         add(new DoubleSetting("legitEase", "Camera turn speed", 0.25, 0.05, 1.0, 0.05)
-            .description("How fast your camera turns to the place spot in Real rotation mode (higher = snappier).").group("General"));
+            .description("How fast your camera turns to the place spot in Real rotation mode (higher = snappier).").visibleWhen(MenuMode::advanced).group("General"));
     }
 
     @Override

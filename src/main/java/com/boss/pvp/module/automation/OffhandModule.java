@@ -3,6 +3,7 @@ package com.boss.pvp.module.automation;
 import com.boss.pvp.BossPvpAddon;
 import com.boss.pvp.util.pvp.PvpUtil;
 import com.boss.pvp.util.input.OffhandManager;
+import com.boss.pvp.util.MenuMode;
 
 import autismclient.modules.Module;
 import autismclient.api.module.*;
@@ -24,13 +25,13 @@ public final class OffhandModule extends Module {
     private long lastMoveMs = 0L;
 
     public OffhandModule() {
-        super(BossPvpAddon.ID + ":offhand", "Offhand", "Keeps your chosen item (totem, crystal, or gapple) in your offhand.");
+        super(BossPvpAddon.ID + ":offhand", "Offhand", "Keeps your chosen item in your offhand.");
 
         add(new ChoiceSetting("mode", "Mode", "Totem", "Totem", "Crystal", "Gapple-on-low", "Smart").group("General"));
         add(new DoubleSetting("lowHealth", "Gapple below HP", 12.0, 1.0, 19.0, 0.5).group("General"));
-        add(new DoubleSetting("smartTotem", "Smart: totem below HP", 14.0, 1.0, 19.0, 0.5).group("Smart"));
-        add(new DoubleSetting("smartGapple", "Smart: gapple below HP", 8.0, 1.0, 19.0, 0.5).group("Smart"));
-        add(new IntSetting("delay", "Delay (ms)", 100, 0, 1000, 10).group("General"));
+        add(new DoubleSetting("smartTotem", "Smart: totem below HP", 14.0, 1.0, 19.0, 0.5).group("Smart").visibleWhen(MenuMode::advanced));
+        add(new DoubleSetting("smartGapple", "Smart: gapple below HP", 8.0, 1.0, 19.0, 0.5).group("Smart").visibleWhen(MenuMode::advanced));
+        add(new IntSetting("delay", "Delay (ms)", 100, 0, 1000, 10).group("General").visibleWhen(MenuMode::advanced));
         add(new BoolSetting("pauseInGuis", "Pause in containers", true).group("General"));
     }
 
