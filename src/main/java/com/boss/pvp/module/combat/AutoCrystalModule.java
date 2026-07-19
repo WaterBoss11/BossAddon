@@ -83,61 +83,61 @@ public final class AutoCrystalModule extends Module {
     private record Candidate(BlockPos base, double enemyDmg, double selfDmg, double distSq) {}
 
     public AutoCrystalModule() {
-        super(BossPvpAddon.ID + ":autocrystal", "AutoCrystal", "Crystal aura: LiquidBounce-style damage, placement, anti-suicide and silent rotation.");
+        super(BossPvpAddon.ID + ":autocrystal", "AutoCrystal", "Automatically places and breaks end crystals to damage nearby enemies.");
 
-        add(RegistryListSetting.entityTypes("entities", "Entities", PvpUtil.DEFAULT_COMBAT_TARGETS).group("Target"));
+        add(RegistryListSetting.entityTypes("entities", "Targets", PvpUtil.DEFAULT_COMBAT_TARGETS).group("Target"));
         add(new DoubleSetting("range", "Target range", 6.0, 1.0, 12.0, 0.5).group("Target"));
         add(new DoubleSetting("placeRange", "Place reach", 4.5, 1.0, 6.0, 0.5).group("Target"));
         add(new DoubleSetting("breakRange", "Break reach", 4.5, 1.0, 6.0, 0.5).group("Target"));
 
-        add(new BoolSetting("doPlace", "Place", true).group("Actions"));
-        add(new BoolSetting("doBreak", "Break", true).group("Actions"));
-        add(new IntSetting("maxPerTick", "Max break / tick", 1, 1, 4, 1).group("Actions"));
-        add(new IntSetting("maxPlace", "Max place / tick", 1, 1, 4, 1).group("Actions"));
+        add(new BoolSetting("doPlace", "Place crystals", true).group("Actions"));
+        add(new BoolSetting("doBreak", "Break crystals", true).group("Actions"));
+        add(new IntSetting("maxPerTick", "Max breaks per tick", 1, 1, 4, 1).group("Actions"));
+        add(new IntSetting("maxPlace", "Max places per tick", 1, 1, 4, 1).group("Actions"));
         add(new ChoiceSetting("breakMode", "Break mode", "Normal", "Normal", "Packet").group("Actions"));
         add(new IntSetting("placeDelay", "Place delay (ms)", 100, 0, 1000, 10).group("Actions"));
         add(new IntSetting("breakDelay", "Break delay (ms)", 80, 0, 1000, 10).group("Actions"));
         add(new BoolSetting("fastBreak", "Fast break", true)
-            .description("Break a crystal the instant it spawns (entity-load hook), capped by Max breaks/sec. Raises cycle rate.").group("Actions"));
-        add(new IntSetting("maxBps", "Max breaks / sec", 20, 1, 40, 1)
-            .description("Upper bound on break attempts per second, shared by the normal loop and Fast break. Higher = faster cycle, but more suspicious to anticheat.").group("Actions"));
-        add(new BoolSetting("setDead", "Instant break (setDead)", true)
-            .description("Don't re-attack a crystal we just hit until the server confirms it (LiquidBounce SetDead).").group("Actions"));
-        add(new BoolSetting("hideOnHit", "Client-side hide (HCsCR)", false)
-            .description("The instant we hit a crystal (before the server confirms), drop its hitbox client-side so the spot frees for the next placement — the corrected obstruction check re-places there without waiting for the server. Reappears if the server never confirms (see Resync window). Prototype — verify per server.").group("Actions"));
+            .description("Break crystals the instant they appear, for a faster place-break cycle (still capped by Max breaks/sec).").group("Actions"));
+        add(new IntSetting("maxBps", "Max breaks per second", 20, 1, 40, 1)
+            .description("Hard cap on break attempts per second. Higher = faster, but more suspicious to anticheat.").group("Actions"));
+        add(new BoolSetting("setDead", "No double-hits", true)
+            .description("After hitting a crystal, don't hit it again until the server confirms it broke (avoids wasted clicks).").group("Actions"));
+        add(new BoolSetting("hideOnHit", "Hide crystal on hit", false)
+            .description("Hide a crystal on your screen the moment you hit it so a new one can be placed there right away. It reappears if the server never confirms the break. Experimental — test on your server.").group("Actions"));
         add(new IntSetting("resyncTicks", "Resync window", 4, 1, 50, 1)
             .formatter(v -> v + "t")
-            .description("How long a hidden crystal stays hidden before its hitbox reappears if the server hasn't confirmed the kill. Default 4 is a safe match to server cadence; lower = safer against ghosts, higher = holds the spot clear longer.")
+            .description("How long a hidden crystal stays hidden before it reappears if the server never confirmed the break. Default 4 is a safe choice; higher holds the spot open longer.")
             .visibleWhen(() -> bool("hideOnHit")).group("Actions"));
-        add(new BoolSetting("effectGate", "Effect-aware hit gate", true)
-            .description("Skip the client-side hide when the swing wouldn't register (e.g. Weakness has cancelled the attack), so a nullified hit can't leave a ghost crystal.")
+        add(new BoolSetting("effectGate", "Skip hide on blocked hits", true)
+            .description("Don't hide a crystal when your hit wouldn't actually count (e.g. you have Weakness), so you never see ghost crystals.")
             .visibleWhen(() -> bool("hideOnHit")).group("Actions"));
 
         add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real").group("Targeting"));
-        add(new DoubleSetting("legitEase", "Legit ease speed", 0.25, 0.05, 1.0, 0.05)
-            .description("How fast the real camera glides to the place/break point in Real mode (higher = snappier).").group("Targeting"));
-        add(new ChoiceSetting("targetMode", "Place priority", "Highest damage", "Highest damage", "Closest", "Safest").group("Targeting"));
-        add(new BoolSetting("prediction", "Prediction", true).group("Targeting"));
+        add(new DoubleSetting("legitEase", "Camera turn speed", 0.25, 0.05, 1.0, 0.05)
+            .description("How fast your camera turns to the place/break spot in Real rotation mode (higher = snappier).").group("Targeting"));
+        add(new ChoiceSetting("targetMode", "Placement priority", "Highest damage", "Highest damage", "Closest", "Safest").group("Targeting"));
+        add(new BoolSetting("prediction", "Predict movement", true).group("Targeting"));
         add(new BoolSetting("physicsPredict", "Physics prediction", false)
-            .description("Bias placement by a 2-tick vanilla-physics prediction instead of the velocity lead (off = unchanged).").group("Targeting"));
+            .description("Use a more accurate physics-based prediction of where the target is about to move.").group("Targeting"));
         add(new DoubleSetting("predictionStrength", "Prediction strength", 0.5, 0.0, 3.0, 0.1).group("Targeting"));
-        add(new BoolSetting("raytrace", "Raytrace place + break", true).group("Targeting"));
+        add(new BoolSetting("raytrace", "Only visible spots", true).group("Targeting"));
 
         add(new BoolSetting("antiSuicide", "Anti-suicide", true)
-            .description("Never place/break a crystal that would kill you (self damage >= health + absorption).").group("Safety"));
+            .description("Never place or break a crystal that could kill you.").group("Safety"));
         add(new DoubleSetting("maxSelfDamage", "Max self damage", 8.0, 0.0, 20.0, 0.5).group("Safety"));
         add(new DoubleSetting("minEnemyDamage", "Min damage to place", 4.0, 0.0, 20.0, 0.5).group("Safety"));
         add(new DoubleSetting("minBreakDamage", "Min damage to break", 4.0, 0.0, 20.0, 0.5).group("Safety"));
-        add(new BoolSetting("efficient", "Efficient (target > self)", true)
-            .description("Only act when the crystal hurts the target more than it hurts you.").group("Safety"));
-        add(new DoubleSetting("facePlaceHealth", "FacePlace below HP", 8.0, 0.0, 36.0, 1.0)
-            .description("Below this target health, place even under the min-damage floor (finish a low enemy).").group("Safety"));
+        add(new BoolSetting("efficient", "Only worthwhile trades", true)
+            .description("Only act when the crystal hurts the enemy more than it hurts you.").group("Safety"));
+        add(new DoubleSetting("facePlaceHealth", "Finish enemies below HP", 8.0, 0.0, 36.0, 1.0)
+            .description("When the enemy's health is below this, place crystals even if the damage is small, to finish them off.").group("Safety"));
 
         add(new BoolSetting("autoSwitch", "Switch to crystal", true).group("Switch"));
         add(new BoolSetting("switchBack", "Switch back after", true).group("Switch"));
-        add(new BoolSetting("placeAlert", "Chat ping on place", false).group("Switch"));
+        add(new BoolSetting("placeAlert", "Chat message on place", false).group("Switch"));
 
-        add(new BoolSetting("teamCheck", "Team check", false)
+        add(new BoolSetting("teamCheck", "Ignore teammates", false)
             .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").group("Team"));
 
         add(new BoolSetting("onBlockChange", "Trigger on block change", false)
@@ -146,10 +146,10 @@ public final class AutoCrystalModule extends Module {
             .description("Act immediately when an explosion sound plays.").group("Triggers"));
         add(new BoolSetting("onEntityTeleport", "Trigger on target teleport", false)
             .description("Act immediately when an entity teleports.").group("Triggers"));
-        add(new BoolSetting("dualDamage", "Dual-position damage check", false)
-            .description("Require the crystal be effective at both the target's current and 2-tick predicted position.").group("Safety"));
-        add(new DoubleSetting("wallsRange", "Walls range (through-wall)", 0.0, 0.0, 6.0, 0.5)
-            .description("Act on a non-visible crystal/position only within this distance (0 = strict line-of-sight).").group("Targeting"));
+        add(new BoolSetting("dualDamage", "Double-check damage", false)
+            .description("Only act if the crystal would still hit the target both where it is now and where it's about to be.").group("Safety"));
+        add(new DoubleSetting("wallsRange", "Through-wall range", 0.0, 0.0, 6.0, 0.5)
+            .description("Allow acting through walls within this distance (0 = only what you can see).").group("Targeting"));
         add(new BoolSetting("offhandCrystal", "Use offhand crystals", false)
             .description("Place from the offhand if it holds end crystals (no hotbar switch).").group("Switch"));
 

@@ -53,47 +53,47 @@ public final class AimAssistModule extends Module {
 
     public AimAssistModule() {
         super(BossPvpAddon.ID + ":aimassist", "AimAssist",
-            "Full AimAssist with per-frame smooth glide, plus sticky/prediction/LOS and an FOV circle.");
+            "Smoothly steers your crosshair toward nearby targets.");
 
-        add(RegistryListSetting.entityTypes("entities", "Entities", "minecraft:player"));
+        add(RegistryListSetting.entityTypes("entities", "Targets", "minecraft:player"));
         add(new DoubleSetting("range", "Range", 4.2, 1.0, 8.0, 0.1));
         add(new IntSetting("fov", "FOV", 180, 0, 180, 1));
-        add(new ChoiceSetting("target-point", "Target Point", "Center", "Nearest", "Center", "Head", "Body", "Feet"));
-        add(new ChoiceSetting("priority", "Priority", "Direction", "Direction", "Type", "Health", "Distance", "HurtTime", "Age"));
-        add(new ChoiceSetting("axis", "Axis", "Both", "Both", "Horizontal", "Vertical"));
+        add(new ChoiceSetting("target-point", "Aim at", "Center", "Nearest", "Center", "Head", "Body", "Feet"));
+        add(new ChoiceSetting("priority", "Target priority", "Direction", "Direction", "Type", "Health", "Distance", "HurtTime", "Age"));
+        add(new ChoiceSetting("axis", "Aim axis", "Both", "Both", "Horizontal", "Vertical"));
         add(new IntSetting("hurt-time", "Hurt Time", 10, 0, 10, 1));
 
-        add(new ChoiceSetting("smooth-mode", "Smooth", "Interpolation", "Interpolation", "Instant", "Linear", "Sigmoid").group("Smoothing"));
+        add(new ChoiceSetting("smooth-mode", "Smoothing mode", "Interpolation", "Interpolation", "Instant", "Linear", "Sigmoid").group("Smoothing"));
         add(new IntSetting("smoothness", "Smoothness", 35, 0, 100, 1)
             .visibleWhen(() -> usesSmoothing(this)).group("Smoothing"));
-        add(new IntSetting("horizontal-speed", "Horizontal", 100, 1, 100, 1)
+        add(new IntSetting("horizontal-speed", "Horizontal speed", 100, 1, 100, 1)
             .formatter(v -> v + "%").visibleWhen(() -> usesSmoothing(this)).group("Smoothing"));
-        add(new IntSetting("vertical-speed", "Vertical", 100, 1, 100, 1)
+        add(new IntSetting("vertical-speed", "Vertical speed", 100, 1, 100, 1)
             .formatter(v -> v + "%").visibleWhen(() -> usesSmoothing(this)).group("Smoothing"));
 
         add(new DoubleSetting("turnSpeed", "Turn speed (deg/s)", 420.0, 30.0, 1200.0, 10.0).group("Smoothing"));
         add(new DoubleSetting("sigSteepness", "Sigmoid steepness", 10.0, 0.0, 20.0, 0.5).group("Smoothing"));
         add(new DoubleSetting("sigMidpoint", "Sigmoid midpoint", 0.3, 0.0, 1.0, 0.05).group("Smoothing"));
-        add(new BoolSetting("gcd", "GCD (legit rotations)", true)
-            .description("Snap the applied rotation onto the mouse-sensitivity grid each frame so aim moves in mouse-sized steps (defeats rotation-analysis anti-cheat). Off = raw floating-point aim.").group("Smoothing"));
+        add(new BoolSetting("gcd", "Mouse-like aim (GCD)", true)
+            .description("Moves your aim in the same small steps a real mouse makes, so rotations look human to anticheat. Recommended: on.").group("Smoothing"));
 
         add(new BoolSetting("sticky", "Sticky target", true).group("Extras"));
         add(new IntSetting("switchDelay", "Switch delay (ms)", 400, 0, 2000, 10).group("Extras"));
-        add(new BoolSetting("prediction", "Prediction", true).group("Extras"));
+        add(new BoolSetting("prediction", "Predict movement", true).group("Extras"));
         add(new BoolSetting("physicsPredict", "Physics prediction", false)
-            .description("Lead the aim by a 2-tick vanilla-physics movement prediction of the target (additive, off = unchanged).").group("Extras"));
+            .description("Aims slightly ahead of where the target is about to move, for a more accurate lead.").group("Extras"));
         add(new DoubleSetting("predictionStrength", "Prediction strength", 1.0, 0.0, 3.0, 0.1).group("Extras"));
         add(new BoolSetting("requireLineOfSight", "Require line of sight", true).group("Extras"));
         add(new BoolSetting("onlyWhileAttacking", "Only while attacking", false).group("Extras"));
 
-        add(new BoolSetting("showCircle", "Show FOV circle", true).group("Circle"));
-        add(new BoolSetting("teamCheck", "Team check", false)
+        add(new BoolSetting("showCircle", "Show aim circle", true).group("Circle"));
+        add(new BoolSetting("teamCheck", "Ignore teammates", false)
             .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").group("Team"));
         add(new IntSetting("circleRadius", "Circle radius", 60, 10, 300, 1).group("Circle"));
         add(new IntSetting("circleThickness", "Circle thickness", 2, 1, 6, 1).group("Circle"));
-        add(new BoolSetting("filled", "Filled", false).group("Circle"));
+        add(new BoolSetting("filled", "Fill circle", false).group("Circle"));
         add(new BoolSetting("releaseOnLeave", "Release when target leaves circle", false)
-            .description("Also DROP a locked target the moment it leaves the circle (not just at acquisition). Off = sticky lock holds once acquired.")
+            .description("Drop the locked target as soon as it leaves the circle. Off = keep aiming at it once locked.")
             .group("Circle"));
     }
 

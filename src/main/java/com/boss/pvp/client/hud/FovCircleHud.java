@@ -30,8 +30,8 @@ public final class FovCircleHud implements HudElementProvider {
     }
 
     @Override public String id() { return BossPvpAddon.ID + ":fov-circle"; }
-    @Override public String label() { return "AimAssist FOV Circle"; }
-    @Override public String description() { return "FOV circle for AimAssist, centered on the crosshair."; }
+    @Override public String label() { return "Aim Assist Circle"; }
+    @Override public String description() { return "Draws Aim Assist's aiming range as a circle around your crosshair (turns red when locked on)."; }
 
     @Override public int width()  { return radius() * 2; }
     @Override public int height() { return radius() * 2; }

@@ -59,7 +59,7 @@ public final class TrajectoryModule extends Module {
 
     public TrajectoryModule() {
         super(BossPvpAddon.ID + ":trajectory", "Trajectory",
-            "Show the predicted flight path of projectiles before you throw them.");
+            "Shows where your arrow, pearl, or other projectile will land before you throw it.");
         add(new BoolSetting("showArrow", "Bow / crossbow", true).group("Projectiles"));
         add(new BoolSetting("showTrident", "Trident", true).group("Projectiles"));
         add(new BoolSetting("showPearl", "Ender pearl", true).group("Projectiles"));
@@ -68,10 +68,10 @@ public final class TrajectoryModule extends Module {
         add(new BoolSetting("showFireball", "Fireball (fire charge)", false).group("Projectiles"));
         add(new BoolSetting("showPotion", "Splash / lingering potion", true).group("Projectiles"));
 
-        add(new IntSetting("maxTicks", "Max ticks", 200, 20, 200, 1)
-            .description("How many ticks of flight to simulate.").group("Display"));
-        add(new IntSetting("smoothness", "Smoothness", 10, 1, 16, 1)
-            .description("Render subdivisions per simulated tick (Catmull-Rom curve). 1 = raw per-tick line.").group("Display"));
+        add(new IntSetting("maxTicks", "Prediction length", 200, 20, 200, 1)
+            .description("How far ahead to predict the flight (in game ticks). Higher = longer path shown.").group("Display"));
+        add(new IntSetting("smoothness", "Line smoothness", 10, 1, 16, 1)
+            .description("How smooth the drawn line looks. 1 = jagged segments; higher = smoother curve.").group("Display"));
         add(new DoubleSetting("width", "Line width", 2.5, 1.0, 6.0, 0.5).group("Display"));
 
         // World-space geometry must be drawn from Fabric's level-render event (correct pose + buffer).

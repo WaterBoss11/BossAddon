@@ -39,13 +39,13 @@ public final class TrapperModule extends Module {
         add(new ChoiceSetting("block", "Block", "Obsidian", "Obsidian", "Crying Obsidian", "Cobblestone").group("General"));
         add(new BoolSetting("headRing", "Also wall the head", true).group("General"));
         add(new BoolSetting("onlyKillAuraTarget", "Only KillAura's target", false).group("General"));
-        add(new BoolSetting("teamCheck", "Team check", false)
+        add(new BoolSetting("teamCheck", "Ignore teammates", false)
             .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").group("Team"));
-        add(new IntSetting("blocksPerTick", "Blocks/tick", 1, 1, 4, 1).group("General"));
+        add(new IntSetting("blocksPerTick", "Blocks per tick", 1, 1, 4, 1).group("General"));
         add(new IntSetting("delay", "Delay (ms)", 60, 0, 1000, 10).group("General"));
         add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real").group("General"));
-        add(new DoubleSetting("legitEase", "Legit ease speed", 0.25, 0.05, 1.0, 0.05)
-            .description("How fast the real camera glides to the place point in Real mode (higher = snappier).").group("General"));
+        add(new DoubleSetting("legitEase", "Camera turn speed", 0.25, 0.05, 1.0, 0.05)
+            .description("How fast your camera turns to the place spot in Real rotation mode (higher = snappier).").group("General"));
     }
 
     @Override

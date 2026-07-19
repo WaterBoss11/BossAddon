@@ -25,21 +25,21 @@ public final class TriggerBotModule extends Module {
 
     public TriggerBotModule() {
         super(BossPvpAddon.ID + ":triggerbot", "TriggerBot",
-            "Auto-attack the entity under your crosshair. No rotation — you aim, it clicks.");
+            "Attacks whatever your crosshair is pointing at — you aim, it clicks.");
 
-        add(RegistryListSetting.entityTypes("entities", "Entities", "minecraft:player"));
+        add(RegistryListSetting.entityTypes("entities", "Targets", "minecraft:player"));
         add(new DoubleSetting("range", "Range", 3.0, 1.0, 3.5, 0.1)
-            .description("Attack reach. Vanilla is 3.0; above is opt-in and may flag on strict anticheats."));
+            .description("Attack reach. 3.0 is the normal game value; higher may be flagged on strict anticheats."));
         add(new IntSetting("delay", "Delay (ms)", 100, 0, 1000, 10)
-            .description("Base delay between hits; jittered +-25% so the click rate isn't robotic."));
-        add(new IntSetting("hurtTime", "Hurt Time", 10, 0, 10, 1)
-            .description("Only hit once the target's hurt-flash has dropped to/below this (allows a fresh hit)."));
+            .description("Time between hits. Varies slightly on its own (+-25%) so the click rate doesn't look robotic."));
+        add(new IntSetting("hurtTime", "Hurt time", 10, 0, 10, 1)
+            .description("How faded the target's red damage flash must be before hitting again. 10 = hit as soon as possible; lower = wait longer."));
         add(new BoolSetting("fullCharge", "Require full charge", true)
-            .description("Only attack when the attack-cooldown is fully charged (max-damage hits)."));
-        add(new BoolSetting("onlyWhileWeapon", "Only while holding weapon", false));
-        add(new BoolSetting("swing", "Swing", true));
+            .description("Waits for your attack bar to fully charge so every hit does full damage."));
+        add(new BoolSetting("onlyWhileWeapon", "Only while holding a weapon", false));
+        add(new BoolSetting("swing", "Swing arm", true));
         add(new BoolSetting("teamCheck", "Team check", false)
-            .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").group("Team"));
+            .description("Skips players wearing leather armor dyed the same color as yours (likely teammates).").group("Team"));
     }
 
     public void tick(Minecraft mc) {

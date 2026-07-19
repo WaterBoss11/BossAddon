@@ -31,7 +31,7 @@ public final class AutoXPModule extends Module {
         add(new IntSetting("burst", "Throws per burst", 3, 1, 16, 1).group("General"));
         add(new IntSetting("delay", "Throw delay (ms)", 150, 0, 1000, 10).group("General"));
         add(new IntSetting("cooldown", "Burst cooldown (ms)", 2000, 0, 10000, 100).group("General"));
-        add(new BoolSetting("switchBack", "Switch back after", true).group("General"));
+        add(new BoolSetting("switchBack", "Switch back to previous item", true).group("General"));
     }
 
     @Override

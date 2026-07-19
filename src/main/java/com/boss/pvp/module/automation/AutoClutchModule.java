@@ -37,12 +37,12 @@ public final class AutoClutchModule extends Module {
     public AutoClutchModule() {
         super(BossPvpAddon.ID + ":autoclutch", "AutoClutch", "Catch yourself: place a block under your feet when you fall or get pushed off.");
 
-        add(new ChoiceSetting("block", "Block", "Any full cube", "Any full cube", "Obsidian", "Cobblestone").group("General"));
-        add(new IntSetting("triggerDrop", "Catch when drop >", 2, 1, 16, 1)
-            .description("Only clutch if there's no solid ground within this many blocks below the feet.").group("General"));
+        add(new ChoiceSetting("block", "Block to place", "Any full cube", "Any full cube", "Obsidian", "Cobblestone").group("General"));
+        add(new IntSetting("triggerDrop", "Catch when drop deeper than", 2, 1, 16, 1)
+            .description("Only places a block if there's no solid ground within this many blocks below you.").group("General"));
         add(new BoolSetting("airPlace", "Air place (catch over void)", true).group("General"));
         add(new IntSetting("delay", "Delay (ms)", 40, 0, 500, 10).group("General"));
-        add(new BoolSetting("silent", "Silent rotation", true).group("General"));
+        add(new BoolSetting("silent", "Silent rotation (camera doesn't move)", true).group("General"));
     }
 
     @Override

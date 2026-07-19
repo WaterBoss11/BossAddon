@@ -59,16 +59,16 @@ public final class BurrowModule extends Module {
     private final Map<BlockPos, Pending> pending = new HashMap<>();
 
     public BurrowModule() {
-        super(BossPvpAddon.ID + ":burrow", "Burrow (Beta)", "Encase yourself in obsidian (ghost-safe, ordered, no-teleport recenter).");
+        super(BossPvpAddon.ID + ":burrow", "Burrow (Beta)", "Automatically boxes you in with obsidian for protection.");
 
         add(new ChoiceSetting("block", "Block", "Obsidian", "Obsidian", "Crying Obsidian").group("General"));
-        add(new BoolSetting("centerFirst", "Recenter on block first", true)
-            .description("Nudge velocity to block centre before placing (no teleport). Off = place from where you stand.").group("General"));
-        add(new BoolSetting("topCap", "Cap above head", true).group("General"));
-        add(new BoolSetting("doubleBurrow", "Double (2-thick walls)", false).group("General"));
-        add(new IntSetting("blocksPerTick", "Blocks/tick", 2, 1, 6, 1).group("General"));
-        add(new IntSetting("delay", "Delay (ms)", 50, 0, 1000, 10).group("General"));
-        add(new BoolSetting("disableWhenDone", "Disable when fully encased", false).group("General"));
+        add(new BoolSetting("centerFirst", "Walk to block center first", true)
+            .description("Walks you to the middle of your block before placing (no teleporting). Off = place from wherever you stand.").group("General"));
+        add(new BoolSetting("topCap", "Cover above your head", true).group("General"));
+        add(new BoolSetting("doubleBurrow", "Double walls (2 blocks thick)", false).group("General"));
+        add(new IntSetting("blocksPerTick", "Blocks placed per tick", 2, 1, 6, 1).group("General"));
+        add(new IntSetting("delay", "Delay between placements (ms)", 50, 0, 1000, 10).group("General"));
+        add(new BoolSetting("disableWhenDone", "Turn off when fully boxed in", false).group("General"));
         add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real").group("General"));
     }
 

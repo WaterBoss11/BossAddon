@@ -27,18 +27,18 @@ public final class SelfDestructModule extends Module {
 
     public SelfDestructModule() {
         super(BossPvpAddon.ID + ":selfdestruct", "SelfDestruct",
-            "Panic wipe: clears MC logs, removes the addon jar, and empties the recycle bin.");
+            "Panic button: wipes game logs, deletes this mod, and empties the recycle bin.");
         add(new KeybindSetting("triggerKey", "Trigger key", -1)
             .description("Bind a key to trigger SelfDestruct (unbound by default — must be set manually).")
             .group("General"));
-        add(new BoolSetting("confirm", "Confirm", true)
-            .description("Require the key to be pressed twice within 3s before executing.").group("General"));
+        add(new BoolSetting("confirm", "Ask for confirmation", true)
+            .description("The key must be pressed twice within 3 seconds — prevents accidental triggers.").group("General"));
         add(new BoolSetting("clearLogs", "Clear logs", true)
-            .description("Delete .minecraft/logs and .minecraft/crash-reports contents.").group("Steps"));
+            .description("Deletes Minecraft's log files and crash reports.").group("Steps"));
         add(new BoolSetting("deleteMod", "Delete mod", true)
-            .description("Delete boss-pvp*.jar from the .minecraft/mods folder.").group("Steps"));
+            .description("Deletes this addon's jar file from your mods folder.").group("Steps"));
         add(new BoolSetting("clearRecycleBin", "Clear recycle bin", true)
-            .description("Empty the Windows recycle bin (silent, ignored on other OSes).").group("Steps"));
+            .description("Empties the Windows recycle bin (does nothing on other systems).").group("Steps"));
     }
 
     @Override

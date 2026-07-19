@@ -13,11 +13,11 @@ import net.minecraft.world.item.Items;
 public final class FastPlaceModule extends Module {
 
     public FastPlaceModule() {
-        super(BossPvpAddon.ID + ":fastplace", "FastPlace", "Remove the right-click place/use cooldown.");
+        super(BossPvpAddon.ID + ":fastplace", "FastPlace", "Lets you place blocks and use items faster by removing the right-click delay.");
 
-        add(new IntSetting("placeRate", "Cooldown ticks", 0, 0, 4, 1)
-            .description("0 = no cooldown (place every tick). Vanilla is 4.").group("General"));
-        add(new ChoiceSetting("scope", "Scope", "Both", "Both", "Blocks", "PvP items").group("General"));
+        add(new IntSetting("placeRate", "Delay between placements (ticks)", 0, 0, 4, 1)
+            .description("0 = fastest (every tick). The normal game uses 4.").group("General"));
+        add(new ChoiceSetting("scope", "Applies to", "Both", "Both", "Blocks", "PvP items").group("General"));
     }
 
     public int placeRate() { return integer("placeRate"); }

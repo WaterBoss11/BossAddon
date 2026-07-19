@@ -45,18 +45,18 @@ public final class SurroundModule extends Module {
         super(BossPvpAddon.ID + ":surround", "Surround", "Surround your feet with obsidian to block crystal damage.");
 
         add(new ChoiceSetting("block", "Block", "Obsidian", "Obsidian", "Crying Obsidian", "Cobblestone").group("General"));
-        add(new ChoiceSetting("expand", "Expand", "Sides", "Sides", "Sides + Under", "Two High").group("General"));
+        add(new ChoiceSetting("expand", "Coverage", "Sides", "Sides", "Sides + Under", "Two High").group("General"));
         add(new BoolSetting("onlyWhenThreatened", "Only when threatened", true).group("General"));
-        add(new BoolSetting("autoDisableOnMove", "Auto-disable on move", false).group("General"));
+        add(new BoolSetting("autoDisableOnMove", "Pause while moving", false).group("General"));
         add(new BoolSetting("replaceMined", "Replace mined blocks", true).group("General"));
-        add(new IntSetting("blocksPerTick", "Blocks/tick", 1, 1, 4, 1).group("General"));
+        add(new IntSetting("blocksPerTick", "Blocks per tick", 1, 1, 4, 1).group("General"));
         add(new IntSetting("delay", "Delay (ms)", 50, 0, 1000, 10).group("General"));
-        add(new BoolSetting("centerFirst", "Center on block first (legit walk)", true).group("General"));
-        add(new BoolSetting("teamCheck", "Team check", false)
+        add(new BoolSetting("centerFirst", "Walk to block center first", true).group("General"));
+        add(new BoolSetting("teamCheck", "Ignore teammates", false)
             .description("Don't treat players wearing leather armour dyed your colour as a threat (teammates).").group("Team"));
         add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real").group("General"));
-        add(new DoubleSetting("legitEase", "Legit ease speed", 0.25, 0.05, 1.0, 0.05)
-            .description("How fast the real camera glides to the place point in Real mode (higher = snappier).").group("General"));
+        add(new DoubleSetting("legitEase", "Camera turn speed", 0.25, 0.05, 1.0, 0.05)
+            .description("How fast your camera turns to the place spot in Real rotation mode (higher = snappier).").group("General"));
     }
 
     @Override public void onDisable() {

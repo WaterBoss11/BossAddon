@@ -70,38 +70,38 @@ public final class AutoArmorModule extends Module {
         "instant_health", "regeneration", "strong_healing", "swiftness", "strength", "fire_resistance", "water_breathing");
 
     public AutoArmorModule() {
-        super(BossPvpAddon.ID + ":autoarmor", "AutoArmor", "Auto-equip the best armor from your inventory, one piece per tick.");
+        super(BossPvpAddon.ID + ":autoarmor", "AutoArmor", "Automatically wears the best armor you're carrying, one piece at a time.");
 
         add(new BoolSetting("preferEnchanted", "Prefer enchanted", true)
-            .description("ON = enchants dominate the ranking (recommended). OFF = material tier dominates instead.").group("General"));
+            .description("ON = enchantments count more than armor material when picking (recommended). OFF = material counts more.").group("General"));
         add(new BoolSetting("preferBlast", "Prefer Blast Protection", true)
-            .description("Extra weight on Blast Protection levels (crystal/anchor PvP).").group("General"));
-        add(new IntSetting("durabilitySwap", "Durability swap below %", 10, 0, 100, 1).formatter(v -> v + "%").group("General"));
+            .description("Favors Blast Protection armor — best for crystal and anchor fights.").group("General"));
+        add(new IntSetting("durabilitySwap", "Swap damaged armor below", 10, 0, 100, 1).formatter(v -> v + "%").group("General"));
         add(new BoolSetting("pauseInCombat", "Pause when enemy near", false).group("General"));
-        add(new BoolSetting("onlyNoContainer", "Only when no container open", true).group("General"));
+        add(new BoolSetting("onlyNoContainer", "Pause while a chest/menu is open", true).group("General"));
         add(new IntSetting("delay", "Delay (ms)", 100, 0, 1000, 10).group("General"));
 
         add(new BoolSetting("autoDrop", "Auto-drop worse armor", false)
-            .description("Drop inventory armor that isn't a strict upgrade over what you're wearing. Destructive.").group("Auto-drop"));
+            .description("Throws away carried armor that isn't better than what you're wearing. Dropped items land on the ground — use with care.").group("Auto-drop"));
         add(new BoolSetting("keepSpare", "Keep one spare per slot", true)
-            .description("Keep a single equal-quality backup per slot instead of dropping every spare.").group("Auto-drop"));
+            .description("Keeps one backup piece for each armor slot instead of dropping every spare.").group("Auto-drop"));
 
-        add(new BoolSetting("dropJunk", "Drop junk (keep-list)", false)
-            .description("Drop anything NOT on the keep-list. Destructive — edit the keep-list first.").group("Drop junk"));
+        add(new BoolSetting("dropJunk", "Drop junk items", false)
+            .description("Throws away anything NOT on the keep list. Check the keep list first — dropped items land on the ground.").group("Drop junk"));
         add(new BoolSetting("keepBestTool", "Keep best tool only", true)
-            .description("For kept weapons/tools, keep the single best per category and drop duplicates.").group("Drop junk"));
+            .description("Keeps only your best sword, axe, etc. and drops weaker duplicates.").group("Drop junk"));
         add(RegistryListSetting.items("keepList", "Keep list", DEFAULT_KEEP_LIST)
-            .description("Item types to KEEP. Everything else is junk. Defaults to the standard PvP kit.").group("Drop junk"));
+            .description("Items to keep. Anything not listed counts as junk. Starts with a standard PvP kit.").group("Drop junk"));
 
-        add(new KeybindSetting("addHeldKey", "Add/remove held item to Keep-list", -1)
-            .description("Default unbound — bind it, then hold an item and tap to toggle it on the keep-list.").group("Drop junk"));
-        add(new ActionSetting("snapshot", "Snapshot inventory -> Keep-list", this::snapshotKeepList)
-            .description("Replace the keep-list with every item type currently in your inventory. Use on a clean kit.").group("Drop junk"));
+        add(new KeybindSetting("addHeldKey", "Hotkey: add/remove held item", -1)
+            .description("Not bound by default. Bind a key, then hold an item and press it to add or remove that item from the keep list.").group("Drop junk"));
+        add(new ActionSetting("snapshot", "Copy inventory to keep list", this::snapshotKeepList)
+            .description("Replaces the keep list with everything currently in your inventory. Do this while carrying a clean kit.").group("Drop junk"));
 
-        add(new KeybindSetting("addPotKey", "Add/remove held POTION to Pot-keep-list", -1)
-            .description("Default unbound — bind it, then hold a potion and tap to toggle its effect on the pot keep-list.").group("Drop junk"));
-        add(new ActionSetting("snapshotPots", "Snapshot inventory potions -> Pot-keep-list", this::snapshotPotionKeep)
-            .description("Replace the pot keep-list with every potion effect currently in your inventory. Use on a clean kit.").group("Drop junk"));
+        add(new KeybindSetting("addPotKey", "Hotkey: add/remove held potion", -1)
+            .description("Not bound by default. Bind a key, then hold a potion and press it to add or remove its effect from the potion keep list.").group("Drop junk"));
+        add(new ActionSetting("snapshotPots", "Copy potions to potion keep list", this::snapshotPotionKeep)
+            .description("Replaces the potion keep list with every potion effect currently in your inventory. Do this while carrying a clean kit.").group("Drop junk"));
     }
 
     private static final String DEFAULT_KEEP_LIST = String.join(",",

@@ -18,16 +18,16 @@ public final class CriticalsModule extends Module {
     private long lastCritMs = 0L;
 
     public CriticalsModule() {
-        super(BossPvpAddon.ID + ":criticals", "Criticals", "Always crit: packet / mini-jump / jump / no-ground.");
+        super(BossPvpAddon.ID + ":criticals", "Criticals", "Makes your hits land as critical hits.");
 
         add(new ChoiceSetting("mode", "Mode", "Packet", "Packet", "MiniJump", "Jump", "NoGround").group("General"));
-        add(new BoolSetting("onlyWithAura", "Only with aura active", false).group("General"));
+        add(new BoolSetting("onlyWithAura", "Only while KillAura attacks", false).group("General"));
         add(new BoolSetting("requireFullCharge", "Require full charge", true).group("General"));
-        add(new BoolSetting("groundCheck", "Ground check", true).group("General"));
+        add(new BoolSetting("groundCheck", "Only while on ground", true).group("General"));
         add(new IntSetting("delay", "Min delay (ms)", 100, 0, 1000, 10).group("General"));
         add(new DoubleSetting("miniJumpHeight", "Mini-jump height", 0.1, 0.01, 0.42, 0.01).group("General"));
         add(new BoolSetting("stopSprint", "Stop sprint for crit", true)
-            .description("Drop sprint just before the crit (vanilla blocks critical hits while sprinting).").group("General"));
+            .description("Briefly stop sprinting just before the hit (the game blocks critical hits while sprinting).").group("General"));
     }
 
     public void tick(Minecraft mc) {

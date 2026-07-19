@@ -27,17 +27,17 @@ public final class AutoTotemModule extends Module {
     private int popCount = 0;
 
     public AutoTotemModule() {
-        super(BossPvpAddon.ID + ":autototem", "AutoTotem", "Keeps a totem in your offhand: instant re-totem, pop counter, smart trigger.");
+        super(BossPvpAddon.ID + ":autototem", "AutoTotem", "Keeps a totem in your offhand and replaces it right after it pops.");
 
         add(new IntSetting("delay", "Delay (ms)", 100, 0, 1000, 10).group("General"));
         add(new BoolSetting("pauseInGuis", "Pause in containers", true).group("General"));
 
         add(new ChoiceSetting("mode", "Mode", "Always", "Always", "Smart").group("General"));
-        add(new DoubleSetting("health", "Smart health", 12.0, 1.0, 19.0, 0.5).group("General"));
+        add(new DoubleSetting("health", "Smart: totem below HP", 12.0, 1.0, 19.0, 0.5).group("General"));
         add(new BoolSetting("instantRetotem", "Instant re-totem", true).group("General"));
-        add(new BoolSetting("mainhandFallback", "Mainhand fallback if offhand blocked", true).group("General"));
+        add(new BoolSetting("mainhandFallback", "Use main hand if offhand has a shield", true).group("General"));
         add(new BoolSetting("popAlert", "Chat alert on pop", true).group("General"));
-        add(new BoolSetting("predictCrystal", "Re-totem if crystal near (Smart)", false).group("General"));
+        add(new BoolSetting("predictCrystal", "Smart: re-totem if crystal nearby", false).group("General"));
     }
 
     @Override

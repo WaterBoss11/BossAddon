@@ -26,10 +26,10 @@ public final class InvManagerModule extends Module {
     public InvManagerModule() {
         super(BossPvpAddon.ID + ":invmanager", "InvManager", "Refill the hotbar from your inventory mid-fight so you never run dry.");
 
-        add(new BoolSetting("crystals", "Keep crystals", true).group("Items"));
-        add(new BoolSetting("totems", "Keep totems", true).group("Items"));
-        add(new BoolSetting("gapples", "Keep gapples", true).group("Items"));
-        add(new BoolSetting("blocks", "Keep obsidian", true).group("Items"));
+        add(new BoolSetting("crystals", "Restock crystals", true).group("Items"));
+        add(new BoolSetting("totems", "Restock totems", true).group("Items"));
+        add(new BoolSetting("gapples", "Restock gapples", true).group("Items"));
+        add(new BoolSetting("blocks", "Restock obsidian", true).group("Items"));
         add(new IntSetting("delay", "Delay (ms)", 150, 0, 1000, 10).group("General"));
         add(new BoolSetting("pauseInGuis", "Pause in containers", true).group("General"));
     }

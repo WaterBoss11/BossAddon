@@ -15,11 +15,11 @@ public final class UpdateCheckModule extends Module {
 
     public UpdateCheckModule() {
         super(BossPvpAddon.ID + ":updatecheck", "Update Checker",
-            "Checks GitHub at launch for a newer release and notifies you (chat + HUD). Read-only — never "
-                + "downloads or installs anything. On by default; turn off to make no GitHub request at all.");
+            "Checks once at game launch whether a newer version exists and tells you in chat and on the "
+                + "HUD. Never downloads or installs anything. On by default; turn off to skip the check.");
         add(new BoolSetting("check", "Check for updates at launch", true)
-            .description("Make a single GitHub Releases API request at launch to see if a newer version "
-                + "exists. Read-only, no download. Uncheck to disable the check entirely (no request)."));
+            .description("Asks GitHub once at launch whether a newer version exists. Only looks — never "
+                + "downloads or installs anything. Uncheck to skip the check entirely (nothing is sent)."));
     }
 
     /** Whether the launch-time update check is allowed by the user's toggle (default on). */

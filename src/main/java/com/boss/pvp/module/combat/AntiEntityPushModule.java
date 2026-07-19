@@ -8,9 +8,9 @@ import autismclient.api.module.*;
 public final class AntiEntityPushModule extends Module {
 
     public AntiEntityPushModule() {
-        super(BossPvpAddon.ID + ":antientitypush", "AntiEntityPush", "Prevent other entities from pushing you out of position.");
+        super(BossPvpAddon.ID + ":antientitypush", "AntiEntityPush", "Stops mobs and players from pushing you around.");
         add(new BoolSetting("onlyWhileSurrounded", "Only while Surround active", false)
-            .description("Only block collision pushes while the Surround module is enabled.").group("General"));
+            .description("Only stop pushes while the Surround module is turned on.").group("General"));
     }
 
     public boolean onlyWhileSurrounded() { return bool("onlyWhileSurrounded"); }

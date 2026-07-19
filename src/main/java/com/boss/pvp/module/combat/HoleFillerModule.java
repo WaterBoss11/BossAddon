@@ -30,22 +30,22 @@ public final class HoleFillerModule extends Module {
     private Vec3 legitAim = null;
 
     public HoleFillerModule() {
-        super(BossPvpAddon.ID + ":holefiller", "HoleFiller", "Cap an enemy's 1x1 hole with obsidian.");
+        super(BossPvpAddon.ID + ":holefiller", "HoleFiller", "Covers the hole an enemy is hiding in with a block.");
 
         add(new DoubleSetting("range", "Reach", 4.5, 1.0, 6.0, 0.5).group("General"));
         add(new BoolSetting("onlyWithKillAura", "Only KillAura's target", true).group("General"));
-        add(new BoolSetting("teamCheck", "Team check", false)
+        add(new BoolSetting("teamCheck", "Ignore teammates", false)
             .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").group("Team"));
         add(new ChoiceSetting("block", "Block", "Obsidian", "Obsidian", "Crying Obsidian", "Cobblestone").group("General"));
-        add(new IntSetting("blocksPerTick", "Blocks/tick", 1, 1, 4, 1).group("General"));
+        add(new IntSetting("blocksPerTick", "Blocks per tick", 1, 1, 4, 1).group("General"));
         add(new IntSetting("delay", "Delay (ms)", 80, 0, 1000, 10).group("General"));
 
-        add(new BoolSetting("prediction", "Prediction", true).group("Targeting"));
+        add(new BoolSetting("prediction", "Predict movement", true).group("Targeting"));
         add(new DoubleSetting("predictionStrength", "Prediction strength", 0.5, 0.0, 3.0, 0.1).group("Targeting"));
-        add(new BoolSetting("raytrace", "Raytrace", true).group("Targeting"));
+        add(new BoolSetting("raytrace", "Only visible spots", true).group("Targeting"));
         add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real").group("Targeting"));
-        add(new DoubleSetting("legitEase", "Legit ease speed", 0.25, 0.05, 1.0, 0.05)
-            .description("How fast the real camera glides to the place point in Real mode (higher = snappier).").group("Targeting"));
+        add(new DoubleSetting("legitEase", "Camera turn speed", 0.25, 0.05, 1.0, 0.05)
+            .description("How fast your camera turns to the place spot in Real rotation mode (higher = snappier).").group("Targeting"));
     }
 
     @Override

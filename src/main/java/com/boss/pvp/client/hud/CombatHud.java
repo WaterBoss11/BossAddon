@@ -23,7 +23,7 @@ public final class CombatHud implements HudElementProvider {
 
     @Override public String id() { return BossPvpAddon.ID + ":combat-hud"; }
     @Override public String label() { return "Combat HUD"; }
-    @Override public String description() { return "Target + HP, totem/crystal/gapple counts, active modules."; }
+    @Override public String description() { return "Shows your target's health, your totem/crystal/gapple/block counts, and which modules are on."; }
 
     @Override public int width()  { return 150; }
     @Override public int height() { return 47; }

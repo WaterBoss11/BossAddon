@@ -42,25 +42,25 @@ public final class AutoAnchorModule extends Module {
     private Vec3 legitAim = null;
 
     public AutoAnchorModule() {
-        super(BossPvpAddon.ID + ":autoanchor", "AutoAnchor", "Place + charge + detonate respawn anchors: ghost-safe, confirm-sequenced, auto re-arm.");
+        super(BossPvpAddon.ID + ":autoanchor", "AutoAnchor", "Automatically places, charges, and blows up respawn anchors on nearby enemies.");
 
         add(new DoubleSetting("range", "Target range", 6.0, 1.0, 12.0, 0.5).group("Target"));
-        add(new BoolSetting("teamCheck", "Team check", false)
+        add(new BoolSetting("teamCheck", "Ignore teammates", false)
             .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").group("Team"));
         add(new DoubleSetting("placeRange", "Place reach", 4.5, 1.0, 6.0, 0.5).group("Target"));
-        add(new IntSetting("charges", "Charges before detonate", 1, 1, 4, 1).group("Actions"));
+        add(new IntSetting("charges", "Charges before exploding", 1, 1, 4, 1).group("Actions"));
 
         add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real").group("Targeting"));
-        add(new DoubleSetting("legitEase", "Legit ease speed", 0.25, 0.05, 1.0, 0.05)
-            .description("How fast the real camera glides to the anchor in Legit mode (higher = snappier).").group("Targeting"));
-        add(new ChoiceSetting("targetMode", "Place target", "Highest damage", "Highest damage", "Closest", "Safest").group("Targeting"));
-        add(new BoolSetting("raytrace", "Raytrace", true).group("Targeting"));
-        add(new BoolSetting("predict", "Predict (lead target)", false).group("Targeting"));
+        add(new DoubleSetting("legitEase", "Camera turn speed", 0.25, 0.05, 1.0, 0.05)
+            .description("How fast your camera turns to the anchor in Real rotation mode (higher = snappier).").group("Targeting"));
+        add(new ChoiceSetting("targetMode", "Placement priority", "Highest damage", "Highest damage", "Closest", "Safest").group("Targeting"));
+        add(new BoolSetting("raytrace", "Only visible spots", true).group("Targeting"));
+        add(new BoolSetting("predict", "Predict movement", false).group("Targeting"));
         add(new IntSetting("predictTicks", "Predict ticks", 3, 0, 10, 1).group("Targeting"));
 
         add(new BoolSetting("antiSuicide", "Anti-suicide", true).group("Safety"));
         add(new DoubleSetting("maxSelfDamage", "Max self damage", 8.0, 0.0, 20.0, 0.5).group("Safety"));
-        add(new DoubleSetting("healthFloor", "Health floor", 6.0, 0.0, 20.0, 0.5)
+        add(new DoubleSetting("healthFloor", "Keep health above", 6.0, 0.0, 20.0, 0.5)
             .description("Never detonate if it would drop your health below this.").group("Safety"));
         add(new DoubleSetting("minEnemyDamage", "Min enemy damage", 4.0, 0.0, 20.0, 0.5).group("Safety"));
 

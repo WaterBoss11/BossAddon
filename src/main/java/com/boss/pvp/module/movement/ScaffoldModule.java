@@ -81,44 +81,44 @@ public final class ScaffoldModule extends Module {
     private record Hit(BlockPos neighbor, Direction face, Vec3 vec) {}
 
     public ScaffoldModule() {
-        super(BossPvpAddon.ID + ":scaffold", "Scaffold", "Auto-bridge (LiquidBounce-style): zitter, eagle, stabilize, safewalk, tower.");
+        super(BossPvpAddon.ID + ":scaffold", "Scaffold", "Automatically places blocks under you as you walk, so you can bridge without looking down.");
 
         add(new ChoiceSetting("mode", "Mode", "Normal", "Normal", "Fast", "Legit").group("General"));
         add(new BoolSetting("silentRotation", "Silent rotation", true)
-            .description("ON forces silent even in Legit. OFF lets Legit move the real camera.").group("General"));
-        add(new DoubleSetting("lookahead", "Lookahead ticks", 1.5, 0.0, 4.0, 0.1).group("General"));
-        add(new BoolSetting("keepY", "Keep-Y / Same-Y (flat)", true)
-            .description("Bridge at a fixed Y level (this is the Same-Y feature).").group("General"));
-        add(new BoolSetting("down", "Down scaffold", false)
-            .description("Bridge downward one level (like holding sneak in LiquidBounce's Down).").group("General"));
-        add(new BoolSetting("speedScaling", "Speed scaling", true).group("General"));
-        add(new ChoiceSetting("width", "Width", "1", "1", "3").group("General"));
-        add(new BoolSetting("airPlace", "Air place (no support needed)", false).group("General"));
+            .description("On: your camera never visibly turns toward placements. Off: in Legit mode the camera really turns.").group("General"));
+        add(new DoubleSetting("lookahead", "Place ahead (ticks)", 1.5, 0.0, 4.0, 0.1).group("General"));
+        add(new BoolSetting("keepY", "Stay at same height", true)
+            .description("Keeps the bridge flat at one height instead of following where you look.").group("General"));
+        add(new BoolSetting("down", "Bridge downward", false)
+            .description("Places blocks one level lower so you descend as you walk.").group("General"));
+        add(new BoolSetting("speedScaling", "Place further when moving fast", true).group("General"));
+        add(new ChoiceSetting("width", "Bridge width", "1", "1", "3").group("General"));
+        add(new BoolSetting("airPlace", "Place in mid-air (no support needed)", false).group("General"));
 
-        add(new ChoiceSetting("safewalk", "SafeWalk", "OnEdge", "None", "Safe", "OnEdge").group("Movement"));
-        add(new ChoiceSetting("zitter", "Zitter", "Off", "Off", "Teleport", "Smooth").group("Movement"));
-        add(new BoolSetting("eagle", "Eagle (auto-sneak on edges)", false).group("Movement"));
-        add(new BoolSetting("stabilize", "Stabilize movement", true)
-            .description("Removes sideways drift so the bridge stays straight (disabled while Zitter is on).").group("Movement"));
-        add(new BoolSetting("slow", "Slow (speed limiter)", false).group("Movement"));
+        add(new ChoiceSetting("safewalk", "Edge protection (SafeWalk)", "OnEdge", "None", "Safe", "OnEdge").group("Movement"));
+        add(new ChoiceSetting("zitter", "Zitter (side-to-side wiggle)", "Off", "Off", "Teleport", "Smooth").group("Movement"));
+        add(new BoolSetting("eagle", "Auto-sneak at edges (Eagle)", false).group("Movement"));
+        add(new BoolSetting("stabilize", "Keep bridge straight", true)
+            .description("Removes sideways drift so you bridge in a straight line (turned off while Zitter is on).").group("Movement"));
+        add(new BoolSetting("slow", "Limit walking speed", false).group("Movement"));
         add(new DoubleSetting("speedLimit", "Speed limit", 0.11, 0.01, 0.40, 0.01).group("Movement"));
 
-        add(new BoolSetting("advancedRotation", "Advanced rotation (XYZ jitter)", false).group("Rotation"));
-        add(new DoubleSetting("rangeX", "Range X", 0.15, 0.0, 0.5, 0.01).group("Rotation"));
-        add(new DoubleSetting("rangeY", "Range Y", 0.15, 0.0, 0.5, 0.01).group("Rotation"));
-        add(new DoubleSetting("rangeZ", "Range Z", 0.15, 0.0, 0.5, 0.01).group("Rotation"));
-        add(new BoolSetting("simulatePlacements", "Simulate placement attempts", false)
-            .description("Send extra swings when a placement can't land, to look legit.").group("Rotation"));
+        add(new BoolSetting("advancedRotation", "Randomize aim point", false).group("Rotation"));
+        add(new DoubleSetting("rangeX", "Randomness: X", 0.15, 0.0, 0.5, 0.01).group("Rotation"));
+        add(new DoubleSetting("rangeY", "Randomness: Y", 0.15, 0.0, 0.5, 0.01).group("Rotation"));
+        add(new DoubleSetting("rangeZ", "Randomness: Z", 0.15, 0.0, 0.5, 0.01).group("Rotation"));
+        add(new BoolSetting("simulatePlacements", "Fake swings on failed placements", false)
+            .description("Swings your arm when a block can't be placed, so it looks more natural to others.").group("Rotation"));
 
-        add(new BoolSetting("tower", "Tower (hold jump)", true).group("Tower"));
-        add(new DoubleSetting("towerSpeed", "Tower speed", 0.5, 0.1, 1.0, 0.01).group("Tower"));
+        add(new BoolSetting("tower", "Tower up (hold jump)", true).group("Tower"));
+        add(new DoubleSetting("towerSpeed", "Tower climb speed", 0.5, 0.1, 1.0, 0.01).group("Tower"));
         add(new BoolSetting("whileMoving", "Tower while moving", false)
-            .description("Off = only tower when standing still (Meteor default).").group("Tower"));
-        add(new BoolSetting("centerFirst", "Center first", true).group("Tower"));
+            .description("Off = only tower when standing still (recommended).").group("Tower"));
+        add(new BoolSetting("centerFirst", "Center on block before towering", true).group("Tower"));
 
-        add(new BoolSetting("preferObsidian", "Prefer Obsidian", true).group("Blocks"));
-        add(new BoolSetting("allowNonFull", "Allow non-full blocks", false).group("Blocks"));
-        add(new BoolSetting("switchBack", "Switch back after", true).group("Blocks"));
+        add(new BoolSetting("preferObsidian", "Prefer obsidian", true).group("Blocks"));
+        add(new BoolSetting("allowNonFull", "Allow partial blocks (slabs etc.)", false).group("Blocks"));
+        add(new BoolSetting("switchBack", "Switch back to previous item", true).group("Blocks"));
     }
 
     @Override

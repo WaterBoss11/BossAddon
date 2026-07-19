@@ -17,7 +17,7 @@ public final class UpdateHud implements HudElementProvider {
 
     @Override public String id() { return BossPvpAddon.ID + ":update"; }
     @Override public String label() { return "Update Notice"; }
-    @Override public String description() { return "Shows a small notice when a newer Boss's PVP release is available."; }
+    @Override public String description() { return "Shows a small notice when a newer version of Boss's PVP is available."; }
 
     @Override public int width() { return 180; }
     @Override public int height() { return 10; }

@@ -25,12 +25,12 @@ public final class ShieldBreakerModule extends Module {
     private LivingEntity victim;
 
     public ShieldBreakerModule() {
-        super(BossPvpAddon.ID + ":shieldbreaker", "ShieldBreaker", "Auto-axe a blocking enemy to break their shield, then switch back.");
+        super(BossPvpAddon.ID + ":shieldbreaker", "ShieldBreaker", "Automatically switches to an axe to disable a blocking enemy's shield, then switches back.");
 
         add(new DoubleSetting("range", "Range", 3.0, 1.0, 3.5, 0.1)
-            .description("Vanilla reach. Higher is opt-in and may flag."));
-        add(new BoolSetting("onlyWhenBlocking", "Only when target blocking", true).group("General"));
-        add(new BoolSetting("teamCheck", "Team check", false)
+            .description("Attack reach. Vanilla is 3.0; higher may flag on anticheat."));
+        add(new BoolSetting("onlyWhenBlocking", "Only when target is blocking", true).group("General"));
+        add(new BoolSetting("teamCheck", "Ignore teammates", false)
             .description("Skip players wearing leather armour dyed the same colour as yours (teammates).").group("Team"));
         add(new BoolSetting("switchBack", "Switch back after", true).group("General"));
         add(new IntSetting("delay", "Delay (ms)", 250, 0, 2000, 10).group("General"));

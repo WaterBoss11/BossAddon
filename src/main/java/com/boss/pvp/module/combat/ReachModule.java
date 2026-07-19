@@ -20,16 +20,16 @@ public final class ReachModule extends Module {
 
     public ReachModule() {
         super(BossPvpAddon.ID + ":reach", "Reach",
-            "Extend attack/interact distance via the player reach attributes. "
-          + "SERVER-VALIDATED: works on servers without anticheat, but silently fails or trips "
-          + "anticheat on validated servers.");
+            "Lets you attack and reach blocks from farther away. "
+          + "Only works on servers without anticheat — on protected servers it "
+          + "silently fails or gets you flagged.");
 
         add(new DoubleSetting("attackRange", "Attack range", 3.0, 3.0, 6.0, 0.1)
-            .description("Entity interaction (attack) range. Vanilla = 3.0.").group("General"));
+            .description("How far you can hit players and mobs. Vanilla is 3.0.").group("General"));
         add(new DoubleSetting("interactRange", "Interact range", 4.5, 4.5, 6.0, 0.1)
-            .description("Block interaction (use/place/mine) range. Vanilla = 4.5.").group("General"));
+            .description("How far you can place, break, and use blocks. Vanilla is 4.5.").group("General"));
         add(new BoolSetting("onlyInCombat", "Only in combat", false)
-            .description("Only extend reach while KillAura has a target or you attacked within the last second.")
+            .description("Only extend reach while KillAura has a target or you attacked in the last second.")
             .group("General"));
     }
 

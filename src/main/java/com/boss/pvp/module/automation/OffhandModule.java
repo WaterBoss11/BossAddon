@@ -24,7 +24,7 @@ public final class OffhandModule extends Module {
     private long lastMoveMs = 0L;
 
     public OffhandModule() {
-        super(BossPvpAddon.ID + ":offhand", "Offhand", "Keeps a Totem / Crystal / Gapple in your offhand by situation.");
+        super(BossPvpAddon.ID + ":offhand", "Offhand", "Keeps your chosen item (totem, crystal, or gapple) in your offhand.");
 
         add(new ChoiceSetting("mode", "Mode", "Totem", "Totem", "Crystal", "Gapple-on-low", "Smart").group("General"));
         add(new DoubleSetting("lowHealth", "Gapple below HP", 12.0, 1.0, 19.0, 0.5).group("General"));

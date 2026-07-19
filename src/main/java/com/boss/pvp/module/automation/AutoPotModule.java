@@ -41,14 +41,14 @@ public final class AutoPotModule extends Module {
         super(BossPvpAddon.ID + ":autopot", "AutoPot", "Throws a splash heal potion when you get low.");
 
         add(new DoubleSetting("health", "Pot below health", 12.0, 1.0, 19.0, 0.5).group("General"));
-        add(new BoolSetting("absorptionAware", "Count absorption (gapple) HP", false).group("General"));
+        add(new BoolSetting("absorptionAware", "Count absorption (yellow) hearts", false).group("General"));
         add(new IntSetting("delay", "Delay (ms)", 800, 100, 5000, 50).group("General"));
         add(new BoolSetting("rotate", "Look down to throw", true).group("General"));
-        add(new DoubleSetting("throwPitch", "Throw pitch", 85.0, 70.0, 90.0, 1.0).group("General"));
-        add(new BoolSetting("silentRotation", "Silent rotation", true).group("General"));
+        add(new DoubleSetting("throwPitch", "Throw angle", 85.0, 70.0, 90.0, 1.0).group("General"));
+        add(new BoolSetting("silentRotation", "Silent rotation (camera doesn't move)", true).group("General"));
         add(new BoolSetting("mainhandOnly", "Main hand only", false).group("General"));
-        add(new BoolSetting("switchToPot", "Pot even when not holding", true).group("Switch"));
-        add(new BoolSetting("switchBack", "Switch back after", true).group("Switch"));
+        add(new BoolSetting("switchToPot", "Auto-switch to a potion", true).group("Switch"));
+        add(new BoolSetting("switchBack", "Switch back to previous item", true).group("Switch"));
     }
 
     @Override

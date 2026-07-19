@@ -27,14 +27,14 @@ public final class AutoGapModule extends Module {
     private boolean switched = false;
 
     public AutoGapModule() {
-        super(BossPvpAddon.ID + ":autogap", "AutoGap", "Auto-eat gapples/food at health + hunger thresholds.");
+        super(BossPvpAddon.ID + ":autogap", "AutoGap", "Automatically eats golden apples or food when your health or hunger gets low.");
 
         add(new DoubleSetting("health", "Eat below HP", 14.0, 1.0, 19.5, 0.5).group("General"));
         add(new IntSetting("hunger", "Eat below hunger", 16, 0, 20, 1).group("General"));
         add(new BoolSetting("preferGapInCombat", "Prefer gapple in combat", true).group("General"));
         add(new BoolSetting("eatNormalFood", "Eat normal food too", true).group("General"));
         add(new BoolSetting("pauseOnMove", "Pause while moving", false).group("General"));
-        add(new BoolSetting("reEquip", "Re-equip previous item", true).group("General"));
+        add(new BoolSetting("reEquip", "Switch back to previous item", true).group("General"));
     }
 
     @Override

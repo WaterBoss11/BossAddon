@@ -26,25 +26,25 @@ public final class AntiKnockbackModule extends Module {
     private long prevKaAttackMs = 0L;
 
     public AntiKnockbackModule() {
-        super(BossPvpAddon.ID + ":antiknockback", "Anti-Knockback", "Reduce or cancel knockback. Packet-aware, paced, anticheat-safe defaults.");
+        super(BossPvpAddon.ID + ":antiknockback", "Anti-Knockback", "Reduces or cancels the knockback you take when hit. Defaults are safe for most servers.");
 
         add(new ChoiceSetting("mode", "Mode", "Reduce", "Reduce", "Cancel", "JumpReset").group("General"));
         add(new IntSetting("horizontal", "Horizontal reduction", 50, 0, 100, 1).formatter(v -> v + "%").group("General"));
         add(new IntSetting("vertical", "Vertical reduction", 30, 0, 100, 1).formatter(v -> v + "%").group("General"));
-        add(new IntSetting("chance", "Chance", 100, 0, 100, 1).formatter(v -> v + "%").group("General"));
+        add(new IntSetting("chance", "Chance to apply", 100, 0, 100, 1).formatter(v -> v + "%").group("General"));
         add(new BoolSetting("onlyWhileAttacking", "Only while attacking", false).group("General"));
         add(new BoolSetting("onlyPlayers", "Only when a player is near", false).group("General"));
         add(new BoolSetting("reduceWhileSprinting", "Reduce while sprinting", true).group("General"));
 
         add(new BoolSetting("wtap", "W-tap (sprint reset)", false).group("W-tap"));
         add(new ChoiceSetting("wtapTrigger", "Trigger", "On hit", "On hit", "On hurt", "Both")
-            .description("On hit = after YOU attack (offensive). On hurt = when you take knockback (defensive).").group("W-tap"));
-        add(new IntSetting("tapTicks", "Tap ticks", 1, 1, 3, 1)
-            .description("How many ticks to release W before re-pressing it (resets sprint).").group("W-tap"));
+            .description("On hit = right after you attack someone. On hurt = when you get knocked back. Both = either one.").group("W-tap"));
+        add(new IntSetting("tapTicks", "Tap length", 1, 1, 3, 1)
+            .description("How long to let go of W before pressing it again (in game ticks). 1 is usually best.").group("W-tap"));
         add(new BoolSetting("wtapOnlyForward", "Only while moving forward", true)
-            .description("No-op if you aren't actually holding W (nothing to reset).").group("W-tap"));
-        add(new BoolSetting("superKb", "Super KB (offensive W-tap on hit)", false)
-            .description("Release W on each of your attacks to maximise knockback DEALT (independent of the W-tap toggle).").group("W-tap"));
+            .description("Skips the W-tap when you aren't holding W (there is nothing to reset).").group("W-tap"));
+        add(new BoolSetting("superKb", "Super knockback (W-tap every hit)", false)
+            .description("Briefly releases W on every attack so your hits knock enemies back further. Works even if W-tap is off.").group("W-tap"));
     }
 
     @Override

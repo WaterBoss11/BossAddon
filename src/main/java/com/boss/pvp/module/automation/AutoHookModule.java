@@ -40,21 +40,21 @@ public final class AutoHookModule extends Module {
     public AutoHookModule() {
         super(BossPvpAddon.ID + ":autohook", "AutoHook", "Cast a fishing rod at an attacker to break their combo.");
 
-        add(RegistryListSetting.entityTypes("entities", "Entities", "minecraft:player"));
+        add(RegistryListSetting.entityTypes("entities", "Targets", "minecraft:player"));
         add(new IntSetting("hits", "Hits to trigger", 3, 1, 10, 1).group("Trigger"));
-        add(new IntSetting("window", "Window (ms)", 1500, 100, 5000, 50).group("Trigger"));
+        add(new IntSetting("window", "Combo window (ms)", 1500, 100, 5000, 50).group("Trigger"));
         add(new IntSetting("cooldown", "Cooldown (ms)", 1000, 0, 5000, 50).group("Trigger"));
         add(new ChoiceSetting("triggerMode", "Trigger mode", "Combo", "Combo", "On-attack").group("Trigger"));
 
         add(new DoubleSetting("range", "Range", 4.0, 1.0, 6.0, 0.1).group("Targeting")
-            .description("Vanilla reach. Higher is opt-in and may flag."));
+            .description("How close the attacker must be. The default matches normal reach; higher may be flagged by anticheat."));
         add(new ChoiceSetting("rotationMode", "Rotation", "Silent", "Silent", "Real", "None").group("Targeting"));
-        add(new ChoiceSetting("targetPriority", "Target", "Closest", "Closest", "Lowest HP").group("Targeting"));
-        add(new BoolSetting("raytrace", "Raytrace (only what you see)", true).group("Targeting"));
+        add(new ChoiceSetting("targetPriority", "Target priority", "Closest", "Closest", "Lowest HP").group("Targeting"));
+        add(new BoolSetting("raytrace", "Only targets you can see", true).group("Targeting"));
 
         add(new BoolSetting("reelAfterCast", "Reel after cast", true).group("Actions"));
         add(new BoolSetting("pullMode", "Pull (reel immediately)", false).group("Actions"));
-        add(new BoolSetting("switchBack", "Switch back after", true).group("Actions"));
+        add(new BoolSetting("switchBack", "Switch back to previous item", true).group("Actions"));
     }
 
     @Override
