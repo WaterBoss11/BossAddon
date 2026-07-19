@@ -1,17 +1,19 @@
 #!/bin/sh
-# Reject a push if ANY commit being pushed has a non-project author/committer identity.
-# Backstop for pre-commit: catches identities introduced by rebase, cherry-pick, `git commit -c ...`,
-# GIT_AUTHOR_* env, or commits pulled from elsewhere. Activate with: git config core.hooksPath .githooks
+# Reject a push if ANY commit being pushed has a non-project author/committer identity, OR whose
+# message carries an AI/tool co-author trailer. Backstop for pre-commit/commit-msg: catches things
+# introduced by rebase, cherry-pick, `git commit -c ...`, --no-verify, GIT_AUTHOR_* env, or commits
+# pulled from elsewhere. Activate with: git config core.hooksPath .githooks
 exp="WaterBoss11 <esadbulbul11@gmail.com>"
 zero="0000000000000000000000000000000000000000"
+pattern='co-authored-by|claude|anthropic|noreply@anthropic|generated with'
 status=0
 
 while read local_ref local_sha remote_ref remote_sha; do
   [ "$local_sha" = "$zero" ] && continue           # deleting a ref: nothing to check
   if [ "$remote_sha" = "$zero" ]; then
-    commits=$(git rev-list "$local_sha" --not --remotes)   # new remote ref: commits not already pushed
+    commits=$(git rev-list "$local_sha" --not --remotes)          # new remote ref: not-yet-pushed commits
   else
-    commits=$(git rev-list "$remote_sha..$local_sha")
+    commits=$(git rev-list "$remote_sha..$local_sha" 2>/dev/null) # force-push may drop an unknown old tip
   fi
   for c in $commits; do
     ident=$(git show -s --format='%an <%ae>|%cn <%ce>' "$c")
@@ -20,6 +22,11 @@ while read local_ref local_sha remote_ref remote_sha; do
     if [ "$a" != "$exp" ] || [ "$cm" != "$exp" ]; then
       echo "PUSH REJECTED: commit $c" >&2
       echo "  author='$a' committer='$cm' (expected '$exp')" >&2
+      status=1
+    fi
+    if git show -s --format='%B' "$c" | grep -iEq "$pattern"; then
+      echo "PUSH REJECTED: commit $c message has a forbidden co-author / tool-attribution trailer" >&2
+      git show -s --format='%B' "$c" | grep -inE "$pattern" | sed 's/^/    /' >&2
       status=1
     fi
   done

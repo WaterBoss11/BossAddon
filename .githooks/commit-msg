@@ -1,0 +1,17 @@
+#!/bin/sh
+# Reject commit messages carrying an AI/tool co-author trailer or tool/vendor identity.
+# The pre-commit/pre-push hooks only validate author/committer identity; this guards the MESSAGE
+# BODY, which is where a "Co-authored-by: <tool>" trailer or vendor mention would otherwise slip
+# through (as happened once and required a history rewrite to remove). Activate with:
+#   git config core.hooksPath .githooks
+msg_file="$1"
+pattern='co-authored-by|claude|anthropic|noreply@anthropic|generated with'
+
+if grep -iEq "$pattern" "$msg_file"; then
+  echo "COMMIT REJECTED: message contains a forbidden co-author / tool-attribution trailer." >&2
+  echo "  Offending line(s):" >&2
+  grep -inE "$pattern" "$msg_file" | sed 's/^/    /' >&2
+  echo "  This repo keeps AI/tool attribution out of commit history — remove the line(s) and retry." >&2
+  exit 1
+fi
+exit 0
