@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/LogoWithText.png" width="800" alt="BossAddon">
+  <img src="assets/BossAddonLogo.png" width="800" alt="BossAddon">
 </p>
 
 <p align="center"><sub>Logo by @WaterBoss11</sub></p>
