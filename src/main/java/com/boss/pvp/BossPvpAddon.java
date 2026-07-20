@@ -173,6 +173,10 @@ public final class BossPvpAddon extends AutismAddon {
         for (Module m : all) AutismAddons.modules().register(m);
         registeredModules = all;
 
+        // BossAddon halves: register this half with the group toggle (/bossaddon pvp on|off) and apply a
+        // persisted OFF state. The utility half registers itself from BossUtilityAddon.
+        com.boss.pvp.util.AddonHalves.registerPvp(all);
+
         // Flag reporting (kick / packet-kick / crash -> boss-pvp-flags Discord). Reads its webhook from a
         // LOCAL client config (not a repo secret) and flushes any crash report persisted before a hard crash.
         com.boss.pvp.flag.FlagReporter.init();
@@ -227,6 +231,12 @@ public final class BossPvpAddon extends AutismAddon {
 
             if (autoTestCountdown > 0 && --autoTestCountdown == 0) enableTestModules();
             com.boss.pvp.command.BossAutoTestCommand.tickClient();
+
+            // PVP half disabled -> genuinely inert: skip ALL pvp module ticking below (modules were also
+            // force-disabled by AddonHalves, silencing their mixin-driven hooks). Infra above (update
+            // check, relay, autotest plumbing) is NOT a module and keeps running.
+            if (!com.boss.pvp.util.AddonHalves.pvpOn()) return;
+
             killAura.pollFriendKey(mc);
             com.boss.pvp.util.CombatManager.tick();
             if (autoPot.isEnabled())       autoPot.tick(mc);

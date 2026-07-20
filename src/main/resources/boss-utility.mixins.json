@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "package": "com.boss.utility.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "BiomeColorsMixin",
+    "FogRendererMixin",
+    "SkyRendererMixin",
+    "FlagDisconnectMixin",
+    "FlagCrashMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -19,14 +19,17 @@
   "environment": "client",
   "entrypoints": {
     "client": [
-      "com.boss.pvp.BossPvpInit"
+      "com.boss.pvp.BossPvpInit",
+      "com.boss.pvp.BossAddonInit"
     ],
     "autism": [
-      "com.boss.pvp.BossPvpAddon"
+      "com.boss.pvp.BossPvpAddon",
+      "com.boss.utility.BossUtilityAddon"
     ]
   },
   "mixins": [
-    "boss-pvp.mixins.json"
+    "boss-pvp.mixins.json",
+    "boss-utility.mixins.json"
   ],
   "depends": {
     "java": ">=25",
