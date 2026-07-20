@@ -3,6 +3,7 @@ package com.boss.pvp.relay;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -22,13 +23,21 @@ class RelayModeTest {
     }
 
     @Test
-    void buttonLabelReflectsScope() {
+    void buttonLabelIsBrandedBossChatWithScopeAndDot() {
         RelayManager r = RelayManager.get();
         r.setMode(RelayManager.Mode.OFF);
-        assertEquals("Relay: off", r.buttonLabel());
+        String off = r.buttonLabel();
+        assertTrue(off.contains("BossChat:"), "branded BossChat, not Relay");
+        assertTrue(off.contains("off"));
+        assertTrue(off.contains("●"), "has the status dot icon");
+        assertTrue(off.contains("§7"), "off state is grey");
+        assertFalse(off.contains("Relay"), "old 'Relay' label must be gone");
+
         r.setMode(RelayManager.Mode.GLOBAL);
-        // Not authed in a unit test, so the label carries the "connecting" ellipsis.
-        assertTrue(r.buttonLabel().startsWith("Relay: GLOBAL"));
+        String global = r.buttonLabel();
+        assertTrue(global.contains("BossChat:") && global.contains("global"));
+        // Not authed in a unit test, so the connecting-state colour (§e) is used.
+        assertTrue(global.contains("§e"), "connecting state is yellow");
     }
 
     @Test

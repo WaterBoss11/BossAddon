@@ -26,6 +26,7 @@ public final class RelayConfig {
     private static final String URL_KEY = "relay.url";
     private static final String INVITE_KEY = "relay.invite";
     private static final String OFFLINE_KEY = "relay.offline";
+    private static final String PASSWORD_KEY = "relay.password";
 
     // Baked first-launch defaults. EMPTY in the public build → auto-populate is a
     // no-op and normal installs are unaffected. A PILOT build overrides these two
@@ -36,6 +37,7 @@ public final class RelayConfig {
     private static final String URL_ENV = "BOSS_PVP_RELAY_URL";
     private static final String INVITE_ENV = "BOSS_PVP_RELAY_INVITE";
     private static final String OFFLINE_ENV = "BOSS_PVP_RELAY_OFFLINE";
+    private static final String PASSWORD_ENV = "BOSS_PVP_RELAY_PASSWORD";
 
     /** The relay WebSocket URL, or null if unset. Must be {@code ws://} or {@code wss://} to be usable. */
     public static String url() {
@@ -54,6 +56,17 @@ public final class RelayConfig {
     /** True only when BOTH a valid URL and an invite code are present — the closed-pilot gate. */
     public static boolean isConfigured() {
         return url() != null && invite() != null;
+    }
+
+    /**
+     * Optional password used to CLAIM (and later resume) an unverified username, so a cracked/offline account
+     * can keep the same name across sessions. Only sent on the offline auth path. Sending it on a free name
+     * claims it; reconnecting to a claimed name requires the same password. Never used for verified accounts,
+     * and never lets an unverified user take a verified name (enforced relay-side).
+     */
+    public static String password() {
+        String v = resolve(PASSWORD_ENV, PASSWORD_KEY);
+        return v == null || v.isBlank() ? null : v;   // do NOT trim — passwords may legitimately have spaces
     }
 
     /**

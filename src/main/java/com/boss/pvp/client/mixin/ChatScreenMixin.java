@@ -38,9 +38,10 @@ public abstract class ChatScreenMixin extends Screen {
     private void bosspvp$addRelayToggle(CallbackInfo ci) {
         if (!RelayConfig.isConfigured()) return;
         RelayManager relay = RelayManager.get();
-        int w = 62, h = 14;
-        int x = this.width - w - 4;
-        int y = this.height - 32;   // just above the vanilla chat input line
+        int h = 16;
+        int w = this.font.width(RelayManager.buttonLabelWidest()) + 12;   // fits the widest state label
+        int x = 4;                    // LEFT side of the chat box
+        int y = this.height - 32;     // just above the vanilla chat input line
         Button button = Button.builder(Component.literal(relay.buttonLabel()), b -> {
             relay.cycleMode();
             b.setMessage(Component.literal(relay.buttonLabel()));
@@ -53,6 +54,13 @@ public abstract class ChatScreenMixin extends Screen {
         if (message == null || message.isEmpty() || message.startsWith("/")) return;
         RelayManager relay = RelayManager.get();
         if (!relay.shouldRedirectChat()) return;
+        // Preserve vanilla up-arrow recall: cancelling handleChatInput skips its own addRecentChat, so a
+        // relay message would never enter the history. Add it here exactly as vanilla would, then cancel.
+        if (addToHistory) {
+            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+            // 26.2: ChatComponent is reached via Gui -> Hud -> getChat() (vanilla's own handleChatInput path).
+            if (mc.gui != null && mc.gui.hud != null) mc.gui.hud.getChat().addRecentChat(message);
+        }
         relay.sendTyped(message);
         ci.cancel();   // consumed by the relay — do not also send to the Minecraft server
     }

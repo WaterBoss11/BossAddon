@@ -114,7 +114,8 @@ public final class RelayManager implements RelayClient.Handler {
                 case "hello"  -> onHello(str(o, "serverId"), bool(o, "allowUnverified", false));
                 case "authok" -> onAuthOk(bool(o, "verified", true));
                 case "msg"    -> onInboundMessage(o);
-                case "system" -> display("§7[Relay] " + str(o, "text"));
+                // Never render raw wire text: §-strip the server's system text before styling it.
+                case "system" -> display(BossChatFormat.system(RelaySanitizer.sanitize(str(o, "text"))));
                 case "error"  -> onError(str(o, "reason"));
                 default -> { /* unknown type — ignore */ }
             }
@@ -161,13 +162,12 @@ public final class RelayManager implements RelayClient.Handler {
                     auth.addProperty("username", name);
                     auth.addProperty("invite", RelayConfig.invite());
                     auth.addProperty("server", currentServerId());
+                    String pw = RelayConfig.password();   // claims/resumes the name if set (never sent for verified)
+                    if (pw != null) auth.addProperty("password", pw);
                     c.send(auth.toString());
-                    display("§e[Relay] Connecting as UNVERIFIED (offline) — your messages will be marked "
-                        + "§8(Unverified)§e to everyone.");
+                    display(BossChatFormat.connectingUnverified());
                 } else {
-                    display(RelayConfig.forceOffline()
-                        ? "§c[Relay] This relay is verified-only — it does not allow offline accounts."
-                        : "§c[Relay] Mojang session auth failed and this relay is verified-only — not connecting.");
+                    display(BossChatFormat.verifiedOnly(RelayConfig.forceOffline()));
                     fatal = true;   // won't fix on retry; user must /bossrelay reconnect
                     closeQuietly();
                 }
@@ -185,13 +185,11 @@ public final class RelayManager implements RelayClient.Handler {
         status = verified ? "connected" : "connected (unverified)";
         lastServer = null;
         reportServer(true);
-        display(verified
-            ? "§a[Relay] Connected (verified). Type in chat while relay is on, or use §f/bossrelay§a."
-            : "§a[Relay] Connected as §8(Unverified)§a. Others see your messages marked unverified.");
+        display(verified ? BossChatFormat.connectedVerified() : BossChatFormat.connectedUnverified());
     }
 
     private void onError(String reason) {
-        display("§c[Relay] Rejected: " + (reason == null ? "unknown" : reason));
+        display(BossChatFormat.rejected(reason));
         // Auth/gate rejections won't fix themselves on retry — stop hammering until the user reconnects.
         if (reason != null) {
             String r = reason.toLowerCase();
@@ -216,7 +214,7 @@ public final class RelayManager implements RelayClient.Handler {
     public void sendDm(String toUser, String text) { send("dm", toUser, text); }
 
     private void send(String scope, String to, String text) {
-        if (!authed) { display("§c[Relay] Not connected."); return; }
+        if (!authed) { display(BossChatFormat.notConnected()); return; }
         String clean = RelaySanitizer.sanitize(text);
         if (clean.isEmpty()) return;
         RelayClient c = client;
@@ -280,15 +278,25 @@ public final class RelayManager implements RelayClient.Handler {
 
     public void setMode(Mode m) { this.mode = m; }
 
-    /** Short label for the toggle button / status line. */
+    /**
+     * Styled label for the toggle button: a status dot coloured by state, then "BossChat: &lt;mode&gt;".
+     * Grey = off, yellow = connecting, green = connected+global, aqua = connected+server. Uses legacy § codes
+     * which the vanilla font renders inside the button.
+     */
     public String buttonLabel() {
-        String tag = switch (mode) {
-            case OFF -> "off";
-            case GLOBAL -> "GLOBAL";
-            case SERVER -> "server";
-        };
-        if (mode != Mode.OFF && !authed) tag += " …";
-        return "Relay: " + tag;
+        String color;
+        String tag;
+        switch (mode) {
+            case GLOBAL -> { color = authed ? "§a" : "§e"; tag = authed ? "global" : "global…"; }
+            case SERVER -> { color = authed ? "§b" : "§e"; tag = authed ? "server" : "server…"; }
+            default     -> { color = "§7"; tag = "off"; }
+        }
+        return color + "● §fBossChat: " + color + tag;
+    }
+
+    /** Plain (uncoloured) button text, for width measurement — the longest possible label. */
+    public static String buttonLabelWidest() {
+        return "● BossChat: global…";
     }
 
     // ---- display -------------------------------------------------------------------------------------
@@ -302,28 +310,11 @@ public final class RelayManager implements RelayClient.Handler {
         // Sanitize again on display — never render raw wire text into chat.
         String safe = RelaySanitizer.sanitize(text);
         if (safe.isEmpty()) return;
-        String who = markName(from, fromVerified);
-        String line = switch (scope == null ? "" : scope) {
-            case "server" -> "§a[Relay·server] " + who + "§7: §f" + safe;
-            case "dm" -> "§d[Relay·DM] " + who + " §7→ you: §f" + safe;
-            default -> "§b[Relay] " + who + "§7: §f" + safe;
-        };
-        display(line);
+        display(BossChatFormat.inbound(scope, from, fromVerified, safe));
     }
 
     private void echoLocal(String scope, String to, String text) {
-        String me = myVerified ? "§7you" : "§8(Unverified)§7 you";
-        String line = switch (scope) {
-            case "server" -> "§a[Relay·server] " + me + ": §f" + text;
-            case "dm" -> "§d[Relay·DM] " + me + " → §f" + to + "§7: §f" + text;
-            default -> "§b[Relay] " + me + ": §f" + text;
-        };
-        display(line);
-    }
-
-    /** Render a sender name with the unverified marker so it is never visually identical to a verified one. */
-    private static String markName(String name, boolean verified) {
-        return verified ? "§f" + name : "§8(Unverified)§f " + name;
+        display(BossChatFormat.outbound(scope, to, myVerified, text));
     }
 
     private void display(String s) {

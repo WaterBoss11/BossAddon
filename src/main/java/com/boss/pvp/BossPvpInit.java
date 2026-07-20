@@ -6,6 +6,9 @@ import com.boss.pvp.relay.RelayConfig;
 import com.boss.pvp.relay.RelayManager;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -27,26 +30,11 @@ public final class BossPvpInit implements ClientModInitializer {
                     .then(ClientCommands.literal("advanced").executes(ctx -> setMenuMode(true)))
                     .executes(ctx -> setMenuMode(!com.boss.pvp.util.MenuMode.advanced()))));
 
-            // Chat relay control (closed pilot). Guaranteed send path independent of the ChatScreen mixin;
-            // scope toggles, DMs, and status all live here. Registered always, but every action is inert
-            // unless the pilot gate (relay.url + relay.invite) is configured.
-            dispatcher.register(ClientCommands.literal("bossrelay")
-                .then(ClientCommands.literal("off").executes(ctx -> setRelayMode(RelayManager.Mode.OFF)))
-                .then(ClientCommands.literal("global").executes(ctx -> setRelayMode(RelayManager.Mode.GLOBAL)))
-                .then(ClientCommands.literal("server").executes(ctx -> setRelayMode(RelayManager.Mode.SERVER)))
-                .then(ClientCommands.literal("reconnect").executes(ctx -> relayReconnect()))
-                .then(ClientCommands.literal("g")
-                    .then(ClientCommands.argument("message", StringArgumentType.greedyString())
-                        .executes(ctx -> relaySend("global", null, StringArgumentType.getString(ctx, "message")))))
-                .then(ClientCommands.literal("s")
-                    .then(ClientCommands.argument("message", StringArgumentType.greedyString())
-                        .executes(ctx -> relaySend("server", null, StringArgumentType.getString(ctx, "message")))))
-                .then(ClientCommands.literal("dm")
-                    .then(ClientCommands.argument("user", StringArgumentType.word())
-                        .then(ClientCommands.argument("message", StringArgumentType.greedyString())
-                            .executes(ctx -> relaySend("dm", StringArgumentType.getString(ctx, "user"),
-                                StringArgumentType.getString(ctx, "message"))))))
-                .executes(ctx -> relayStatus()));
+            // BossChat control (closed pilot). Guaranteed send path independent of the ChatScreen mixin;
+            // scope toggles, DMs, and status all live here. Registered under /bosschat (primary) and
+            // /bossrelay (kept as a backward-compat alias). Inert unless the pilot gate is configured.
+            dispatcher.register(bossChatCommand("bosschat"));
+            dispatcher.register(bossChatCommand("bossrelay"));
         });
 
         // Server-side test harness can't enable client modules itself, so it sends this trigger packet;
@@ -67,13 +55,34 @@ public final class BossPvpInit implements ClientModInitializer {
         return 1;
     }
 
-    // ---- /bossrelay ----------------------------------------------------------------------------------
+    // ---- /bosschat (alias: /bossrelay) ---------------------------------------------------------------
+
+    /** The BossChat command tree, so it can be registered under both /bosschat and /bossrelay. */
+    private static LiteralArgumentBuilder<FabricClientCommandSource> bossChatCommand(String name) {
+        return ClientCommands.literal(name)
+            .then(ClientCommands.literal("off").executes(ctx -> setRelayMode(RelayManager.Mode.OFF)))
+            .then(ClientCommands.literal("global").executes(ctx -> setRelayMode(RelayManager.Mode.GLOBAL)))
+            .then(ClientCommands.literal("server").executes(ctx -> setRelayMode(RelayManager.Mode.SERVER)))
+            .then(ClientCommands.literal("reconnect").executes(ctx -> relayReconnect()))
+            .then(ClientCommands.literal("g")
+                .then(ClientCommands.argument("message", StringArgumentType.greedyString())
+                    .executes(ctx -> relaySend("global", null, StringArgumentType.getString(ctx, "message")))))
+            .then(ClientCommands.literal("s")
+                .then(ClientCommands.argument("message", StringArgumentType.greedyString())
+                    .executes(ctx -> relaySend("server", null, StringArgumentType.getString(ctx, "message")))))
+            .then(ClientCommands.literal("dm")
+                .then(ClientCommands.argument("user", StringArgumentType.word())
+                    .then(ClientCommands.argument("message", StringArgumentType.greedyString())
+                        .executes(ctx -> relaySend("dm", StringArgumentType.getString(ctx, "user"),
+                            StringArgumentType.getString(ctx, "message"))))))
+            .executes(ctx -> relayStatus());
+    }
 
     private static int setRelayMode(RelayManager.Mode mode) {
         if (relayGate()) return 1;
         RelayManager.get().setMode(mode);
-        relayMsg("§b[Relay] scope = " + mode.name().toLowerCase()
-            + (mode == RelayManager.Mode.OFF ? " (chat is normal)" : " (typed chat goes to relay)"));
+        relayMsg(com.boss.pvp.relay.BossChatFormat.scopeChanged(
+            mode.name().toLowerCase(), mode == RelayManager.Mode.OFF));
         return 1;
     }
 
@@ -89,7 +98,7 @@ public final class BossPvpInit implements ClientModInitializer {
 
     private static int relayReconnect() {
         if (relayGate()) return 1;
-        relayMsg("§b[Relay] reconnecting…");
+        relayMsg(com.boss.pvp.relay.BossChatFormat.reconnecting());
         RelayManager.get().connect();
         return 1;
     }
@@ -97,14 +106,14 @@ public final class BossPvpInit implements ClientModInitializer {
     private static int relayStatus() {
         if (relayGate()) return 1;
         RelayManager r = RelayManager.get();
-        relayMsg("§b[Relay] status: §f" + r.status() + " §7| scope: §f" + r.mode().name().toLowerCase());
+        relayMsg(com.boss.pvp.relay.BossChatFormat.statusReport(r.status(), r.mode().name().toLowerCase()));
         return 1;
     }
 
     /** True (and prints a hint) when the relay isn't configured — the pilot gate. */
     private static boolean relayGate() {
         if (RelayConfig.isConfigured()) return false;
-        relayMsg("§7[Relay] Not enabled on this install (closed pilot — no invite configured).");
+        relayMsg(com.boss.pvp.relay.BossChatFormat.notEnabled());
         return true;
     }
 
