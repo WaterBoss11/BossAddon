@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class FlagCombinedPayloadTest {
 
     private static final String LOGO = "https://example/logo.png";
-    private static final String REPO = "WaterBoss11/boss-pvp";
+    private static final String REPO = "WaterBoss11/BossAddon";
     private static final String ZWSP = "​";
 
     private static JsonObject embedOf(String json) {

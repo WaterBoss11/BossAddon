@@ -41,8 +41,10 @@ public final class FlagReporter {
 
     private FlagReporter() {}
 
-    private static final String LOGO = "https://raw.githubusercontent.com/WaterBoss11/boss-pvp/master/assets/MainLogo.png";
-    private static final String REPO = "WaterBoss11/boss-pvp";
+    // Renamed with the repo (boss-pvp -> BossAddon). GitHub redirects the old name post-rename, so
+    // already-shipped jars keep working; these new URLs resolve once the rename is done.
+    private static final String LOGO = "https://raw.githubusercontent.com/WaterBoss11/BossAddon/master/assets/MainLogo.png";
+    private static final String REPO = "WaterBoss11/BossAddon";
     private static final String PENDING_REL = "boss-pvp/pending-flags.jsonl";
 
     // Cross-addon dedup: when BossUtility is also installed, boss-pvp is the designated reporter — it fires

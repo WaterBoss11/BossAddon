@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "boss-pvp",
   "version": "${version}",
-  "name": "Boss's PVP",
-  "description": "The best PvP addon for 2b2t | @WaterBoss11",
+  "name": "BossAddon",
+  "description": "PvP + utility addon for 2b2t — the merged home of Boss's PVP and BossUtility | @WaterBoss11",
   "authors": [
     "WaterBoss11"
   ],

@@ -22,7 +22,7 @@ const {
 } = process.env;
 
 const dryRun = DRY_RUN === '1';
-const [owner, repoName] = (GITHUB_REPOSITORY || 'WaterBoss11/boss-pvp').split('/');
+const [owner, repoName] = (GITHUB_REPOSITORY || 'WaterBoss11/BossAddon').split('/');
 const LOGO = `https://raw.githubusercontent.com/${owner}/${repoName}/master/assets/MainLogo.png`;
 
 const COLOR = {

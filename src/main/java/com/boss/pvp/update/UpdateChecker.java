@@ -31,7 +31,10 @@ public final class UpdateChecker {
 
     private UpdateChecker() {}
 
-    public static final String REPO = "WaterBoss11/boss-pvp";
+    // NOTE: must match the GitHub repo name. The repo is being renamed boss-pvp -> BossAddon; GitHub
+    // redirects the OLD name after a rename (existing released jars keep working), but this NEW name only
+    // resolves once the rename has actually been done — do not ship a release with this until then.
+    public static final String REPO = "WaterBoss11/BossAddon";
     private static final String MOD_ID = "boss-pvp";
     private static final String LATEST_API = "https://api.github.com/repos/" + REPO + "/releases/latest";
     public static final String RELEASES_PAGE = "https://github.com/" + REPO + "/releases/latest";

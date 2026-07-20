@@ -1,18 +1,20 @@
 <p align="center">
-  <img src="assets/LogoWithText.png" width="800" alt="Boss's PVP">
+  <img src="assets/LogoWithText.png" width="800" alt="BossAddon">
 </p>
 
 <p align="center"><sub>Logo by @WaterBoss11</sub></p>
 
-# Boss's PVP
+# BossAddon
 
-> An open-source PvP addon for AUTISM Client on Minecraft 26.2
+> An open-source PvP + utility addon for AUTISM Client on Minecraft 26.2 — the merged home of
+> **Boss's PVP** (combat) and **BossUtility** (QoL/utility), each toggleable as a half via
+> `/bossaddon pvp|utility on|off`.
 
-[![License](https://img.shields.io/github/license/WaterBoss11/boss-pvp?color=blue)](LICENSE)
+[![License](https://img.shields.io/github/license/WaterBoss11/BossAddon?color=blue)](LICENSE)
 ![Minecraft](https://img.shields.io/badge/Minecraft-26.2-brightgreen)
 ![AUTISM Client](https://img.shields.io/badge/AUTISM%20Client-3.4-orange)
-[![Release](https://img.shields.io/github/v/release/WaterBoss11/boss-pvp?color=success&label=release)](https://github.com/WaterBoss11/boss-pvp/releases/latest)
-[![Issues](https://img.shields.io/github/issues/WaterBoss11/boss-pvp)](https://github.com/WaterBoss11/boss-pvp/issues)
+[![Release](https://img.shields.io/github/v/release/WaterBoss11/BossAddon?color=success&label=release)](https://github.com/WaterBoss11/BossAddon/releases/latest)
+[![Issues](https://img.shields.io/github/issues/WaterBoss11/BossAddon)](https://github.com/WaterBoss11/BossAddon/issues)
 
 A combat addon for AUTISM Client. It adds 31 modules and 3 HUDs covering crystal PvP, melee, survival
 automation, movement, and defense. Modules use real vanilla explosion-damage math, silent server-side
@@ -127,7 +129,7 @@ combat target to the list on the fly. The list persists via AUTISM's settings.
 # 2. Point JAVA_HOME at a JDK 25 install, then build:
 gradlew build          # Windows
 ./gradlew build        # macOS / Linux
-# Output: build/libs/boss-pvp-1.0.0.jar
+# Output: build/libs/boss-pvp-<version>.jar
 ```
 
 Match the versions in `gradle/libs.versions.toml` (minecraft, fabric, autism) to the AUTISM release you build
@@ -137,10 +139,12 @@ against.
 
 ## Installation
 
-1. Download the latest release from the [Releases](https://github.com/WaterBoss11/boss-pvp/releases/latest) page.
-2. Drop `boss-pvp-1.0.0.jar` into your `.minecraft/mods/` folder.
+1. Download the latest release from the [Releases](https://github.com/WaterBoss11/BossAddon/releases/latest) page.
+2. Drop `boss-pvp-<version>.jar` into your `.minecraft/mods/` folder.
 3. Launch with AUTISM Client 3.4 and Fabric API for Minecraft 26.2. The modules appear under the Boss's PVP
-   category.
+   and BossUtility addon categories — the two halves of BossAddon. Toggle either half with
+   `/bossaddon pvp|utility on|off`: turning a half off disables its modules and skips their ticking entirely,
+   and turning it back on restores exactly the modules that were enabled.
 
 ---
 
@@ -153,7 +157,7 @@ contains:
   connection** (VPN/proxy block, wrong loader, whitelist, ban), **Kicked** (kicked mid-game), **Timed out**,
   **Disconnected**, or **Crash**,
 - **your Minecraft username** (the reporting player's own name — never anyone else's),
-- which boss-pvp modules were enabled at that moment, and
+- which BossAddon modules were enabled at that moment, and
 - **a short excerpt of your client log from around the event** (roughly the last ~10–15 seconds plus a few
   seconds after), attached as a downloadable `flag-log-<timestamp>.txt` file, to help debugging.
 
@@ -168,9 +172,9 @@ occurrence of **your own** username (it's already sent as the Player field). **W
 removal:** log text is freeform, so **other players'** names in server-custom chat formats, or in a self-hosted
 (singleplayer/LAN) world's command output (e.g. `/give … to <name>`, `Teleported <name>`), may slip through —
 those aren't reliably distinguishable from ordinary log text, and we deliberately avoid blanket rules that would
-shred legitimate logs. Treat the file as "scrubbed, not guaranteed clean." If both boss-pvp and BossUtility are
-installed, the same excerpt rides on the single combined report. Reports are deduplicated so a reconnect loop
-can't spam the channel.
+shred legitimate logs. Treat the file as "scrubbed, not guaranteed clean." BossUtility now ships inside
+BossAddon: its flag reporter still exists but automatically defers to the main (Boss's PVP) reporter, so a
+single combined report goes out. Reports are deduplicated so a reconnect loop can't spam the channel.
 
 **To turn it off:** open the **Crash & Kick Reports** module and uncheck **"Report crashes & kicks"**. That
 opts you out completely — no report, and no log file, goes out.

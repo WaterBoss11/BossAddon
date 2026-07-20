@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class FlagPayloadTest {
 
     private static final String LOGO = "https://example/logo.png";
-    private static final String REPO = "WaterBoss11/boss-pvp";
+    private static final String REPO = "WaterBoss11/BossAddon";
     private static final String ZWSP = "​";
 
     // Most tests don't care about the username; inject a fixed one. The username-specific tests call
