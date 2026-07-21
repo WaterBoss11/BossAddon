@@ -2,7 +2,6 @@ package com.boss.pvp.flag;
 
 import com.boss.pvp.BossPvpAddon;
 
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.CrashReport;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -47,9 +46,9 @@ public final class FlagReporter {
     private static final String REPO = "WaterBoss11/BossAddon";
     private static final String PENDING_REL = "boss-pvp/pending-flags.jsonl";
 
-    // Cross-addon dedup: when BossUtility is also installed, boss-pvp is the designated reporter — it fires
-    // ONE combined embed (both addons' modules) to the dual channel, and BossUtility suppresses its own.
-    private static final String OTHER_MOD_ID = "boss-utility";
+    // Cross-addon dedup: when the BossUtility half is present, boss-pvp is the designated reporter — it fires
+    // ONE combined embed (both addons' modules) to the dual channel, and BossUtility suppresses its own. The
+    // utility half is detected by the presence of its bridge class (see otherLoaded), not by a Fabric mod id.
     private static final String OTHER_BRIDGE = "com.boss.utility.flag.FlagBridge";
 
     private static final long DEDUP_WINDOW_MS = 30_000L;
@@ -98,7 +97,7 @@ public final class FlagReporter {
                 + "BOSS_PVP_FLAGS_WEBHOOK or create " + FlagConfig.configPath() + " with webhook=<url>");
             return;
         }
-        if (FabricLoader.getInstance().isModLoaded(OTHER_MOD_ID)) {
+        if (otherLoaded()) {
             log("BossUtility detected — boss-pvp will report combined kick/crash flags for both addons.");
         }
         flushPending();
@@ -198,7 +197,19 @@ public final class FlagReporter {
 
     // Combined (BossUtility installed) -> dual channel, both addons' modules; else -> boss-pvp's own channel.
     private static String targetWebhook(boolean combined) {
-        return combined ? FlagConfig.dualWebhook() : FlagConfig.webhook();
+        return pickWebhook(combined, FlagConfig.webhook(), FlagConfig.dualWebhook());
+    }
+
+    /**
+     * Pick the webhook a report is sent to. A combined (both-halves) report goes to the dual channel — but if the
+     * dual channel isn't configured, it falls back to the single channel rather than resolving to null: a combined
+     * report must never silently mean "send nothing". A non-combined report always uses the single channel. A
+     * blank/null value counts as not configured. Pure and package-private for unit testing.
+     */
+    static String pickWebhook(boolean combined, String single, String dual) {
+        String d = (dual == null || dual.isBlank()) ? null : dual;
+        String s = (single == null || single.isBlank()) ? null : single;
+        return (combined && d != null) ? d : s;
     }
 
     private static String buildJson(FlagPayload.Type type, String reason, boolean combined) {
@@ -249,10 +260,17 @@ public final class FlagReporter {
         return out.isEmpty() ? null : out;
     }
 
-    /** Whether BossUtility is also installed — then boss-pvp reports one combined embed for both addons. */
+    /**
+     * Whether the BossUtility half is present — then boss-pvp reports one combined embed for both addons.
+     * BossUtility is now bundled inside the same {@code bossaddon} Fabric mod (not a separate mod), so
+     * {@code isModLoaded("boss-utility")} no longer detects it. We detect it by the PRESENCE OF ITS BRIDGE CLASS
+     * instead — the same robust approach the utility side already uses to detect boss-pvp — so combined reporting
+     * still works after the merge. {@code initialize = false}: just probe for the class, don't run its static init.
+     */
     private static boolean otherLoaded() {
         try {
-            return FabricLoader.getInstance().isModLoaded(OTHER_MOD_ID);
+            Class.forName(OTHER_BRIDGE, false, FlagReporter.class.getClassLoader());
+            return true;
         } catch (Throwable t) {
             return false;
         }
