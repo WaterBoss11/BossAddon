@@ -4,10 +4,11 @@
 # UpdateChecker compares against the latest GitHub release tag. It MUST track the release tag: every
 # release bumps this and the git tag together (e.g. tag v1.9.1 <-> mod-version 1.9.1). The old "jar stays
 # at 1.0.0 while tags advance" convention is dropped — it made the UpdateChecker report a permanent false
-# "outdated" notice. 1.11.1 is an identity/packaging patch: the mod id and jar were renamed to bossaddon
-# (jar is now bossaddon-<version>.jar; fabric id "bossaddon", `provides` "boss-pvp"). No new functionality,
-# and no settings reset — the internal module-id namespace and config file deliberately stay "boss-pvp".
-mod-version = "1.11.1"
+# "outdated" notice. 1.12.0 is a minor feature release: BossChat scope-tab bar + DM chat scope, the "?"
+# command prefix made fully optional with Tab-complete, and a real bug fix so the pvp/utility halves toggle
+# syncs with AUTISM's own module menu. Jar is bossaddon-<version>.jar; the config file and internal
+# module-id namespace deliberately stay "boss-pvp" (no settings reset).
+mod-version = "1.12.0"
 
 minecraft = "26.2"
 fabric-loader = "0.19.3"
