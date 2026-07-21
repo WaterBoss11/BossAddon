@@ -48,7 +48,8 @@ public final class FlagReporter {
     // it fires ONE combined embed (pulling BossUtility's modules via FlagBridge), so BossUtility suppresses
     // its own report here. If boss-pvp's toggle is off (or its bridge can't be reached), BossUtility falls
     // back to reporting independently — see suppressedByReporter().
-    private static final String REPORTER_MOD_ID = "boss-pvp";
+    // The main addon's Fabric mod id (renamed boss-pvp -> bossaddon). BossUtility defers to it when present.
+    private static final String REPORTER_MOD_ID = "bossaddon";
     private static final String REPORTER_BRIDGE = "com.boss.pvp.flag.FlagBridge";
 
     private static final long DEDUP_WINDOW_MS = 30_000L;

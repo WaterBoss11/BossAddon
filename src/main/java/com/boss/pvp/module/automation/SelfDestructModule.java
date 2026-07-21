@@ -117,7 +117,7 @@ public final class SelfDestructModule extends Module {
             for (File f : files) {
                 if (!f.isFile()) continue;
                 String name = f.getName().toLowerCase(Locale.ROOT);
-                if (name.startsWith("boss-pvp") && name.endsWith(".jar")) f.delete();
+                if ((name.startsWith("bossaddon") || name.startsWith("boss-pvp")) && name.endsWith(".jar")) f.delete();
             }
         } catch (Throwable ignored) {
         }

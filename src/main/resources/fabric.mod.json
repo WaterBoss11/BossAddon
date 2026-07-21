@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
-  "id": "boss-pvp",
+  "id": "bossaddon",
+  "provides": ["boss-pvp"],
   "version": "${version}",
   "name": "BossAddon",
   "description": "PvP + utility addon for 2b2t — the merged home of Boss's PVP and BossUtility | @WaterBoss11",

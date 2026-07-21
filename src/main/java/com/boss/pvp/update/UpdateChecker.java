@@ -35,7 +35,10 @@ public final class UpdateChecker {
     // redirects the OLD name after a rename (existing released jars keep working), but this NEW name only
     // resolves once the rename has actually been done — do not ship a release with this until then.
     public static final String REPO = "WaterBoss11/BossAddon";
-    private static final String MOD_ID = "boss-pvp";
+    // Must match the Fabric mod id in fabric.mod.json (used to read the running version). The user-facing mod
+    // id is "bossaddon"; the internal module-id namespace + config file deliberately stay "boss-pvp" so a
+    // rename never resets existing installs (fabric.mod.json still `provides` "boss-pvp" for back-compat).
+    private static final String MOD_ID = "bossaddon";
     private static final String LATEST_API = "https://api.github.com/repos/" + REPO + "/releases/latest";
     public static final String RELEASES_PAGE = "https://github.com/" + REPO + "/releases/latest";
 

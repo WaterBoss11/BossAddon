@@ -129,7 +129,7 @@ combat target to the list on the fly. The list persists via AUTISM's settings.
 # 2. Point JAVA_HOME at a JDK 25 install, then build:
 gradlew build          # Windows
 ./gradlew build        # macOS / Linux
-# Output: build/libs/boss-pvp-<version>.jar
+# Output: build/libs/bossaddon-<version>.jar
 ```
 
 Match the versions in `gradle/libs.versions.toml` (minecraft, fabric, autism) to the AUTISM release you build
@@ -140,7 +140,7 @@ against.
 ## Installation
 
 1. Download the latest release from the [Releases](https://github.com/WaterBoss11/BossAddon/releases/latest) page.
-2. Drop `boss-pvp-<version>.jar` into your `.minecraft/mods/` folder.
+2. Drop `bossaddon-<version>.jar` into your `.minecraft/mods/` folder.
 3. Launch with AUTISM Client 3.4 and Fabric API for Minecraft 26.2. The modules appear under the Boss's PVP
    and BossUtility addon categories — the two halves of BossAddon. Toggle either half with
    `?bossaddon pvp|utility on|off`: turning a half off disables its modules and skips their ticking entirely,

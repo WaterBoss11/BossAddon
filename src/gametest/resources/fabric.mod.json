@@ -8,7 +8,7 @@
     "fabric-client-gametest": ["com.boss.pvp.test.BossPvpClientGameTest"]
   },
   "depends": {
-    "boss-pvp": "*",
+    "bossaddon": "*",
     "fabric-api": "*"
   }
 }
