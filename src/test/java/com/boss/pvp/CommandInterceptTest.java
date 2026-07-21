@@ -136,4 +136,20 @@ class CommandInterceptTest {
             assertTrue(BossAddonInit.shouldIntercept(m), "must be intercepted so it can't be sent: " + m);
         }
     }
+
+    // ---- explicit "party invite <user>" keyword (additive; bare "party <user>" kept as an alias) ---------
+
+    @Test
+    void partyInviteKeywordAndBareShortcutBothRecognized() {
+        // Explicit keyword, short and full forms.
+        assertTrue(BossAddonInit.isRecognizedCommand("party invite Steve"), "party invite <user>");
+        assertTrue(BossAddonInit.isRecognizedCommand("bossaddon party invite Steve"), "bossaddon party invite <user>");
+        // Bare shortcut still works (kept as an alias, not replaced).
+        assertTrue(BossAddonInit.isRecognizedCommand("party Steve"), "bare party <user> still invites");
+        // "invite" is offered as a party subcommand, identically for the short and full forms.
+        assertTrue(BossAddonInit.suggest("party ").contains("invite"), "party subs: " + BossAddonInit.suggest("party "));
+        assertEquals(BossAddonInit.suggest("party "), BossAddonInit.suggest("bossaddon party "));
+        // A partial narrows to it.
+        assertEquals(java.util.List.of("invite"), BossAddonInit.suggest("party inv"));
+    }
 }

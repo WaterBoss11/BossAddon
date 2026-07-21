@@ -55,6 +55,16 @@ public final class BossAddonInit implements ClientModInitializer {
     private static final CommandDispatcher<Object> DISPATCHER = new CommandDispatcher<>();
     private static final Object SOURCE = new Object();
 
+    // A second, FLAT tree used only to drive the native vanilla command-suggestion dropdown for "?" input.
+    // Here the subcommands are registered at the TOP level (not under a "bossaddon" root), so parsing the text
+    // from the point where the subcommand begins produces Brigadier suggestions whose character ranges line up
+    // with the real chat-input string — which is what lets us hand them to vanilla's own CommandSuggestions
+    // widget (see BossCommandSuggestionsMixin). Both prefix forms are served from this one tree: the short
+    // "?<sub>" form parses from just after "?", and the long "?bossaddon <sub>" form parses from just after
+    // "?bossaddon " (see parseSuggest / suggestContentStart), so each gets an aligned dropdown without a separate
+    // tree. Recognition/execution still go through DISPATCHER + canonical() above; this tree is suggestion-only.
+    private static final CommandDispatcher<Object> SUGGEST = new CommandDispatcher<>();
+
     /** One row of the help listing: the subcommand and a short, plain-language description (5-8 words). */
     private record Cmd(String usage, String desc) {}
 
@@ -80,6 +90,15 @@ public final class BossAddonInit implements ClientModInitializer {
             .then(partySubtree("party"))
             .then(helpSubtree("help"))
             .executes(ctx -> overview()));
+
+        // The flat suggestion tree: the same subcommands, registered at the top level (fresh builders — the
+        // helpers construct a new node graph each call). Drives the native "?" dropdown only.
+        SUGGEST.register(half(AddonHalves.PVP));
+        SUGGEST.register(half(AddonHalves.UTILITY));
+        SUGGEST.register(menuSubtree("menu"));
+        SUGGEST.register(chatSubtree("chat"));
+        SUGGEST.register(partySubtree("party"));
+        SUGGEST.register(helpSubtree("help"));
     }
 
     @Override
@@ -153,6 +172,58 @@ public final class BossAddonInit implements ClientModInitializer {
         java.util.List<String> out = new java.util.ArrayList<>(s.getList().size());
         for (com.mojang.brigadier.suggestion.Suggestion sug : s.getList()) out.add(sug.getText());
         return out;
+    }
+
+    /**
+     * Parse a full {@code "?..."} chat line (the {@code "?"} still attached) against the flat {@link #SUGGEST}
+     * tree, starting the reader at the point where the completable subcommand text begins — see
+     * {@link #suggestContentStart}. Because the reader keeps its absolute position, the Brigadier suggestions it
+     * produces carry character ranges that line up with the real chat-input string, for <b>both</b> the short
+     * {@code "?<sub>"} form and the long {@code "?bossaddon <sub>"} form (only the start offset differs; the
+     * subcommand/argument data is the same flat tree). So they can be fed straight to vanilla's
+     * {@code CommandSuggestions} widget. Suggestion-only; recognition and execution use {@link #DISPATCHER} via
+     * {@link #canonical}.
+     */
+    public static com.mojang.brigadier.ParseResults<Object> parseSuggest(String fullValue) {
+        String v = fullValue == null ? "" : fullValue;
+        com.mojang.brigadier.StringReader reader = new com.mojang.brigadier.StringReader(v);
+        reader.setCursor(Math.min(suggestContentStart(v), v.length()));
+        return SUGGEST.parse(reader, SOURCE);
+    }
+
+    /**
+     * The index in a {@code "?..."} line where the completable subcommand text starts, i.e. how far to advance the
+     * suggestion reader so its ranges land in the real input. For the long form {@code "?bossaddon <sub>"} that is
+     * just past {@code "?bossaddon "}; otherwise (the short {@code "?<sub>"} form) it is just past the {@code "?"}.
+     * Both then parse the same flat {@link #SUGGEST} tree, so the completions match while the ranges stay aligned.
+     */
+    private static int suggestContentStart(String fullValue) {
+        String longPrefix = PREFIX + ROOT + " ";                // "?bossaddon "
+        if (fullValue.startsWith(longPrefix)) return longPrefix.length();
+        return PREFIX.length();                                  // "?"
+    }
+
+    /**
+     * Native-dropdown completions for a full {@code "?..."} line at the given cursor. The returned suggestions'
+     * ranges are absolute positions in {@code fullValue} (e.g. {@code "?p"} at cursor 2 &rarr; {@code party}/
+     * {@code pvp}, each replacing {@code [1,2]}, so {@code apply} yields {@code "?party"}/{@code "?pvp"}). Pure and
+     * client-free (Brigadier only), so it is unit-testable; completes immediately (no async providers).
+     */
+    public static java.util.concurrent.CompletableFuture<com.mojang.brigadier.suggestion.Suggestions>
+            suggestionsFor(String fullValue, int cursor) {
+        return SUGGEST.getCompletionSuggestions(parseSuggest(fullValue), cursor);
+    }
+
+    /**
+     * Native-dropdown completions for a full {@code "?..."} line, completing at the END of the line (the whole
+     * final token). This is what the live dropdown uses: completing at the raw caret position would splice a
+     * suggestion into the middle of a token when the caret isn't at the end and duplicate the trailing characters
+     * (e.g. {@code "?pvp o"} with the caret before a stray char &rarr; {@code "?pvp offo"}). End-of-input
+     * completion always replaces the whole final token cleanly.
+     */
+    public static java.util.concurrent.CompletableFuture<com.mojang.brigadier.suggestion.Suggestions>
+            suggestionsFor(String fullValue) {
+        return suggestionsFor(fullValue, fullValue == null ? 0 : fullValue.length());
     }
 
     /**
@@ -251,6 +322,11 @@ public final class BossAddonInit implements ClientModInitializer {
             .then(lit("decline").executes(ctx -> relayParty("decline")))
             .then(lit("leave").executes(ctx -> relayParty("leave")))
             .then(lit("list").executes(ctx -> relayParty("list")))
+            // Explicit, clearly-named invite: "party invite <user>". Same handler as the bare "party <user>"
+            // shortcut below, which is kept as an additive alias so neither form breaks.
+            .then(lit("invite")
+                .then(strArg("user", StringArgumentType.word())
+                    .executes(ctx -> relayPartyInvite(StringArgumentType.getString(ctx, "user")))))
             .then(lit("msg")
                 .then(strArg("message", StringArgumentType.greedyString())
                     .executes(ctx -> relaySend("party", null, StringArgumentType.getString(ctx, "message")))))
@@ -435,7 +511,8 @@ public final class BossAddonInit implements ClientModInitializer {
             }
             case "party" -> {
                 msg("§6?party§r §7(private group chat)");
-                msg("  §f<user>§8 — §7Invite a player to your party");
+                msg("  §finvite §7<user>§8 — §7Invite a player to your party");
+                msg("  §f<user>§8 — §7Shortcut for §finvite <user>");
                 msg("  §faccept§8 / §fdecline§8 — §7Answer an invite");
                 msg("  §fleave§8 — §7Leave your current party");
                 msg("  §flist§8 — §7Show who is in the party");

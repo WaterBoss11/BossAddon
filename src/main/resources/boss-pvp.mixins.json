@@ -4,6 +4,8 @@
   "compatibilityLevel": "JAVA_25",
   "client": [
     "ChatScreenMixin",
+    "BossCommandSuggestionsMixin",
+    "CommandSuggestionsListAccessor",
     "PacketSanityMixin",
     "EntityHitboxMixin",
     "CrystalHideMixin",
