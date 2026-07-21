@@ -2,34 +2,25 @@ package com.boss.pvp.command;
 
 import com.boss.pvp.BossPvpAddon;
 
-import autismclient.commands.AutismCommandSource;
-import autismclient.commands.Command;
 import autismclient.modules.Module;
-
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.context.CommandContext;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
-public final class BossAutoTestCommand extends Command {
+/**
+ * Automated test harness — <b>not</b> a user command. {@link #trigger()} enables the PvP test modules and, after
+ * a short countdown driven by {@link #tickClient()}, runs the server-side {@code bosstest run} suite. It is
+ * invoked only by the {@link com.boss.pvp.net.AutoTestPayload} receiver (server-driven test path) and the
+ * per-tick hook in {@code BossPvpAddon}; there is no {@code /bossautotest} client command any more.
+ */
+public final class BossAutoTestCommand {
 
+    private BossAutoTestCommand() {}
+
+    private static final int SUCCESS = 1;
     private static int countdown = -1;
 
-    public BossAutoTestCommand() {
-        super("bossautotest", "Enable the test modules and auto-start the Boss PVP test suite.");
-    }
-
-    @Override
-    public void build(LiteralArgumentBuilder<AutismCommandSource> builder) {
-        builder.executes(this::run);
-    }
-
-    @Override
-    public int run(CommandContext<AutismCommandSource> ctx) {
-        return trigger();
-    }
-
+    /** Enable the test modules and arm the countdown that starts the suite. Returns a success code. */
     public static int trigger() {
         enableModules();
         msg("§a[BossPVP] Auto-test: modules enabled, starting in 5s...");

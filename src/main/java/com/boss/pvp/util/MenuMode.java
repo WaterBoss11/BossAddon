@@ -8,7 +8,7 @@ import com.boss.pvp.BossPvpAddon;
  * settings gated by {@code visibleWhen(MenuMode::advanced)} still function via config if already set — they are
  * just hidden from the menu until Advanced is on.
  *
- * <p>Deliberately NOT a module {@code Setting} — it's toggled by the {@code /bosspvp menu} command and persisted
+ * <p>Deliberately NOT a module {@code Setting} — it's toggled by the {@code ?bossaddon menu} command and persisted
  * in {@code boss-pvp.properties}, so it adds no setting key to any module (keeps the setting-key inventory
  * unchanged). One flip applies across every module at once.
  */

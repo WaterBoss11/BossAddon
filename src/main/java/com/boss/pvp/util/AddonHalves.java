@@ -6,7 +6,7 @@ import com.boss.pvp.BossPvpAddon;
 
 /**
  * The two halves of BossAddon — PVP (com.boss.pvp modules) and UTILITY (the merged com.boss.utility
- * modules) — each toggleable as a group via {@code /bossaddon pvp|utility on|off}.
+ * modules) — each toggleable as a group via {@code ?bossaddon pvp|utility on|off}.
  *
  * <p><b>Genuinely inert, not hidden:</b> turning a half OFF (1) force-disables every enabled module in
  * that half — so every mixin/render/packet hook that gates on {@code module.isEnabled()} short-circuits

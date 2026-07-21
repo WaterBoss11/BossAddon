@@ -173,7 +173,7 @@ public final class BossPvpAddon extends AutismAddon {
         for (Module m : all) AutismAddons.modules().register(m);
         registeredModules = all;
 
-        // BossAddon halves: register this half with the group toggle (/bossaddon pvp on|off) and apply a
+        // BossAddon halves: register this half with the group toggle (?bossaddon pvp on|off) and apply a
         // persisted OFF state. The utility half registers itself from BossUtilityAddon.
         com.boss.pvp.util.AddonHalves.registerPvp(all);
 
@@ -199,13 +199,6 @@ public final class BossPvpAddon extends AutismAddon {
         restoreHudVisibilityOnce();
 
         applyAlphabeticalMenuOrder(all);
-
-        autismclient.api.AddonRegistrationResult cmdResult =
-            AutismAddons.commands().registerDetailed(new com.boss.pvp.command.BossAutoTestCommand());
-        boolean cmdFound = autismclient.commands.AutismCommands.find("bossautotest") != null;
-        System.out.println("[BossPvP] command 'bossautotest' register: accepted=" + cmdResult.accepted()
-            + " id=" + cmdResult.id() + " reason=" + cmdResult.reason()
-            + " | find()=" + cmdFound + " | prefix='" + autismclient.commands.AutismCommands.effectivePrefix() + "'");
 
         // Auto-enable the test modules 3s after joining a localhost server (client-side, so they actually
         // turn on). Disable them again on disconnect so they don't linger after testing.

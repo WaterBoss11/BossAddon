@@ -93,7 +93,7 @@ public final class BossUtilityAddon extends AutismAddon {
         // ChestSwap is a one-shot; everything else is driven per-tick below.
         tickables = all;
 
-        // BossAddon halves: register this half with the group toggle (/bossaddon utility on|off) and apply
+        // BossAddon halves: register this half with the group toggle (?bossaddon utility on|off) and apply
         // a persisted OFF state. See com.boss.pvp.util.AddonHalves.
         com.boss.pvp.util.AddonHalves.registerUtility(all);
 
