@@ -4,9 +4,11 @@
 # UpdateChecker compares against the latest GitHub release tag. It MUST track the release tag: every
 # release bumps this and the git tag together (e.g. tag v1.9.1 <-> mod-version 1.9.1). The old "jar stays
 # at 1.0.0 while tags advance" convention is dropped — it made the UpdateChecker report a permanent false
-# "outdated" notice. 1.10.1 is a UX/behavior patch: Client settings category, shorter module
-# descriptions, a global Simple/Advanced menu mode, and the launch update check made always-on.
-mod-version = "1.10.1"
+# "outdated" notice. 1.11.0 is a significant feature release: the command system moved under a single
+# ?bossaddon root (old /bosspvp /bosschat /bossrelay /bossautotest removed), BossChat went public-facing
+# with party + party-warp, and three defensive features landed (Velocity Crash Guard, AntiEntityPush
+# Modify mode, reconfigure-loop guard).
+mod-version = "1.11.0"
 
 minecraft = "26.2"
 fabric-loader = "0.19.3"
