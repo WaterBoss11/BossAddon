@@ -10,24 +10,23 @@ public final class VelocityMath {
 
     /**
      * Maximum absolute value allowed for a single incoming motion axis (blocks/tick), used by the velocity
-     * crash guard. Chosen far above any legitimate speed — vanilla movement, elytra + firework boosts, riptide
-     * tridents and even extreme TNT/explosion launches all stay well under ~100 blocks/tick — and far below the
-     * values that overflow Minecraft's own position/section math. Real crash reports carried ~1.8e38 / 2.8e38 /
-     * 2.1e38 per axis; this cap sits ~100x above anything legitimate and ~34 orders of magnitude below those.
+     * crash guard. Now sourced from the shared {@link com.boss.pvp.util.NumericSanity#MAX_MOTION_PER_AXIS} so the
+     * motion path and the wider packet-sanity guard share one definition. Chosen far above any legitimate speed —
+     * vanilla movement, elytra + firework boosts, riptide tridents and even extreme TNT/explosion launches all
+     * stay well under ~100 blocks/tick — and far below the values that overflow Minecraft's own position/section
+     * math (real crash reports carried ~1.8e38 / 2.8e38 / 2.1e38 per axis).
      */
-    public static final double MAX_MOTION_PER_AXIS = 1.0e4;
+    public static final double MAX_MOTION_PER_AXIS = com.boss.pvp.util.NumericSanity.MAX_MOTION_PER_AXIS;
 
     /**
      * Clamp one incoming motion component to a sane range so a malformed/malicious value can never reach
-     * vanilla's collision/section math and overflow it. {@code NaN} → 0 (no direction to preserve); {@code
-     * +/-Infinity} and any finite value beyond the cap → {@code +/-}{@link #MAX_MOTION_PER_AXIS}; every value
-     * already in range is returned unchanged (bit-for-bit), so legitimate speeds are never touched.
+     * vanilla's collision/section math and overflow it. Delegates to the shared
+     * {@link com.boss.pvp.util.NumericSanity#clampMotion}: {@code NaN} → 0 (no direction to preserve);
+     * {@code +/-Infinity} and any finite value beyond the cap → {@code +/-}{@link #MAX_MOTION_PER_AXIS}; every
+     * value already in range is returned unchanged (bit-for-bit), so legitimate speeds are never touched.
      */
     public static double clampMotion(double v) {
-        if (Double.isNaN(v)) return 0.0;
-        if (v >  MAX_MOTION_PER_AXIS) return  MAX_MOTION_PER_AXIS;   // also catches +Infinity
-        if (v < -MAX_MOTION_PER_AXIS) return -MAX_MOTION_PER_AXIS;   // also catches -Infinity
-        return v;
+        return com.boss.pvp.util.NumericSanity.clampMotion(v);
     }
 
     /** True when clamping would change any axis — i.e. some component is non-finite or beyond the cap. */
