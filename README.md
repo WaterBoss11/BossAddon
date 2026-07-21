@@ -146,12 +146,17 @@ against.
    `?bossaddon pvp|utility on|off`: turning a half off disables its modules and skips their ticking entirely,
    and turning it back on restores exactly the modules that were enabled.
 
-> **Command prefix — `?`, not `/`.** Every BossAddon command starts with `?` (e.g. `?bossaddon help`). `/` is a
-> real Minecraft command character sent to the server; `?` is not, so BossAddon intercepts it client-side. A
-> chat line is treated as a command **only** when it begins with `?bossaddon` as a complete word (followed by a
-> space or the end of the line). Anything else that starts with `?` — a lone `?`, `?hi`, `?bossaddonx`, or a
-> server's own `?`-prefixed chat commands — is sent as normal chat and never eaten. (`?` was chosen because it
-> can't collide with AUTISM's command prefix, which is one of `. % - _ * # @ & =`.)
+> **Command prefix — `?`, not `/`.** Every BossAddon command starts with `?` (e.g. `?help`). `/` is a real
+> Minecraft command character sent to the server; `?` is not, so BossAddon intercepts it client-side.
+>
+> **`bossaddon` is optional** — `?` on its own is the same as `?bossaddon`, `?help` == `?bossaddon help`,
+> `?pvp on` == `?bossaddon pvp on`, and so on. The full `?bossaddon …` form still works too.
+>
+> **Any chat line whose first character is `?` is always local-only and is never sent to the server or other
+> players — even if it isn't a recognized command.** If it's a valid command it runs; otherwise you get a local
+> *"Unknown command. Try `?help`."* notice so you know it didn't silently vanish. This means **you can't start
+> an ordinary chat message with `?`** — leave off the leading `?` if you actually want to say it in chat. (`?`
+> was chosen because it can't collide with AUTISM's command prefix, one of `. % - _ * # @ & =`.)
 
 ---
 
