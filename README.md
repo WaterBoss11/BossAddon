@@ -173,9 +173,12 @@ chatting. You can turn it off completely at any time (see **Opt-out** below).
 - **Party** — a private group you create by inviting people.
 - **DM** — one specific person. DMs go **only** to that recipient — never echoed, logged, or relayed anywhere else.
 
-**How to use it.** Open the chat box and click the **BossChat** toggle button (cycles Off → Global → Server →
-Party); while a scope is active, what you type is relayed instead of going to the server (lines starting with
-`/` are never touched). Or use the commands:
+**How to use it.** Open the chat box and use the **scope-tab bar** just above the input — a row of clickable
+**GLOBAL / SERVER / PARTY / DM** tabs, the active scope highlighted. Click a tab to send your typed chat to that
+scope (click the active tab again to turn it off). While a scope is active, what you type is relayed instead of
+going to the server (lines starting with `/` are never touched). As you type a `?` command, a native suggestion
+dropdown (the same one vanilla shows for `/` commands) lists the matching subcommands and arguments. Or use the
+commands:
 
 ```
 ?bossaddon chat global | server | off      choose where your typed chat goes
@@ -184,7 +187,8 @@ Party); while a scope is active, what you type is relayed instead of going to th
 ?bossaddon chat dm <user> <msg>             private message someone
 ?bossaddon chat reconnect                   reconnect to the relay
 ?bossaddon chat disable | enable            turn BossChat fully off / back on
-?bossaddon party <user>                     invite someone to your party
+?bossaddon party invite <user>              invite someone to your party
+?bossaddon party <user>                     shortcut for "party invite <user>"
 ?bossaddon party accept | decline | leave | list
 ?bossaddon party msg <msg>                  message your party
 ```
@@ -259,25 +263,28 @@ opts you out completely — no report, and no log file, goes out.
 
 ---
 
-## Crash safeguard (velocity clamp)
+## Crash safeguard (packet crash guard)
 
-Some servers send **malformed or malicious velocity** for your player — real crash reports from this addon
-carried per-axis momentum around **1.8e38 / 2.8e38 / 2.1e38**. Values that large overflow Minecraft's own
-position/section math and crash the client deep inside vanilla's `EntitySectionStorage`/collision code
+Some servers send **malformed or malicious numbers** for your player or nearby entities — real crash reports from
+this addon carried per-axis momentum around **1.8e38 / 2.8e38 / 2.1e38**. Values that large overflow Minecraft's
+own position/section math and crash the client deep inside vanilla's `EntitySectionStorage`/collision code
 (reproducible even with Lithium fully disabled, so it isn't an optimisation-mod bug — and the identical values
 turned up on two separate accounts, which points at a deliberate server-side trigger rather than a glitch).
 
-The **Velocity Crash Guard** module (under the **Client** category, **on by default**) caps incoming velocity to
-a sane maximum before vanilla ever processes it, so a bad value can't reach the code that crashes. The cap sits
-far above anything real gameplay produces — vanilla movement, elytra + firework boosts, riptide, ender pearls
-and even extreme TNT/explosion launches all stay orders of magnitude below it — so **legitimate high-speed
-motion is never affected**; only impossible values are clamped, and you get a one-time chat notice when it
-happens.
+The **Packet Crash Guard** module (under the **Client** category, **on by default**) checks incoming packet
+fields against one shared sanity ceiling before vanilla processes them. An out-of-range **velocity** for your
+player is clamped to a sane magnitude; a packet carrying an impossible **position or velocity** — explosion
+knockback, entity/player teleports, position syncs, entity spawns — is dropped before it is applied. What began
+as a single velocity-packet clamp is now this one shared check, so new overflow vectors are caught by the same
+mechanism instead of each needing a new fix. The ceiling sits far above anything real gameplay produces —
+vanilla movement, elytra + firework boosts, riptide, ender pearls, extreme TNT launches, and legitimate
+positions out to the world border all stay orders of magnitude below it — so **legitimate play is never
+affected**; only impossible values are caught, and you get a one-time chat notice when it happens.
 
 This is a **purely defensive, local-only** protection, the same honest category as the Anti-Knockback
 disclosure: it protects *your own client* from processing an impossible value. It never changes anything you
-send to the server and never deceives it. You can turn it off under **Client → Velocity Crash Guard**, but
-there's no reason to.
+send to the server and never fakes an acknowledgement. You can turn it off under **Client → Packet Crash
+Guard**, but there's no reason to.
 
 ---
 

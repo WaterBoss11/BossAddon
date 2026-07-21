@@ -35,9 +35,10 @@ public final class UpdateChecker {
     // redirects the OLD name after a rename (existing released jars keep working), but this NEW name only
     // resolves once the rename has actually been done — do not ship a release with this until then.
     public static final String REPO = "WaterBoss11/BossAddon";
-    // Must match the Fabric mod id in fabric.mod.json (used to read the running version). The user-facing mod
-    // id is "bossaddon"; the internal module-id namespace + config file deliberately stay "boss-pvp" so a
-    // rename never resets existing installs (fabric.mod.json still `provides` "boss-pvp" for back-compat).
+    // Must match the Fabric mod id in fabric.mod.json (used to read the running version). The mod id is
+    // "bossaddon"; module ids are scoped under it ("bossaddon:pvp:*" / "bossaddon:utility:*") because AUTISM
+    // rejects any module id that does not start with the mod id. The LOCAL CONFIG FILE name still stays
+    // "boss-pvp.properties", and fabric.mod.json still `provides` "boss-pvp" for dependency back-compat.
     private static final String MOD_ID = "bossaddon";
     private static final String LATEST_API = "https://api.github.com/repos/" + REPO + "/releases/latest";
     public static final String RELEASES_PAGE = "https://github.com/" + REPO + "/releases/latest";

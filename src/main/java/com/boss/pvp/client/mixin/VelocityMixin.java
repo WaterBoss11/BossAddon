@@ -21,7 +21,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * hook (so they can't fight over ordering on the same method):
  *
  * <ol>
- *   <li><b>Velocity Crash Guard</b> ({@link VelocityClampModule}, defensive, default on): if the server sent a
+ *   <li><b>Packet Crash Guard</b> ({@link VelocityClampModule}, defensive, default on): if the server sent a
  *       malformed/absurd motion (NaN/Infinity or a magnitude that overflows vanilla's own position/section math
  *       and crashes the client), replace it with a clamped sane value and drop the packet before vanilla — or
  *       the Anti-Knockback module — ever sees it. Purely local; nothing is sent to the server.</li>
