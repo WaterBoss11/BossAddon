@@ -287,4 +287,16 @@ public final class BossChatFormat {
     public static String disabled() {
         return status(GREY, it(GREY) + "BossChat disabled " + it(DGREY) + "(?bossaddon chat enable turns it back on)");
     }
+
+    /** The DM scope was clicked/typed with no target remembered yet — tell the user how to set one. */
+    public static String dmNoTarget() {
+        return status(GREY, it(GREY) + "no DM target yet " + it(DGREY) + MIDDOT + " "
+            + it(GREY) + "set one with " + it(WHITE) + "?bossaddon chat dm " + it(GREY) + "<user> [message]");
+    }
+
+    /** Confirmation that the DM scope is now pointed at {@code user}. */
+    public static String dmScopeSet(String user) {
+        return status(DM, it(DM) + "DM scope on " + it(DGREY) + MIDDOT + " "
+            + it(GREY) + "your chat now goes to " + it(WHITE) + (user == null ? "?" : user));
+    }
 }

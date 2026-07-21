@@ -344,7 +344,9 @@ class BossChatFormatTest {
             BossChatFormat.warpDeclinedBy("A", false),
             BossChatFormat.warpNonePending(),
             BossChatFormat.warpNotOnServer(),
-            BossChatFormat.warpConnecting("play.example.com:25565"));
+            BossChatFormat.warpConnecting("play.example.com:25565"),
+            BossChatFormat.dmNoTarget(),
+            BossChatFormat.dmScopeSet("Steve"));
         for (int i = 0; i < all.length(); i++) {
             char c = all.charAt(i);
             if (c > 0x7F && c != '§') { // '§' is the formatting marker; any OTHER non-ASCII must be proven

@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class RelayManager implements RelayClient.Handler {
 
-    public enum Mode { OFF, GLOBAL, SERVER, PARTY }
+    public enum Mode { OFF, GLOBAL, SERVER, PARTY, DM }
 
     private static final RelayManager INSTANCE = new RelayManager();
     public static RelayManager get() { return INSTANCE; }
@@ -52,6 +52,9 @@ public final class RelayManager implements RelayClient.Handler {
 
     private volatile RelayClient client;
     private volatile Mode mode = Mode.OFF;
+    // The remembered DM target for the DM send-scope: set by "?bossaddon chat dm <user>[ <msg>]" and reused by
+    // the DM scope tab / DM scope so typed chat goes to them. Null until a DM has been addressed at least once.
+    private volatile String dmTarget = null;
     private volatile boolean authed = false;
     private volatile boolean myVerified = true;   // whether OUR connection authenticated via Mojang
     private volatile boolean fatal = false;          // rejected (invite/allowlist/auth) — stop auto-retry until manual reconnect
@@ -229,18 +232,35 @@ public final class RelayManager implements RelayClient.Handler {
 
     /** Redirect a typed chat line (from the ChatScreen mixin) to the relay using the current scope. */
     public void sendTyped(String text) {
-        String scope = switch (mode) {
+        if (mode == Mode.DM) {
+            if (dmTarget == null) { display(BossChatFormat.dmNoTarget()); return; }
+            send("dm", dmTarget, text);
+            return;
+        }
+        send(wireScope(mode), null, text);
+    }
+
+    /** The wire scope string for a send mode. OFF is never sent, so it maps to global for safety. Pure/testable. */
+    public static String wireScope(Mode mode) {
+        return switch (mode) {
             case SERVER -> "server";
             case PARTY -> "party";
-            default -> "global";
+            case DM -> "dm";
+            default -> "global";   // GLOBAL (and OFF, which shouldRedirectChat already excludes)
         };
-        send(scope, null, text);
     }
 
     public void sendGlobal(String text) { send("global", null, text); }
     public void sendServer(String text) { send("server", null, text); }
     public void sendParty(String text) { send("party", null, text); }
-    public void sendDm(String toUser, String text) { send("dm", toUser, text); }
+
+    public void sendDm(String toUser, String text) {
+        if (toUser != null && !toUser.isBlank()) dmTarget = toUser.trim();   // remember the last DM target
+        send("dm", toUser, text);
+    }
+
+    /** The remembered DM target (or null), used by the DM scope + DM tab. */
+    public String dmTarget() { return dmTarget; }
 
     // ---- party actions (invite / accept / decline / leave / list) ------------------------------------
 
@@ -417,17 +437,54 @@ public final class RelayManager implements RelayClient.Handler {
     public boolean isAuthed() { return authed; }
     public String status() { return status; }
 
-    /** Cycle OFF → GLOBAL → SERVER → PARTY → OFF (the chat-toggle button). */
+    /** Cycle OFF → GLOBAL → SERVER → PARTY → OFF (legacy toggle button; the scope-tab bar is the primary UI). */
     public void cycleMode() {
         mode = switch (mode) {
             case OFF -> Mode.GLOBAL;
             case GLOBAL -> Mode.SERVER;
             case SERVER -> Mode.PARTY;
             case PARTY -> Mode.OFF;
+            case DM -> Mode.OFF;
         };
     }
 
     public void setMode(Mode m) { this.mode = m; }
+
+    // ---- scope-tab bar: single source of truth is `mode` (same as the ?bossaddon chat commands) --------
+
+    /** Next mode when a GLOBAL/SERVER/PARTY tab is clicked: activate it, or toggle back OFF if already active. */
+    public static Mode nextScope(Mode current, Mode clicked) {
+        return current == clicked ? Mode.OFF : clicked;
+    }
+
+    /** Next mode when the DM tab is clicked: OFF if already DM; DM if we have a target; otherwise no change. */
+    public static Mode nextDmMode(Mode current, boolean hasTarget) {
+        if (current == Mode.DM) return Mode.OFF;
+        return hasTarget ? Mode.DM : current;
+    }
+
+    /** GLOBAL/SERVER/PARTY tab clicked — switch scope (or toggle OFF). Mirrors {@code ?bossaddon chat <scope>}. */
+    public void toggleScope(Mode scope) {
+        mode = nextScope(mode, scope);
+    }
+
+    /** DM tab clicked — activate the DM scope to the remembered target, toggle off, or hint if no target set. */
+    public void toggleDmScope() {
+        if (mode != Mode.DM && dmTarget == null) {
+            display(BossChatFormat.dmNoTarget());   // never a silent no-op
+            return;
+        }
+        mode = nextDmMode(mode, dmTarget != null);
+    }
+
+    /** Point the DM scope at a user and activate it (from {@code ?bossaddon chat dm <user>} or the DM tab prompt). */
+    public void setDmScope(String toUser) {
+        if (toUser != null && !toUser.isBlank()) dmTarget = toUser.trim();
+        if (dmTarget != null) {
+            mode = Mode.DM;
+            display(BossChatFormat.dmScopeSet(dmTarget));
+        }
+    }
 
     /**
      * Styled label for the toggle button: a status dot coloured by state, then "BossChat: &lt;mode&gt;".
