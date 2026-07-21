@@ -1,5 +1,6 @@
 package com.boss.pvp.client.mixin;
 
+import com.boss.pvp.client.gui.BossSuggestionSource;
 import com.boss.pvp.relay.RelayConfig;
 import com.boss.pvp.relay.RelayManager;
 
@@ -29,28 +30,66 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * break the build — the guaranteed send path is the {@code ?bossaddon chat} command, this is the convenience path).
  *
  * <p>Also provides <b>Tab-completion</b> for {@code "?"} input: pressing Tab cycles through BossAddon's own
- * Brigadier completions (subcommands and their arguments). Vanilla's live suggestion dropdown
- * ({@code CommandSuggestions}) is hardcoded to {@code "/"} and the vanilla dispatcher, so it can't be reused for
- * {@code "?"} — this drives Tab-cycle from the addon's dispatcher instead (no dropdown).
+ * Brigadier completions (subcommands and their arguments), and a small custom-drawn
+ * {@link com.boss.pvp.client.gui.SuggestionPopupWidget} above the input lists those completions live as you type,
+ * highlighting the one Tab would select next. Vanilla's live suggestion dropdown ({@code CommandSuggestions}) is
+ * hardcoded to {@code "/"} and the vanilla dispatcher, so it can't be reused for {@code "?"} — both the Tab-cycle
+ * and the popup are driven from the addon's own Brigadier tree instead. This mixin is the single source of truth
+ * for the cycle state (see {@link BossSuggestionSource}); the popup only renders it.
  *
  * <p>The mixin declares {@code extends Screen} purely so it can call the inherited protected
  * {@code addRenderableWidget} and read {@code width}/{@code height}/{@code font}; the constructor is never used
  * at runtime (the mixin is merged into {@link ChatScreen}).
  */
 @Mixin(ChatScreen.class)
-public abstract class ChatScreenMixin extends Screen {
+public abstract class ChatScreenMixin extends Screen implements BossSuggestionSource {
 
     @Shadow protected EditBox input;
 
-    // Tab-completion cycle state for "?" input: recomputed when the completed-tokens base changes, cycled on
-    // repeated Tab. Vanilla's dropdown (CommandSuggestions) is hardcoded to "/" + the vanilla dispatcher, so
-    // this drives Tab-cycle from BossAddon's own Brigadier tree instead.
+    // Tab-completion cycle state for "?" input. Recomputed live as the typed text changes (so the popup narrows
+    // as you type) and kept stable across our own Tab insertions (so repeated Tab cycles the same list). Vanilla's
+    // dropdown (CommandSuggestions) is hardcoded to "/" + the vanilla dispatcher, so both the cycle and the popup
+    // run off BossAddon's own Brigadier tree instead.
     @Unique private java.util.List<String> bosspvp$completions;
-    @Unique private String bosspvp$completeBase;
     @Unique private int bosspvp$completeIndex;
+    @Unique private String bosspvp$lastText;      // input value the current list was computed for (typed changes)
+    @Unique private String bosspvp$lastApplied;   // input value we last set via Tab (so it isn't seen as a retype)
 
     private ChatScreenMixin(Component title) {
         super(title);
+    }
+
+    /**
+     * Refresh {@link #bosspvp$completions}/{@link #bosspvp$completeIndex} for the current input. Recomputes (and
+     * resets the highlight to the top) only when the user changed the text by typing — a value we set ourselves
+     * via Tab is remembered in {@link #bosspvp$lastApplied} and left alone, so repeated Tab keeps cycling one
+     * stable list instead of collapsing to the just-inserted token. Called both per-frame by the popup and at the
+     * start of a Tab press, so the two always agree.
+     */
+    @Unique
+    private void bosspvp$refreshCompletions() {
+        String text = this.input == null ? null : this.input.getValue();
+        if (text == null || !text.startsWith(com.boss.pvp.BossAddonInit.PREFIX)) {
+            bosspvp$completions = null;
+            bosspvp$completeIndex = 0;
+            bosspvp$lastText = null;
+            bosspvp$lastApplied = null;
+            return;
+        }
+        if (text.equals(bosspvp$lastApplied)) return;                          // our own insertion: keep list+index
+        if (text.equals(bosspvp$lastText) && bosspvp$completions != null) return;   // unchanged typed text: no work
+        String withoutPrefix = text.substring(com.boss.pvp.BossAddonInit.PREFIX.length());
+        bosspvp$completions = com.boss.pvp.BossAddonInit.suggest(withoutPrefix);
+        bosspvp$completeIndex = 0;                                             // typed: highlight the top match
+        bosspvp$lastText = text;
+        bosspvp$lastApplied = null;
+    }
+
+    @Override
+    public BossSuggestionSource.Model bossSuggestionModel() {
+        bosspvp$refreshCompletions();
+        java.util.List<String> items = bosspvp$completions == null ? java.util.List.of() : bosspvp$completions;
+        return new BossSuggestionSource.Model(items, bosspvp$completeIndex);
     }
 
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true, require = 0)
@@ -58,21 +97,19 @@ public abstract class ChatScreenMixin extends Screen {
         if (event.key() != 258) return;                  // GLFW_KEY_TAB
         String text = this.input == null ? null : this.input.getValue();
         if (text == null || !text.startsWith(com.boss.pvp.BossAddonInit.PREFIX)) return;   // only our "?" input
-        String withoutPrefix = text.substring(com.boss.pvp.BossAddonInit.PREFIX.length());
-        // Everything up to and including the last space is fixed; the final (partial) token gets completed.
-        int lastSpace = withoutPrefix.lastIndexOf(' ');
-        String base = lastSpace < 0 ? "" : withoutPrefix.substring(0, lastSpace + 1);
-        if (!base.equals(bosspvp$completeBase) || bosspvp$completions == null) {
-            bosspvp$completions = com.boss.pvp.BossAddonInit.suggest(withoutPrefix);
-            bosspvp$completeBase = base;
-            bosspvp$completeIndex = 0;
-        } else if (!bosspvp$completions.isEmpty()) {
-            bosspvp$completeIndex = (bosspvp$completeIndex + 1) % bosspvp$completions.size();
+        boolean cycling = text.equals(bosspvp$lastApplied);   // repeated Tab on a line we ourselves inserted
+        bosspvp$refreshCompletions();
+        if (bosspvp$completions == null || bosspvp$completions.isEmpty()) { cir.setReturnValue(true); return; }  // no match: swallow Tab
+        if (cycling) {
+            bosspvp$completeIndex = com.boss.pvp.client.SuggestionCycle.nextIndex(bosspvp$completeIndex, bosspvp$completions.size());
         }
-        if (bosspvp$completions.isEmpty()) { cir.setReturnValue(true); return; }   // no match: swallow Tab
+        String withoutPrefix = text.substring(com.boss.pvp.BossAddonInit.PREFIX.length());
         String completion = bosspvp$completions.get(bosspvp$completeIndex);
-        this.input.setValue(com.boss.pvp.BossAddonInit.PREFIX + base + completion);
+        String applied = com.boss.pvp.client.SuggestionCycle.applied(com.boss.pvp.BossAddonInit.PREFIX, withoutPrefix, completion);
+        this.input.setValue(applied);
         this.input.moveCursorToEnd(false);
+        bosspvp$lastApplied = applied;      // so the next refresh keeps this list and the cycle stays stable
+        bosspvp$lastText = applied;
         cir.setReturnValue(true);   // consumed Tab (don't let vanilla/CommandSuggestions also handle it)
     }
 
@@ -88,6 +125,13 @@ public abstract class ChatScreenMixin extends Screen {
         x = bosspvp$tab(x, y, h, font, "SERVER", RelayManager.Mode.SERVER, false, 0xFF66DD66);
         x = bosspvp$tab(x, y, h, font, "PARTY",  RelayManager.Mode.PARTY,  false, 0xFFFFB74D);
         x = bosspvp$tab(x, y, h, font, "DM",     null,                     true,  0xFFBA68C8);
+
+        // The "?" suggestion popup, bottom-anchored just above the tab row and growing upward. It draws nothing
+        // unless the current input is a "?" line with matches, so a non-"?" chat line shows only the tabs.
+        int popupBottom = y - 2;
+        int popupHeight = 8 * 12;     // room for MAX_ROWS rows; the box only fills what the list needs
+        this.addRenderableWidget(new com.boss.pvp.client.gui.SuggestionPopupWidget(
+                4, popupBottom - popupHeight, 180, popupHeight, this));
     }
 
     /** Add one scope tab and return the x for the next tab (1px gap between tabs). */
