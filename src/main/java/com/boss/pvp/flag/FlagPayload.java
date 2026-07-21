@@ -46,6 +46,7 @@ public final class FlagPayload {
         KICKED("Kicked", 0xE67E22),                                // orange — server kicked us while in-world (anticheat/admin)
         TIMED_OUT("Timed out", 0x7F8C8D),                          // slate — connection timed out / reset
         DISCONNECTED("Disconnected", 0x95A5A6),                    // grey — connection lost mid-game, no reason
+        RECONFIGURE_LOOP("Reconfigure loop", 0x9B59B6),            // amethyst — auto-left a play->config loop
         CRASH("Crash", 0xC0392B);                                  // harsh red (distinct from commit/star 0xE74C3C)
 
         public final String label;

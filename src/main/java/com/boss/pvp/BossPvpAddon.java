@@ -88,6 +88,7 @@ public final class BossPvpAddon extends AutismAddon {
     public static com.boss.pvp.module.misc.FlagReportModule flagReport;
     public static com.boss.pvp.module.misc.UpdateCheckModule updateCheck;
     public static com.boss.pvp.module.misc.VelocityClampModule velocityClamp;
+    public static com.boss.pvp.module.misc.ReconfigureGuardModule reconfigureGuard;
 
     // Set by AutoCrystal while it is mid place->break cycle so KillAura defers and they don't fight
     // over the held hotbar slot (the "spaz"). Cleared by AutoCrystal on disable / when it stops acting.
@@ -164,13 +165,14 @@ public final class BossPvpAddon extends AutismAddon {
         flagReport = new com.boss.pvp.module.misc.FlagReportModule();
         updateCheck = new com.boss.pvp.module.misc.UpdateCheckModule();
         velocityClamp = new com.boss.pvp.module.misc.VelocityClampModule();
+        reconfigureGuard = new com.boss.pvp.module.misc.ReconfigureGuardModule();
 
         Module[] all = {
             autoPot, hitbox, autoCrystal, autoTotem, aimAssist, killAura, surround, criticals,
             offhand, shieldBreaker, autoArmor, antiKnockback, autoHook, scaffold, autoAnchor,
             bedAura, holeFiller, fastPlace, burrow, autoGap, invManager, trapper, autoXP,
             autoClutch, triggerBot, reach, autoWeapon, noSlowdown, autoLeave, noHurtCam, antiEntityPush,
-            selfDestruct, trajectory, autoShoot, velocity, flagReport, updateCheck, velocityClamp
+            selfDestruct, trajectory, autoShoot, velocity, flagReport, updateCheck, velocityClamp, reconfigureGuard
         };
         for (Module m : all) AutismAddons.modules().register(m);
         registeredModules = all;

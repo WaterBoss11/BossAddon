@@ -83,6 +83,11 @@ public final class FlagReporter {
     private static volatile Component packetKickReason = null;
     private static volatile long packetKickMs = 0L;
 
+    // Set just before the reconfigure guard closes the connection, so the disconnect that immediately follows
+    // is reported as RECONFIGURE_LOOP instead of the generic DISCONNECTED — one report through the same pipeline.
+    private static final long RECONFIG_MARK_WINDOW_MS = 5_000L;
+    private static volatile long reconfigureLoopMs = 0L;
+
     private static void log(String m) { System.out.println("[boss-pvp/flags] " + m); }
 
     /** Call once on addon init: start capturing logs, then flush any crash reports persisted before a crash. */
@@ -107,6 +112,11 @@ public final class FlagReporter {
         packetKickMs = System.currentTimeMillis();
     }
 
+    /** Reconfigure-guard hook: the next disconnect (which the guard is about to trigger) is a reconfigure loop. */
+    public static void markReconfigureLoop() {
+        reconfigureLoopMs = System.currentTimeMillis();
+    }
+
     /**
      * Mixin hook: the connection dropped. Classifies into a clear category using whether the server actively
      * sent a Disconnect packet (a recent {@link #markPacketKick}) and whether we had reached the in-world
@@ -120,7 +130,13 @@ public final class FlagReporter {
         packetKickReason = null;
 
         String reasonText = textOf(effective);
-        FlagPayload.Type type = FlagPayload.classifyDisconnect(serverSentReason, inWorld, reasonText);
+        FlagPayload.Type type;
+        if (System.currentTimeMillis() - reconfigureLoopMs < RECONFIG_MARK_WINDOW_MS) {
+            type = FlagPayload.Type.RECONFIGURE_LOOP;   // the reconfigure guard just closed this connection
+            reconfigureLoopMs = 0L;
+        } else {
+            type = FlagPayload.classifyDisconnect(serverSentReason, inWorld, reasonText);
+        }
         report(type, reasonText);
     }
 

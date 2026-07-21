@@ -14,7 +14,9 @@
     "NoSlowdownMixin",
     "NoHurtCamMixin",
     "AntiEntityPushMixin",
-    "VelocityMixin"
+    "VelocityMixin",
+    "CommonListenerConnectionAccessor",
+    "ReconfigureLoopMixin"
   ],
   "injectors": {
     "defaultRequire": 1
