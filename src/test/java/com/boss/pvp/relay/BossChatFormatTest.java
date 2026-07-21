@@ -46,17 +46,30 @@ class BossChatFormatTest {
     }
 
     @Test
-    void inboundServerUsesGreenBadgeWithScopeLabel() {
-        assertEquals("§a● §a[BossChat·server] §fBob§7: §fyo",
+    void inboundServerUsesGreenBadgeWithScopeByColourOnly() {
+        // Same [BossChat] anchor as global — scope is the GREEN colour, not a "·server" text tag.
+        assertEquals("§a● §a[BossChat] §fBob§7: §fyo",
             BossChatFormat.inbound("server", "Bob", true, "yo"));
     }
 
     @Test
     void inboundDmUsesPurpleBadgeAndDirectionArrow() {
         String line = BossChatFormat.inbound("dm", "Carol", true, "hey");
-        assertEquals("§d● §d[BossChat·DM] §fCarol §8→ §7you§7: §fhey", line);
+        assertEquals("§d● §d[BossChat] §fCarol §8→ §7you§7: §fhey", line);
         assertTrue(line.contains("→"), "DM shows a direction cue");
         assertTrue(line.contains("you"), "DM inbound is addressed to you");
+    }
+
+    @Test
+    void scopeIsNeverRepeatedAsTextTagOnAnyScope() {
+        // The simplification: one clean "[BossChat]" anchor per line, scope carried by colour only.
+        for (String scope : new String[] {"global", "server", "dm"}) {
+            String line = BossChatFormat.inbound(scope, "Bob", true, "hi");
+            assertTrue(line.contains("[BossChat] "), scope + " keeps the single brand anchor");
+            assertFalse(line.contains("[BossChat·"), scope + " must NOT carry a ·scope text tag: " + line);
+            assertFalse(line.contains("·server"), "no ·server text: " + line);
+            assertFalse(line.contains("·DM"), "no ·DM text: " + line);
+        }
     }
 
     @Test
@@ -88,13 +101,20 @@ class BossChatFormatTest {
     }
 
     @Test
-    void unverifiedSenderGetsIntentionalItalicGreyMarker() {
+    void unverifiedSenderRecedesMutedMarkerAndGreyName() {
         String who = BossChatFormat.sender("Mallory", false);
-        assertEquals("§8§o(unverified)§r §fMallory", who);
-        assertTrue(who.contains("§o"), "marker is italic (intentional, not a warning label)");
-        assertTrue(who.contains("§8"), "marker is grey/muted");
-        assertTrue(who.contains("§r"), "reset before the name so italic never leaks into it");
+        // Dim-grey italic marker AND a grey (NOT white) name, so the whole identity recedes.
+        assertEquals("§8§o(unverified)§r §7Mallory", who);
+        assertTrue(who.contains("§8§o"), "marker is dim-grey italic (secondary, not a warning label)");
+        assertTrue(who.contains("§r §7"), "name is grey, not the white used for verified senders");
+        assertFalse(who.contains("§f"), "unverified name must not use the white anchor colour");
         assertFalse(who.toLowerCase().contains("warning"));
+    }
+
+    @Test
+    void verifiedNameIsTheWhiteAnchorUnverifiedIsNot() {
+        assertTrue(BossChatFormat.sender("Steve", true).startsWith("§f"), "verified = white anchor");
+        assertTrue(BossChatFormat.sender("Steve", false).endsWith("§7Steve"), "unverified = grey, receded");
     }
 
     @Test
@@ -124,7 +144,7 @@ class BossChatFormatTest {
         assertEquals("§b● §b[BossChat] §7you§7: §fhi",
             BossChatFormat.outbound("global", null, true, "hi"));
         String dm = BossChatFormat.outbound("dm", "Dave", true, "yo");
-        assertEquals("§d● §d[BossChat·DM] §7you §8→ §fDave§7: §fyo", dm);
+        assertEquals("§d● §d[BossChat] §7you §8→ §fDave§7: §fyo", dm);
         // Inbound DM is "sender → you"; outbound DM is "you → recipient".
         assertTrue(dm.indexOf("you") < dm.indexOf("Dave"), "outbound reads you → recipient");
     }
@@ -133,6 +153,53 @@ class BossChatFormatTest {
     void unverifiedSelfIsMarkedInTheEcho() {
         String me = BossChatFormat.self(false);
         assertEquals("§8§o(unverified)§r §7you", me);
+    }
+
+    // ---- party scope + party events ------------------------------------------------------------------
+
+    @Test
+    void partyScopeUsesADistinctGoldAnchor() {
+        assertEquals("§6● §6[BossChat] §fAlice§7: §fhi",
+            BossChatFormat.inbound("party", "Alice", true, "hi"));
+        // Distinct from the other three scopes (a NEW colour, gold §6).
+        String p = BossChatFormat.inbound("party", "A", true, "x");
+        assertTrue(p.startsWith("§6"), "party = gold");
+        assertNotEquals(BossChatFormat.inbound("global", "A", true, "x"), p);
+        assertNotEquals(BossChatFormat.inbound("server", "A", true, "x"), p);
+        assertNotEquals(BossChatFormat.inbound("dm", "A", true, "x"), p);
+    }
+
+    @Test
+    void partyChatKeepsTheUnverifiedMarker() {
+        String line = BossChatFormat.inbound("party", "Eve", false, "hi");
+        assertTrue(line.contains("§8§o(unverified)§r §7Eve"), "the honesty marker stays in party chat too");
+    }
+
+    @Test
+    void partyInvitePromptShowsInviterAndHowToRespond() {
+        assertEquals(
+            "§6● §6[BossChat] §fBob §7invited you to a party §8· §7?bossaddon party §faccept §7or §fdecline",
+            BossChatFormat.partyInvite("Bob", true));
+        // An unverified inviter is still marked in the prompt.
+        assertTrue(BossChatFormat.partyInvite("Eve", false).contains("§8§o(unverified)§r §7Eve"));
+    }
+
+    @Test
+    void partyJoinedAndLeftAndDisbanded() {
+        assertEquals("§6● §6[BossChat] §fCarl §7joined the party §8(§73§8)",
+            BossChatFormat.partyJoined("Carl", true, 3));
+        assertEquals("§6● §6[BossChat] §fDan §7left the party",
+            BossChatFormat.partyLeft("Dan", true, false));
+        assertEquals("§6● §6[BossChat] §7the party disbanded",
+            BossChatFormat.partyLeft("Dan", true, true));
+    }
+
+    @Test
+    void partyListRostersEveryMemberWithMarkers() {
+        String list = BossChatFormat.partyList(new String[] {"A", "B"}, new boolean[] {true, false});
+        assertEquals("§6● §6[BossChat] §7party §8(§72§8)§7: §fA§7, §8§o(unverified)§r §7B", list);
+        // Empty / null-safe.
+        assertEquals("§6● §6[BossChat] §7party §8(§70§8)§7: ", BossChatFormat.partyList(null, null));
     }
 
     // ---- system/status lines are structurally distinct from chat -------------------------------------
@@ -168,7 +235,7 @@ class BossChatFormatTest {
     void connectedVerifiedKeepsTheUsefulHint() {
         String s = BossChatFormat.connectedVerified();
         assertTrue(s.contains("connected"));
-        assertTrue(s.contains("/bosschat"), "keeps the how-to hint");
+        assertTrue(s.contains("?bossaddon chat"), "keeps the how-to hint");
         assertTrue(s.contains("verified"));
     }
 
@@ -184,7 +251,7 @@ class BossChatFormatTest {
         assertTrue(BossChatFormat.verifiedOnly(false).toLowerCase().contains("mojang auth failed"));
     }
 
-    // ---- /bosschat command feedback shares the status style -----------------------------------------
+    // ---- ?bossaddon chat command feedback shares the status style -----------------------------------
 
     @Test
     void commandFeedbackUsesTheStatusFormNotTheChatBadge() {
@@ -264,7 +331,20 @@ class BossChatFormatTest {
             BossChatFormat.scopeChanged("global", false),
             BossChatFormat.reconnecting(),
             BossChatFormat.statusReport("connected", "global"),
-            BossChatFormat.notEnabled());
+            BossChatFormat.notEnabled(),
+            BossChatFormat.inbound("party", "A", true, "b"),
+            BossChatFormat.partyInvite("A", true),
+            BossChatFormat.partyJoined("A", true, 2),
+            BossChatFormat.partyLeft("A", true, false),
+            BossChatFormat.partyList(new String[] {"A", "B"}, new boolean[] {true, false}),
+            BossChatFormat.warpRequest("A", true, "play.example.com:25565"),
+            BossChatFormat.warpSent("A"),
+            BossChatFormat.warpSent(null),
+            BossChatFormat.warpDeclined(),
+            BossChatFormat.warpDeclinedBy("A", false),
+            BossChatFormat.warpNonePending(),
+            BossChatFormat.warpNotOnServer(),
+            BossChatFormat.warpConnecting("play.example.com:25565"));
         for (int i = 0; i < all.length(); i++) {
             char c = all.charAt(i);
             if (c > 0x7F && c != '§') { // '§' is the formatting marker; any OTHER non-ASCII must be proven

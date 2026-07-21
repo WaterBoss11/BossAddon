@@ -10,14 +10,14 @@ package com.boss.pvp.relay;
  *   <li><b>Recognition dot.</b> Every BossChat line — chat AND status — starts with a "●" coloured by
  *       scope/state, so the feature is spottable at a glance in a busy chat log (and it mirrors the dot on
  *       the chat-toggle button).</li>
- *   <li><b>Chat messages</b> use a bright, scope-coloured badge ({@code [BossChat]} / {@code [BossChat·server]}
- *       / {@code [BossChat·DM]}), a white sender name, a grey "{@code :}" separator and a white body. Scope is
- *       encoded by BOTH colour and label — aqua global, green server, light-purple DM — so it never relies on
- *       colour alone.</li>
+ *   <li><b>Chat messages</b> lead with a single scope-coloured anchor — "{@code ● [BossChat] }" — then a white
+ *       sender name, a grey "{@code :}" separator and a white body. Scope is carried by the anchor COLOUR alone
+ *       (aqua global, green server, light-purple DM); it is deliberately not repeated as a "·server"/"·DM"
+ *       text tag, so each line reads clean rather than like a stack of coloured fields.</li>
  *   <li><b>System / status lines</b> use a muted, <i>italic</i> "{@code BossChat — …}" form with no bracket and
  *       no "{@code name:}", so a status notice can never be mistaken for a real message at a glance.</li>
- *   <li><b>Unverified</b> senders get an understated italic-grey "{@code (unverified)}" marker — intentional,
- *       not a red warning label.</li>
+ *   <li><b>Unverified</b> senders recede into the background: a dim-grey italic "{@code (unverified)}" marker
+ *       AND a grey (not white) name, so they never compete with a verified white name.</li>
  *   <li><b>Boss</b> keeps the relay's server-side bold-black "{@code [Boss]}" prefix (untouched); the client
  *       adds only a subtle gold accent on the name so the owner reads as premium without shouting.</li>
  *   <li><b>DM</b> is visually distinct from global/server: its own light-purple badge plus an explicit
@@ -40,6 +40,7 @@ public final class BossChatFormat {
     static final String GLOBAL = "§b";   // aqua   — global scope
     static final String SERVER = "§a";   // green  — server scope
     static final String DM     = "§d";   // purple — direct message
+    static final String PARTY  = "§6";   // gold   — party scope (a warm colour, distinct from the cool aqua/green/purple)
     static final String GREY   = "§7";   // separators, "you", light scaffolding
     static final String DGREY  = "§8";   // muted markers / status scaffolding
     static final String WHITE  = "§f";   // names + body
@@ -69,15 +70,26 @@ public final class BossChatFormat {
 
     private static String norm(String scope) { return scope == null ? "" : scope; }
 
+    /**
+     * The one visual anchor a chat line leads with: a scope-coloured "● [BossChat] ". Scope is carried by
+     * this colour alone (aqua global / green server / purple DM) — it is deliberately NOT repeated as a
+     * "·server"/"·DM" text tag, so each line has a single clean brand anchor rather than a debug-log stack
+     * of coloured fields.
+     */
+    static String badge(String scopeColor) {
+        return scopeColor + DOT + " " + scopeColor + "[BossChat] ";
+    }
+
     // ---- chat messages ----------------------------------------------------------------------------------
 
     /** An inbound message from another user, in the given scope. {@code from} may carry the server Boss prefix. */
     public static String inbound(String scope, String from, boolean fromVerified, String body) {
         String who = sender(from, fromVerified);
         return switch (norm(scope)) {
-            case "server" -> SERVER + DOT + " " + SERVER + "[BossChat" + MIDDOT + "server] " + who + GREY + ": " + WHITE + body;
-            case "dm"     -> DM + DOT + " " + DM + "[BossChat" + MIDDOT + "DM] " + who + " " + DGREY + ARROW + " " + GREY + "you" + GREY + ": " + WHITE + body;
-            default       -> GLOBAL + DOT + " " + GLOBAL + "[BossChat] " + who + GREY + ": " + WHITE + body;
+            case "server" -> badge(SERVER) + who + GREY + ": " + WHITE + body;
+            case "party"  -> badge(PARTY) + who + GREY + ": " + WHITE + body;
+            case "dm"     -> badge(DM) + who + " " + DGREY + ARROW + " " + GREY + "you" + GREY + ": " + WHITE + body;
+            default       -> badge(GLOBAL) + who + GREY + ": " + WHITE + body;
         };
     }
 
@@ -85,18 +97,23 @@ public final class BossChatFormat {
     public static String outbound(String scope, String to, boolean meVerified, String body) {
         String me = self(meVerified);
         return switch (norm(scope)) {
-            case "server" -> SERVER + DOT + " " + SERVER + "[BossChat" + MIDDOT + "server] " + me + GREY + ": " + WHITE + body;
-            case "dm"     -> DM + DOT + " " + DM + "[BossChat" + MIDDOT + "DM] " + GREY + "you " + DGREY + ARROW + " " + WHITE + (to == null ? "?" : to) + GREY + ": " + WHITE + body;
-            default       -> GLOBAL + DOT + " " + GLOBAL + "[BossChat] " + me + GREY + ": " + WHITE + body;
+            case "server" -> badge(SERVER) + me + GREY + ": " + WHITE + body;
+            case "party"  -> badge(PARTY) + me + GREY + ": " + WHITE + body;
+            case "dm"     -> badge(DM) + GREY + "you " + DGREY + ARROW + " " + WHITE + (to == null ? "?" : to) + GREY + ": " + WHITE + body;
+            default       -> badge(GLOBAL) + me + GREY + ": " + WHITE + body;
         };
     }
 
-    /** Render a sender name with rank/verification markers. Never visually identical across trust levels. */
+    /**
+     * Render a sender name with rank/verification markers, never visually identical across trust levels.
+     * A verified name is the white anchor; the Boss keeps the server's bold-black "[Boss]" prefix with a
+     * gold name; an UNVERIFIED sender fully recedes — a dim-grey italic "(unverified)" marker AND a grey
+     * (not white) name — so it fades into the background instead of competing for attention.
+     */
     static String sender(String from, boolean verified) {
         String f = from == null ? "" : from;
         if (!verified) {
-            // Understated, deliberate marker — italic grey parenthetical, then the white name.
-            return it(DGREY) + "(unverified)" + RESET + " " + WHITE + f;
+            return it(DGREY) + "(unverified)" + RESET + " " + GREY + f;   // muted marker + grey name: recedes
         }
         if (f.startsWith(BOSS_PREFIX)) {
             // Keep the server's bold-black [Boss] prefix exactly; accent only the name, in gold.
@@ -105,11 +122,88 @@ public final class BossChatFormat {
         return WHITE + f;   // regular verified user (and any Boss-prefix drift degrades safely to this)
     }
 
-    /** Render "you" for the local echo, marked if our own connection is unverified. */
+    /** Render "you" for the local echo, marked (and receding) if our own connection is unverified. */
     static String self(boolean verified) {
         return verified
             ? GREY + "you"
             : it(DGREY) + "(unverified)" + RESET + " " + GREY + "you";
+    }
+
+    // ---- party events (gold party anchor; member names keep the (unverified) marker) --------------------
+
+    /** Prompt shown to someone who was invited to a party, with the accept/decline hint. */
+    public static String partyInvite(String from, boolean fromVerified) {
+        return badge(PARTY) + sender(from, fromVerified) + " " + GREY + "invited you to a party " + DGREY + MIDDOT
+            + " " + GREY + "?bossaddon party " + WHITE + "accept " + GREY + "or " + WHITE + "decline";
+    }
+
+    // ---- party warp (consent-gated: a request, never an automatic connect) ------------------------------
+
+    /**
+     * Prompt shown to a party member who received a warp request. The exact destination address is shown in
+     * full so the recipient can see where they'd be sent BEFORE choosing accept/decline — nothing connects
+     * until they type accept.
+     */
+    public static String warpRequest(String from, boolean fromVerified, String address) {
+        return badge(PARTY) + sender(from, fromVerified) + " " + GREY + "wants you to join them on "
+            + WHITE + (address == null ? "?" : address) + " " + DGREY + MIDDOT + " "
+            + GREY + "?bossaddon party warp " + WHITE + "accept " + GREY + "or " + WHITE + "decline";
+    }
+
+    /** Confirmation to the sender that a warp request went out. {@code target} is a name or "your party". */
+    public static String warpSent(String target) {
+        return status(OK, it(OK) + "warp request sent " + it(DGREY) + "to " + it(WHITE)
+            + (target == null ? "your party" : target));
+    }
+
+    /** You declined (or cleared) the incoming warp request. */
+    public static String warpDeclined() {
+        return status(GREY, it(GREY) + "warp request declined");
+    }
+
+    /** A member declined the warp you proposed. */
+    public static String warpDeclinedBy(String user, boolean verified) {
+        return badge(PARTY) + sender(user, verified) + " " + GREY + "declined your warp request";
+    }
+
+    /** There is no pending warp request to accept or decline. */
+    public static String warpNonePending() {
+        return status(GREY, it(GREY) + "no warp request to respond to");
+    }
+
+    /** You tried to propose a warp but aren't on a server you can send people to. */
+    public static String warpNotOnServer() {
+        return status(GREY, it(GREY) + "you're not on a server you can warp people to");
+    }
+
+    /** Accepted — now connecting to the destination the request named. */
+    public static String warpConnecting(String address) {
+        return status(WARN, it(WARN) + "joining " + it(WHITE) + (address == null ? "?" : address) + it(GREY) + ELL);
+    }
+
+    /** A member joined the party. */
+    public static String partyJoined(String user, boolean verified, int memberCount) {
+        return badge(PARTY) + sender(user, verified) + " " + GREY + "joined the party " + DGREY + "(" + GREY
+            + memberCount + DGREY + ")";
+    }
+
+    /** A member left, or the party disbanded (dropped below two members). */
+    public static String partyLeft(String user, boolean verified, boolean disbanded) {
+        return disbanded
+            ? badge(PARTY) + GREY + "the party disbanded"
+            : badge(PARTY) + sender(user, verified) + " " + GREY + "left the party";
+    }
+
+    /** The current party roster; each member keeps its (unverified) marker. */
+    public static String partyList(String[] names, boolean[] verified) {
+        int n = names == null ? 0 : names.length;
+        StringBuilder members = new StringBuilder();
+        for (int i = 0; i < n; i++) {
+            if (i > 0) members.append(GREY).append(", ");
+            boolean v = verified != null && i < verified.length && verified[i];
+            members.append(sender(names[i], v));
+        }
+        return badge(PARTY) + GREY + "party " + DGREY + "(" + GREY + n + DGREY + ")" + GREY + ": " + members;
     }
 
     // ---- system / status lines (muted italic; structurally distinct from chat) ---------------------------
@@ -132,7 +226,7 @@ public final class BossChatFormat {
 
     public static String connectedVerified() {
         return status(OK, it(OK) + "connected " + it(DGREY) + "(verified) " + it(GREY) + MIDDOT
-            + " type in chat or " + it(WHITE) + "/bosschat");
+            + " type in chat or " + it(WHITE) + "?bossaddon chat");
     }
 
     public static String connectedUnverified() {
@@ -164,7 +258,7 @@ public final class BossChatFormat {
         return status(GREY, it(GREY) + (text == null ? "" : text));
     }
 
-    // ---- /bosschat command feedback (same status form, so the command feels part of the feature) --------
+    // ---- ?bossaddon chat command feedback (same status form, so the command feels part of the feature) ---
 
     /** Response to a scope change: green when a scope is active, grey when turned off. */
     public static String scopeChanged(String modeName, boolean off) {
@@ -173,20 +267,24 @@ public final class BossChatFormat {
             + it(GREY) + (off ? "chat is normal" : "typed chat goes to BossChat"));
     }
 
-    /** Response to a manual /bosschat reconnect. */
+    /** Response to a manual ?bossaddon chat reconnect. */
     public static String reconnecting() {
         return status(WARN, it(GREY) + "reconnecting" + ELL);
     }
 
-    /** Response to /bosschat status: current connection state and active scope. */
+    /** Response to ?bossaddon chat status: current connection state and active scope. */
     public static String statusReport(String connStatus, String scope) {
         return status(GREY, it(GREY) + "status " + it(DGREY) + "= " + it(WHITE) + (connStatus == null ? "?" : connStatus)
             + " " + it(GREY) + MIDDOT + " scope " + it(DGREY) + "= " + it(WHITE) + (scope == null ? "?" : scope));
     }
 
-    /** Shown when the command runs on a non-pilot install (BossChat is inert). */
+    /** Shown when the command runs on an install with no relay URL configured (BossChat is inert). */
     public static String notEnabled() {
-        return status(GREY, it(GREY) + "not enabled on this install " + it(DGREY) + "(closed pilot " + DASH
-            + " no invite configured)");
+        return status(GREY, it(GREY) + "not enabled on this install " + it(DGREY) + "(no relay URL configured)");
+    }
+
+    /** Shown when the user fully opts out with ?bossaddon chat disable. */
+    public static String disabled() {
+        return status(GREY, it(GREY) + "BossChat disabled " + it(DGREY) + "(?bossaddon chat enable turns it back on)");
     }
 }

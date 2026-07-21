@@ -14,11 +14,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class RelayModeTest {
 
     @Test
-    void cycleWrapsThroughAllThreeScopes() {
+    void cycleWrapsThroughAllScopesIncludingParty() {
         RelayManager r = RelayManager.get();
         r.setMode(RelayManager.Mode.OFF);
         r.cycleMode(); assertEquals(RelayManager.Mode.GLOBAL, r.mode());
         r.cycleMode(); assertEquals(RelayManager.Mode.SERVER, r.mode());
+        r.cycleMode(); assertEquals(RelayManager.Mode.PARTY, r.mode());
         r.cycleMode(); assertEquals(RelayManager.Mode.OFF, r.mode());
     }
 
