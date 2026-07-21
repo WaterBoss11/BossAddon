@@ -48,7 +48,13 @@ import com.boss.pvp.module.combat.VelocityModule;
 import net.minecraft.client.Minecraft;
 
 public final class BossPvpAddon extends AutismAddon {
-    public static final String ID = "boss-pvp";
+    // Module/HUD id namespace. MUST begin with the Fabric mod id ("bossaddon") — AUTISM 3.4 rejects any addon
+    // module or HUD whose id does not start with "<modId>:" ("foreign namespace"). After the boss-pvp -> bossaddon
+    // rename this namespace was left as the bare "boss-pvp", which made AUTISM reject every module (nothing showed
+    // in the menu and the pvp/utility toggle had nothing real to toggle). It is now sub-namespaced under the mod
+    // id: "bossaddon:pvp:<module>". The utility half uses "bossaddon:utility:" so the two halves stay distinct and
+    // never collide (both ship a flagreport module). See ModuleNamespaceTest.
+    public static final String ID = "bossaddon:pvp";
 
     public static AutoPotModule autoPot;
     public static HitboxModule hitbox;
@@ -283,6 +289,10 @@ public final class BossPvpAddon extends AutismAddon {
 
         java.util.Map<String, java.util.List<Module>> byCat = new java.util.LinkedHashMap<>();
         for (Module m : modules) {
+            // A module AUTISM rejected (e.g. a namespace mismatch) is never assigned a category, so category() is
+            // null. Skip those rather than NPE here and abort the whole onInitialize — the rejection is already
+            // logged by AUTISM, and menu ordering only concerns modules that actually registered.
+            if (m == null || m.category() == null) continue;
             byCat.computeIfAbsent(m.category().name(), k -> new java.util.ArrayList<>()).add(m);
         }
 

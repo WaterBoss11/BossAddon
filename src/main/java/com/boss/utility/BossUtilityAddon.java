@@ -33,7 +33,10 @@ import net.minecraft.client.Minecraft;
  */
 public final class BossUtilityAddon extends AutismAddon {
 
-    public static final String ID = "boss-utility";
+    // Module id namespace. MUST begin with the Fabric mod id ("bossaddon") or AUTISM 3.4 rejects every module as
+    // "foreign namespace". Sub-namespaced under the mod id and distinct from the pvp half ("bossaddon:pvp:") so the
+    // two halves never collide. See BossPvpAddon#ID and ModuleNamespaceTest.
+    public static final String ID = "bossaddon:utility";
 
     // Movement
     public static SprintModule sprint;

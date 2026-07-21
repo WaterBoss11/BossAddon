@@ -25,7 +25,7 @@ import com.boss.pvp.BossPvpAddon;
  * only enabled flags — so every module keeps its exact configuration through any number of toggles.
  *
  * <p><b>Which modules belong to a half</b> is answered from AUTISM's <em>live</em> module registry, filtered by
- * the half's id-namespace ({@code boss-pvp:} vs {@code boss-utility:}) — see {@link #modulesFor}. This is the
+ * the half's id-namespace ({@code bossaddon:pvp:} vs {@code bossaddon:utility:}) — see {@link #modulesFor}. This is the
  * authoritative source and does not depend on each addon's {@code registerPvp}/{@code registerUtility} call
  * having populated a cached array: the utility half was silently enumerating zero modules because it relied on
  * that array, and the live-registry filter fixes it. The registration arrays remain a fallback for headless
@@ -66,7 +66,7 @@ public final class AddonHalves {
     public interface ModuleSource { java.util.List<ModuleView> all(); }
 
     // How each half's modules are enumerated. The truth is AUTISM's live module registry filtered by the half's
-    // id-namespace ("boss-pvp:" / "boss-utility:"), NOT the array captured at registration — so a half is found
+    // id-namespace ("bossaddon:pvp:" / "bossaddon:utility:"), NOT the array captured at registration — so a half is found
     // even if its addon's registerXxx() never ran (e.g. the second addon-in-one-mod init not populating it, which
     // silently zeroed the utility half). The registered arrays below remain a fallback for when the live registry
     // is unavailable (headless tests) or empty. Swapped in tests via setModuleSource.
@@ -146,8 +146,8 @@ public final class AddonHalves {
 
     /** The id-namespace a half's modules carry — how they are told apart in the live registry. */
     private static String idPrefix(String half) {
-        if (PVP.equals(half)) return BossPvpAddon.ID + ":";                      // "boss-pvp:"
-        if (UTILITY.equals(half)) return com.boss.utility.BossUtilityAddon.ID + ":";   // "boss-utility:"
+        if (PVP.equals(half)) return BossPvpAddon.ID + ":";                      // "bossaddon:pvp:"
+        if (UTILITY.equals(half)) return com.boss.utility.BossUtilityAddon.ID + ":";   // "bossaddon:utility:"
         return null;
     }
 

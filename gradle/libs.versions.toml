@@ -6,8 +6,9 @@
 # at 1.0.0 while tags advance" convention is dropped — it made the UpdateChecker report a permanent false
 # "outdated" notice. 1.12.1 is a patch release: a real bug fix so the ?bossaddon utility on|off toggle acts
 # on the actual utility modules (it was enumerating zero), plus a visual suggestion popup for "?" commands.
-# Jar is bossaddon-<version>.jar; the config file and internal module-id namespace deliberately stay
-# "boss-pvp" (no settings reset).
+# Jar is bossaddon-<version>.jar. The local config FILE stays "boss-pvp.properties", but module ids are now
+# scoped under the fabric mod id ("bossaddon:pvp:*" / "bossaddon:utility:*") — AUTISM 3.4 rejects any addon
+# module whose id does not start with the mod id, which had silently broken every module after the rename.
 mod-version = "1.12.1"
 
 minecraft = "26.2"
