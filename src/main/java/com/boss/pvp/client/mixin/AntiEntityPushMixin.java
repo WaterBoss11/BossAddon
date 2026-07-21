@@ -18,9 +18,18 @@ public abstract class AntiEntityPushMixin {
     private void bosspvp$antiPush(double x, double y, double z, CallbackInfo ci) {
         AntiEntityPushModule m = BossPvpAddon.antiEntityPush;
         if (m == null || !m.isEnabled()) return;
-        if ((Entity) (Object) this != Minecraft.getInstance().player) return;
+        Entity self = (Entity) (Object) this;
+        if (self != Minecraft.getInstance().player) return;
         if (m.onlyWhileSurrounded()
                 && (BossPvpAddon.surround == null || !BossPvpAddon.surround.isEnabled())) return;
+
+        // Replace the vanilla push with the mode's result. Either way the original full push is cancelled;
+        // in Modify mode the scaled remainder is re-applied (vanilla push just adds to deltaMovement, so this
+        // reproduces it faithfully at reduced strength). Cancel mode -> zero delta -> unchanged full-block.
+        double[] d = m.pushDelta(x, y, z);
+        if (d[0] != 0.0 || d[1] != 0.0 || d[2] != 0.0) {
+            self.setDeltaMovement(self.getDeltaMovement().add(d[0], d[1], d[2]));
+        }
         ci.cancel();
     }
 }
