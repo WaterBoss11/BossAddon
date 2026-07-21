@@ -1,7 +1,12 @@
 package com.boss.pvp.util;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -23,6 +28,21 @@ class HalvesToggleSyncTest {
         @Override public String id() { return id; }
         @Override public boolean isEnabled() { return enabled; }
         @Override public void setEnabled(boolean on) { enabled = on; if (on) enables++; else disables++; }
+    }
+
+    @BeforeEach
+    void resetHalves() {
+        // Default source = AUTISM's live registry, which is unreachable headlessly and falls back to the
+        // registered arrays — so each test starts from empty registered halves unless it sets its own source.
+        AddonHalves.setModuleSource(null);
+        AddonHalves.registerViews(AddonHalves.PVP, new AddonHalves.ModuleView[0]);
+        AddonHalves.registerViews(AddonHalves.UTILITY, new AddonHalves.ModuleView[0]);
+    }
+
+    @AfterEach
+    void restoreSource() {
+        // Never leak a fake source into other test classes that touch AddonHalves.
+        AddonHalves.setModuleSource(null);
     }
 
     @Test
@@ -77,5 +97,58 @@ class HalvesToggleSyncTest {
         assertTrue(AddonHalves.parseSaved("").isEmpty());
         assertTrue(AddonHalves.parseSaved(null).isEmpty());
         assertTrue(AddonHalves.parseSaved("x:a,x:b").containsAll(java.util.List.of("x:a", "x:b")));
+    }
+
+    // ---- The utility-half "0 modules" regression -----------------------------------------------------------
+    // The bug: the utility half enumerated an empty array (it relied on registerUtility having populated a cache),
+    // so `?bossaddon utility on|off` silently toggled nothing while reporting success. The fix enumerates each
+    // half from AUTISM's LIVE module registry filtered by id-namespace (boss-pvp: / boss-utility:). These tests
+    // register NOTHING for the halves (mirroring the broken state) and prove enumeration still finds each half's
+    // own modules from the live registry. The older tests above only ever registered the PVP half by hand and
+    // never asserted a non-zero count, which is exactly why they missed this.
+
+    @Test
+    void eachHalfEnumeratesItsOwnNamespaceFromLiveRegistryNotAnEmptyArray() {
+        FakeModule pvpKa   = new FakeModule("boss-pvp:killaura", true);
+        FakeModule pvpAc   = new FakeModule("boss-pvp:autocrystal", false);
+        FakeModule uSprint = new FakeModule("boss-utility:sprint", true);
+        FakeModule uStep   = new FakeModule("boss-utility:step", false);
+        FakeModule uAfk    = new FakeModule("boss-utility:antiafk", true);
+        FakeModule autism  = new FakeModule("killaura", true);   // AUTISM's own module, neither half
+        // Note: NO registerViews for either half — the cached arrays are empty, as in the bug.
+        AddonHalves.setModuleSource(() -> List.of(pvpKa, pvpAc, uSprint, uStep, uAfk, autism));
+
+        List<String> util = AddonHalves.moduleIds(AddonHalves.UTILITY);
+        assertFalse(util.isEmpty(), "utility half must not enumerate zero modules");
+        assertEquals(List.of("boss-utility:sprint", "boss-utility:step", "boss-utility:antiafk"), util,
+            "utility half is exactly the boss-utility: namespace");
+
+        assertEquals(List.of("boss-pvp:killaura", "boss-pvp:autocrystal"),
+            AddonHalves.moduleIds(AddonHalves.PVP), "pvp half is exactly the boss-pvp: namespace");
+
+        // AUTISM's own modules belong to neither half.
+        assertFalse(util.contains("killaura"));
+        assertFalse(AddonHalves.moduleIds(AddonHalves.PVP).contains("killaura"));
+    }
+
+    @Test
+    void utilityToggleOffThenOnActsOnItsLiveRegistryModules() {
+        FakeModule uSprint = new FakeModule("boss-utility:sprint", true);
+        FakeModule uStep   = new FakeModule("boss-utility:step", true);
+        FakeModule uAfk    = new FakeModule("boss-utility:antiafk", false);   // was off; must stay off after restore
+        if (!AddonHalves.utilityOn()) AddonHalves.setHalf(AddonHalves.UTILITY, true);   // known ON baseline
+        AddonHalves.setModuleSource(() -> List.of(uSprint, uStep, uAfk));
+
+        String off = AddonHalves.setHalf(AddonHalves.UTILITY, false);
+        assertTrue(off.contains("disabled 2"), "off disables the 2 enabled utility modules: " + off);
+        assertFalse(uSprint.enabled);
+        assertFalse(uStep.enabled);
+        assertFalse(uAfk.enabled);
+
+        String on = AddonHalves.setHalf(AddonHalves.UTILITY, true);
+        assertTrue(on.contains("restored 2"), "on restores exactly the 2 that were enabled: " + on);
+        assertTrue(uSprint.enabled, "sprint comes back");
+        assertTrue(uStep.enabled, "step comes back");
+        assertFalse(uAfk.enabled, "the one that was off stays off");
     }
 }

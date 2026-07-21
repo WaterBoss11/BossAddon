@@ -23,6 +23,13 @@ import com.boss.pvp.BossPvpAddon;
  * <p>Toggling operates on a {@link ModuleView} abstraction so the toggle/restore logic is unit-testable without
  * a running client (AUTISM's {@code Module} can't be instantiated headlessly). Settings are never touched —
  * only enabled flags — so every module keeps its exact configuration through any number of toggles.
+ *
+ * <p><b>Which modules belong to a half</b> is answered from AUTISM's <em>live</em> module registry, filtered by
+ * the half's id-namespace ({@code boss-pvp:} vs {@code boss-utility:}) — see {@link #modulesFor}. This is the
+ * authoritative source and does not depend on each addon's {@code registerPvp}/{@code registerUtility} call
+ * having populated a cached array: the utility half was silently enumerating zero modules because it relied on
+ * that array, and the live-registry filter fixes it. The registration arrays remain a fallback for headless
+ * tests where the registry isn't reachable.
  */
 public final class AddonHalves {
 
@@ -54,6 +61,17 @@ public final class AddonHalves {
     // (also persisted to config below so it survives a restart). Keyed by half name.
     private static final java.util.Map<String, java.util.Set<String>> savedIds = new java.util.concurrent.ConcurrentHashMap<>();
 
+    /** Supplies the live set of registered modules — the authoritative source a half is filtered from. */
+    @FunctionalInterface
+    public interface ModuleSource { java.util.List<ModuleView> all(); }
+
+    // How each half's modules are enumerated. The truth is AUTISM's live module registry filtered by the half's
+    // id-namespace ("boss-pvp:" / "boss-utility:"), NOT the array captured at registration — so a half is found
+    // even if its addon's registerXxx() never ran (e.g. the second addon-in-one-mod init not populating it, which
+    // silently zeroed the utility half). The registered arrays below remain a fallback for when the live registry
+    // is unavailable (headless tests) or empty. Swapped in tests via setModuleSource.
+    private static volatile ModuleSource moduleSource = AddonHalves::liveModulesFromRegistry;
+
     public static boolean pvpOn() { return pvpOn; }
     public static boolean utilityOn() { return utilityOn; }
 
@@ -82,10 +100,8 @@ public final class AddonHalves {
      * snapshotted set. Returns a short human summary for command feedback, or null if the half name is unknown.
      */
     public static String setHalf(String half, boolean on) {
-        ModuleView[] mods;
-        if (PVP.equals(half)) mods = pvpModules;
-        else if (UTILITY.equals(half)) mods = utilityModules;
-        else return null;
+        if (!PVP.equals(half) && !UTILITY.equals(half)) return null;
+        ModuleView[] mods = modulesFor(half);
 
         boolean was = PVP.equals(half) ? pvpOn : utilityOn;
         if (was == on) return half + " is already " + (on ? "on" : "off");
@@ -124,8 +140,62 @@ public final class AddonHalves {
 
     /** One-line status for the command. */
     public static String status() {
-        return "pvp: " + (pvpOn ? "on" : "off") + " (" + pvpModules.length + " modules) | "
-             + "utility: " + (utilityOn ? "on" : "off") + " (" + utilityModules.length + " modules)";
+        return "pvp: " + (pvpOn ? "on" : "off") + " (" + modulesFor(PVP).length + " modules) | "
+             + "utility: " + (utilityOn ? "on" : "off") + " (" + modulesFor(UTILITY).length + " modules)";
+    }
+
+    /** The id-namespace a half's modules carry — how they are told apart in the live registry. */
+    private static String idPrefix(String half) {
+        if (PVP.equals(half)) return BossPvpAddon.ID + ":";                      // "boss-pvp:"
+        if (UTILITY.equals(half)) return com.boss.utility.BossUtilityAddon.ID + ":";   // "boss-utility:"
+        return null;
+    }
+
+    /**
+     * The modules that belong to a half. Preferred source: the live module registry filtered by the half's
+     * id-namespace — always accurate and independent of whether the half's addon populated its registration array.
+     * Falls back to the array captured at registration when the live registry yields nothing (headless tests, or a
+     * registry API that isn't reachable).
+     */
+    static ModuleView[] modulesFor(String half) {
+        String prefix = idPrefix(half);
+        if (prefix != null) {
+            java.util.List<ModuleView> matched = new java.util.ArrayList<>();
+            for (ModuleView m : moduleSource.all()) {
+                String id = m == null ? null : safeId(m);
+                if (id != null && id.startsWith(prefix)) matched.add(m);
+            }
+            if (!matched.isEmpty()) return matched.toArray(new ModuleView[0]);
+        }
+        return PVP.equals(half) ? pvpModules : UTILITY.equals(half) ? utilityModules : new ModuleView[0];
+    }
+
+    /** The ids of a half's modules (for status/diagnostics and tests). */
+    static java.util.List<String> moduleIds(String half) {
+        java.util.List<String> ids = new java.util.ArrayList<>();
+        for (ModuleView m : modulesFor(half)) { String id = m == null ? null : safeId(m); if (id != null) ids.add(id); }
+        return ids;
+    }
+
+    private static String safeId(ModuleView m) {
+        try { return m.id(); } catch (Throwable ignored) { return null; }
+    }
+
+    /** Wrap every live AUTISM module as a {@link ModuleView}. Guarded so a headless/test context (no registry)
+     * falls back to the registered arrays rather than throwing. */
+    private static java.util.List<ModuleView> liveModulesFromRegistry() {
+        try {
+            java.util.List<ModuleView> out = new java.util.ArrayList<>();
+            for (Module m : autismclient.modules.ModuleRegistry.all()) if (m != null) out.add(realView(m));
+            return out;
+        } catch (Throwable t) {
+            return java.util.List.of();
+        }
+    }
+
+    /** Override the live module source (package-private, for tests). Null restores the default AUTISM registry. */
+    static void setModuleSource(ModuleSource src) {
+        moduleSource = src != null ? src : AddonHalves::liveModulesFromRegistry;
     }
 
     private static boolean readFlag(String half) {
