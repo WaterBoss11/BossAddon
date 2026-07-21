@@ -4,12 +4,13 @@
 # UpdateChecker compares against the latest GitHub release tag. It MUST track the release tag: every
 # release bumps this and the git tag together (e.g. tag v1.9.1 <-> mod-version 1.9.1). The old "jar stays
 # at 1.0.0 while tags advance" convention is dropped — it made the UpdateChecker report a permanent false
-# "outdated" notice. 1.12.1 is a patch release: a real bug fix so the ?bossaddon utility on|off toggle acts
-# on the actual utility modules (it was enumerating zero), plus a visual suggestion popup for "?" commands.
+# "outdated" notice. 1.13.0 is a minor release: the AUTISM module-namespace regression fix (modules are now
+# scoped under the mod id so AUTISM stops rejecting them), the flag-reporter dual-channel routing fix, a
+# generalized packet crash guard, and a native "?" command suggestion dropdown with a "party invite" keyword.
 # Jar is bossaddon-<version>.jar. The local config FILE stays "boss-pvp.properties", but module ids are now
 # scoped under the fabric mod id ("bossaddon:pvp:*" / "bossaddon:utility:*") — AUTISM 3.4 rejects any addon
 # module whose id does not start with the mod id, which had silently broken every module after the rename.
-mod-version = "1.12.1"
+mod-version = "1.13.0"
 
 minecraft = "26.2"
 fabric-loader = "0.19.3"
