@@ -12,8 +12,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Fresh-install behavior of the pilot auto-populate: on first launch (no relay keys yet) the baked defaults are
- * written; already-set keys are never clobbered; and the public build (empty baked defaults) writes nothing.
+ * Fresh-install behavior of the relay auto-populate: on first launch (no relay keys yet) the baked defaults are
+ * written; already-set keys are never clobbered; each key seeds independently (the public build bakes a URL but
+ * no invite, so a blank invite must not block the URL); and a build with no baked URL writes nothing.
  * Uses an in-memory config store injected into {@link RelayConfig#autoPopulate} so the exact write logic runs
  * without a live client (the real path just swaps in {@code BossPvpAddon.getConfigString/setConfigString}).
  */
@@ -40,17 +41,28 @@ class RelayAutoPopulateTest {
     }
 
     @Test
-    void publicBuildEmptyDefaultsWritesNothing() {
-        RelayConfig.autoPopulate(get, set, "", "");   // public build: nothing baked
-        assertTrue(store.isEmpty(), "empty baked defaults must be a no-op");
+    void noBakedUrlWritesNothing() {
+        RelayConfig.autoPopulate(get, set, "", "");   // build with no baked URL: stays inert
+        assertTrue(store.isEmpty(), "no baked URL must be a no-op");
         assertNull(store.get("relay.url"));
         assertNull(store.get("relay.invite"));
     }
 
     @Test
-    void publicBuildDefaultConstantsAreEmpty() {
-        // Guards the checked-in source: the PUBLIC build must ship with no baked pilot values.
-        assertTrue(RelayConfig.DEFAULT_URL.isBlank(), "public DEFAULT_URL must be empty");
-        assertTrue(RelayConfig.DEFAULT_INVITE.isBlank(), "public DEFAULT_INVITE must be empty");
+    void urlOnlyDefaultSeedsUrlButNotInvite() {
+        // The public hybrid build: a URL is baked but the invite default is empty (verified users need none).
+        // The URL must still be seeded, and no blank invite key should be written.
+        RelayConfig.autoPopulate(get, set, "wss://bossrelay.onrender.com", "");
+        assertEquals("wss://bossrelay.onrender.com", store.get("relay.url"));
+        assertNull(store.get("relay.invite"), "a blank invite default writes nothing");
+    }
+
+    @Test
+    void publicBuildBakesProductionUrlAndNoInvite() {
+        // Guards the checked-in source for the public release: a real relay URL is baked (so BossChat is live),
+        // and NO invite is baked (hybrid model — verified users join without one).
+        assertTrue(RelayConfig.DEFAULT_URL.startsWith("wss://") || RelayConfig.DEFAULT_URL.startsWith("ws://"),
+            "public DEFAULT_URL must be a baked ws(s):// relay endpoint");
+        assertTrue(RelayConfig.DEFAULT_INVITE.isBlank(), "public DEFAULT_INVITE must be empty under the hybrid model");
     }
 }

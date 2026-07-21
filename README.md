@@ -8,7 +8,7 @@
 
 > An open-source PvP + utility addon for AUTISM Client on Minecraft 26.2 — the merged home of
 > **Boss's PVP** (combat) and **BossUtility** (QoL/utility), each toggleable as a half via
-> `/bossaddon pvp|utility on|off`.
+> `?bossaddon pvp|utility on|off`.
 
 [![License](https://img.shields.io/github/license/WaterBoss11/BossAddon?color=blue)](LICENSE)
 ![Minecraft](https://img.shields.io/badge/Minecraft-26.2-brightgreen)
@@ -44,7 +44,7 @@ conflict within a tick.
 | ShieldBreaker | Breaks enemy shields with an axe |
 | Reach | Extends attack and interact range |
 | TriggerBot | Attacks the entity on your crosshair |
-| AntiEntityPush | Prevents entities from pushing you |
+| AntiEntityPush | Cancels or reduces entity push (Cancel, or Modify with horizontal/vertical keep %). Reducing push is still anticheat-detectable — same category as the full cancel |
 
 ## Automation Modules
 
@@ -143,8 +143,81 @@ against.
 2. Drop `boss-pvp-<version>.jar` into your `.minecraft/mods/` folder.
 3. Launch with AUTISM Client 3.4 and Fabric API for Minecraft 26.2. The modules appear under the Boss's PVP
    and BossUtility addon categories — the two halves of BossAddon. Toggle either half with
-   `/bossaddon pvp|utility on|off`: turning a half off disables its modules and skips their ticking entirely,
+   `?bossaddon pvp|utility on|off`: turning a half off disables its modules and skips their ticking entirely,
    and turning it back on restores exactly the modules that were enabled.
+
+> **Command prefix — `?`, not `/`.** Every BossAddon command starts with `?` (e.g. `?bossaddon help`). `/` is a
+> real Minecraft command character sent to the server; `?` is not, so BossAddon intercepts it client-side. A
+> chat line is treated as a command **only** when it begins with `?bossaddon` as a complete word (followed by a
+> space or the end of the line). Anything else that starts with `?` — a lone `?`, `?hi`, `?bossaddonx`, or a
+> server's own `?`-prefixed chat commands — is sent as normal chat and never eaten. (`?` was chosen because it
+> can't collide with AUTISM's command prefix, which is one of `. % - _ * # @ & =`.)
+
+---
+
+## BossChat (cross-server chat)
+
+BossChat lets BossAddon users talk to each other **across different Minecraft servers** through a shared relay.
+It is **on by default** on a public build: a Mojang-verified account connects automatically and can start
+chatting. You can turn it off completely at any time (see **Opt-out** below).
+
+**Scopes** — where your chat goes:
+
+- **Global** — everyone connected to the relay.
+- **Server** — only BossAddon users on the *same* Minecraft server you're on.
+- **Party** — a private group you create by inviting people.
+- **DM** — one specific person. DMs go **only** to that recipient — never echoed, logged, or relayed anywhere else.
+
+**How to use it.** Open the chat box and click the **BossChat** toggle button (cycles Off → Global → Server →
+Party); while a scope is active, what you type is relayed instead of going to the server (lines starting with
+`/` are never touched). Or use the commands:
+
+```
+?bossaddon chat global | server | off      choose where your typed chat goes
+?bossaddon chat g <msg>                     send one line to global
+?bossaddon chat s <msg>                     send one line to this server's users
+?bossaddon chat dm <user> <msg>             private message someone
+?bossaddon chat reconnect                   reconnect to the relay
+?bossaddon chat disable | enable            turn BossChat fully off / back on
+?bossaddon party <user>                     invite someone to your party
+?bossaddon party accept | decline | leave | list
+?bossaddon party msg <msg>                  message your party
+```
+
+**Trust model — verified vs unverified.** Every message shows whether its sender is **verified**. *Verified*
+means the relay confirmed, through Mojang's session servers, that the sender owns that premium account.
+*Unverified* means a cracked/offline account that only *self-reports* its name. Access is hybrid: **any verified
+account can use BossChat freely, with no invite**; **unverified identities are gated** — they must be
+allowlisted/invited, and an unverified user can **never** take a verified user's name (the relay blocks it).
+Treat unverified names as unproven.
+
+**What's sent.** When BossChat is on, the relay receives: **your Minecraft username** and verified/unverified
+status (shown to people in your scope), **your current server address** — used to route *Server*-scope messages
+to the right people — and the **message text** you send. Message text is capped at **512 characters** and
+stripped of control characters both before it's sent and again before it's shown to you. Your account password
+is **never** sent for a verified account; it's only used on the unverified path, and only if you explicitly set
+one to claim/keep an offline name. Note this is different from crash & kick reporting below, which deliberately
+does *not* send your server address.
+
+**Party warp (join a party member's server).** A party member can *ask* you to join the server they're on:
+
+```
+?bossaddon party warp [user]                propose your current server to the party (or one member)
+?bossaddon party warp accept | decline      respond to a warp request someone sent you
+```
+
+It is always a **request, never an automatic connect**. When someone proposes a warp you get a prompt showing
+**exactly which server address** you'd be sent to — *"&lt;sender&gt; wants you to join them on &lt;address&gt;"* —
+and **nothing happens unless you type `accept`**. On accept, your client joins that address the same way the
+vanilla **Join Server** button does (it uses Minecraft's own connect path — no server-list edits, no
+automation). Requests expire after two minutes, and any request carrying a malformed address is ignored. The
+**only** data exchanged is the **server address** and **which party member** proposed it — nothing about your
+account, location, or anything else.
+
+**Opt-out.** `?bossaddon chat disable` turns BossChat **completely off** — it disconnects and won't reconnect on
+this or any future launch (persisted as `relay.enabled=false`). `?bossaddon chat enable` turns it back on. Note
+that `?bossaddon chat off` only stops relaying *your* typed chat — you still **receive** messages while
+connected; use **disable** to stop participating entirely.
 
 ---
 
@@ -178,6 +251,48 @@ single combined report goes out. Reports are deduplicated so a reconnect loop ca
 
 **To turn it off:** open the **Crash & Kick Reports** module and uncheck **"Report crashes & kicks"**. That
 opts you out completely — no report, and no log file, goes out.
+
+---
+
+## Crash safeguard (velocity clamp)
+
+Some servers send **malformed or malicious velocity** for your player — real crash reports from this addon
+carried per-axis momentum around **1.8e38 / 2.8e38 / 2.1e38**. Values that large overflow Minecraft's own
+position/section math and crash the client deep inside vanilla's `EntitySectionStorage`/collision code
+(reproducible even with Lithium fully disabled, so it isn't an optimisation-mod bug — and the identical values
+turned up on two separate accounts, which points at a deliberate server-side trigger rather than a glitch).
+
+The **Velocity Crash Guard** module (under the **Client** category, **on by default**) caps incoming velocity to
+a sane maximum before vanilla ever processes it, so a bad value can't reach the code that crashes. The cap sits
+far above anything real gameplay produces — vanilla movement, elytra + firework boosts, riptide, ender pearls
+and even extreme TNT/explosion launches all stay orders of magnitude below it — so **legitimate high-speed
+motion is never affected**; only impossible values are clamped, and you get a one-time chat notice when it
+happens.
+
+This is a **purely defensive, local-only** protection, the same honest category as the Anti-Knockback
+disclosure: it protects *your own client* from processing an impossible value. It never changes anything you
+send to the server and never deceives it. You can turn it off under **Client → Velocity Crash Guard**, but
+there's no reason to.
+
+---
+
+## Reconfigure-loop guard
+
+A malicious server can repeatedly force your client from the play phase back into Minecraft's **configuration**
+phase right after you load in, trapping you in an endless **Loading terrain → Reconfiguring → Loading terrain**
+loop that never lets you actually play.
+
+The **Reconfigure Loop Guard** module (under the **Client** category, **on by default**) watches those
+play→configuration transitions and, if they repeat too many times in a short window (3 within ~12 seconds),
+**cleanly disconnects** you with a clear reason instead of leaving you stuck indefinitely. A single legitimate
+reconfigure — e.g. a server-side resource-pack reload — never trips it.
+
+It is **detect-and-disconnect only, never deceive-and-continue.** It never alters, forges, suppresses, or
+fakes any packet or acknowledgment sent to the server — the server's reconfigure request is always handled
+normally; the guard only *observes* the phase changes and, on a detected loop, closes the **local** connection
+(the same "observe and leave" category as the crash & kick reporting). If the flag reporter is on, the auto-
+disconnect is logged there as a **"Reconfigure loop"** event. Toggle it under **Client → Reconfigure Loop
+Guard**.
 
 ---
 
