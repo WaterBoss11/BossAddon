@@ -21,6 +21,7 @@ import com.boss.utility.module.render.WeatherChangerModule;
 import com.boss.utility.module.world.AutoBreedModule;
 import com.boss.utility.module.world.AutoMountModule;
 import com.boss.utility.module.world.AutoShearerModule;
+import com.boss.utility.module.world.NukerModule;
 
 import net.minecraft.client.Minecraft;
 
@@ -55,6 +56,7 @@ public final class BossUtilityAddon extends AutismAddon {
     public static AutoMountModule autoMount;
     public static AutoBreedModule autoBreed;
     public static AutoShearerModule autoShearer;
+    public static NukerModule nuker;
     // Misc — passive report toggle (registered, but does no per-tick work)
     public static com.boss.utility.module.misc.FlagReportModule flagReport;
 
@@ -85,11 +87,12 @@ public final class BossUtilityAddon extends AutismAddon {
         autoMount = new AutoMountModule();
         autoBreed = new AutoBreedModule();
         autoShearer = new AutoShearerModule();
+        nuker = new NukerModule();
         flagReport = new com.boss.utility.module.misc.FlagReportModule();
 
         Module[] all = {
             sprint, step, antiAfk, autoRespawn, chestSwap, notifier,
-            timeChanger, weatherChanger, ambience, autoMount, autoBreed, autoShearer, flagReport
+            timeChanger, weatherChanger, ambience, autoMount, autoBreed, autoShearer, nuker, flagReport
         };
         for (Module m : all) AutismAddons.modules().register(m);
         registeredModules = all;
@@ -136,6 +139,7 @@ public final class BossUtilityAddon extends AutismAddon {
         if (autoMount.isEnabled()) autoMount.tick(mc);
         if (autoBreed.isEnabled()) autoBreed.tick(mc);
         if (autoShearer.isEnabled()) autoShearer.tick(mc);
+        if (nuker.isEnabled()) nuker.tick(mc);
     }
 
     @Override
