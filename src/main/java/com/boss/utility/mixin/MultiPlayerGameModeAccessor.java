@@ -4,6 +4,7 @@ import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
+import org.spongepowered.asm.mixin.gen.Invoker;
 
 /**
  * Accessor into vanilla's private {@code MultiPlayerGameMode.destroyDelay} — the 5-tick throttle the client
@@ -16,4 +17,7 @@ public interface MultiPlayerGameModeAccessor {
 
     @Accessor("destroyDelay")
     void bossutility$setDestroyDelay(int delay);
+
+    @Invoker("ensureHasSentCarriedItem")
+    void bossutility$syncCarriedItem();
 }

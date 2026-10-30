@@ -6,7 +6,7 @@ import com.boss.pvp.util.MenuMode;
 
 import autismclient.modules.Module;
 import autismclient.api.module.*;
-import autismclient.util.AutismInventoryHelper;
+import com.boss.pvp.util.InventoryUtil;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -52,7 +52,7 @@ public final class AutoGapModule extends Module {
 
         if (!HeldSlotManager.holds(this) && eating) {
             mc.options.keyUse.setDown(false);
-            if (switched && prevSlot >= 0) AutismInventoryHelper.selectHotbarSlot(mc, prevSlot);
+            if (switched && prevSlot >= 0) InventoryUtil.selectHotbarSlot(mc, prevSlot);
             stopState(mc);
             return;
         }
@@ -78,7 +78,7 @@ public final class AutoGapModule extends Module {
 
         prevSlot = p.getInventory().getSelectedSlot();
         if (slot != prevSlot) {
-            AutismInventoryHelper.selectHotbarSlot(mc, slot);
+            InventoryUtil.selectHotbarSlot(mc, slot);
             switched = true;
         }
         eating = true;
@@ -136,8 +136,7 @@ public final class AutoGapModule extends Module {
 
     private boolean inCombat(LocalPlayer p) {
         if (p.hurtTime > 0) return true;
-        if (BossPvpAddon.killAura != null && BossPvpAddon.killAura.isEnabled()
-            && BossPvpAddon.killAura.currentTarget() != null) return true;
+        if (com.boss.pvp.util.CombatManager.currentTarget(Minecraft.getInstance()) != null) return true;
         Minecraft mc = Minecraft.getInstance();
         if (mc == null || mc.level == null) return false;
         for (Player pl : mc.level.players()) {
@@ -150,7 +149,7 @@ public final class AutoGapModule extends Module {
     private void stop(Minecraft mc, LocalPlayer p) {
         mc.options.keyUse.setDown(false);
         if (switched && bool("reEquip") && prevSlot >= 0) {
-            AutismInventoryHelper.selectHotbarSlot(mc, prevSlot);
+            InventoryUtil.selectHotbarSlot(mc, prevSlot);
         }
         stopState(mc);
     }

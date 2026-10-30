@@ -5,7 +5,7 @@ import com.boss.utility.util.Util;
 
 import autismclient.modules.Module;
 import autismclient.api.module.DoubleSetting;
-import autismclient.util.AutismInventoryHelper;
+import com.boss.pvp.util.InventoryUtil;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -40,13 +40,13 @@ public final class AutoShearerModule extends Module {
             int shearsSlot = findShears(p);
             if (shearsSlot < 0) return;
             int prev = p.getInventory().getSelectedSlot();
-            AutismInventoryHelper.selectHotbarSlot(mc, shearsSlot);
+            InventoryUtil.selectHotbarSlot(mc, shearsSlot);
 
             Vec3 center = sheep.getBoundingBox().getCenter();
             Util.face(p, center);
             mc.gameMode.interact(p, sheep, new EntityHitResult(sheep, center), InteractionHand.MAIN_HAND);
 
-            if (prev != shearsSlot) AutismInventoryHelper.selectHotbarSlot(mc, prev);
+            if (prev != shearsSlot) InventoryUtil.selectHotbarSlot(mc, prev);
             return; // one per tick
         }
     }

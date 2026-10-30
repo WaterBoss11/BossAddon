@@ -8,42 +8,44 @@ import autismclient.modules.Module;
 
 import com.boss.pvp.module.automation.AutoPotModule;
 import com.boss.pvp.module.automation.HitboxModule;
-import com.boss.pvp.module.combat.AutoCrystalModule;
-import com.boss.pvp.module.automation.AutoTotemModule;
-import com.boss.pvp.module.combat.AimAssistModule;
 import com.boss.pvp.client.hud.FovCircleHud;
-import com.boss.pvp.module.combat.KillAuraModule;
 import com.boss.pvp.module.combat.AutoWeaponModule;
 import com.boss.pvp.client.hud.AutoTotemHud;
 import com.boss.pvp.client.hud.CombatHud;
-import com.boss.pvp.module.combat.SurroundModule;
-import com.boss.pvp.module.combat.CriticalsModule;
-import com.boss.pvp.module.automation.OffhandModule;
-import com.boss.pvp.module.combat.ShieldBreakerModule;
-import com.boss.pvp.module.automation.AutoArmorModule;
 import com.boss.pvp.module.movement.AntiKnockbackModule;
 import com.boss.pvp.module.movement.NoSlowdownModule;
 import com.boss.pvp.module.automation.AutoHookModule;
-import com.boss.pvp.module.movement.ScaffoldModule;
-import com.boss.pvp.module.combat.AutoAnchorModule;
 import com.boss.pvp.module.combat.BedAuraModule;
 import com.boss.pvp.module.combat.HoleFillerModule;
-import com.boss.pvp.module.automation.FastPlaceModule;
 import com.boss.pvp.module.movement.BurrowModule;
 import com.boss.pvp.module.automation.AutoGapModule;
 import com.boss.pvp.module.automation.InvManagerModule;
-import com.boss.pvp.module.combat.TrapperModule;
-import com.boss.pvp.module.automation.AutoXPModule;
 import com.boss.pvp.module.automation.AutoClutchModule;
-import com.boss.pvp.module.automation.TriggerBotModule;
 import com.boss.pvp.module.automation.AutoLeaveModule;
 import com.boss.pvp.module.automation.SelfDestructModule;
-import com.boss.pvp.module.render.NoHurtCamModule;
-import com.boss.pvp.module.render.TrajectoryModule;
 import com.boss.pvp.module.combat.AutoShootModule;
 import com.boss.pvp.module.combat.AntiEntityPushModule;
 import com.boss.pvp.module.combat.ReachModule;
 import com.boss.pvp.module.combat.VelocityModule;
+import com.boss.pvp.module.combat.CityMineModule;
+import com.boss.pvp.module.combat.PistonPushModule;
+import com.boss.pvp.module.combat.SpearAssistModule;
+import com.boss.pvp.module.combat.ClickPearlModule;
+import com.boss.pvp.module.combat.PearlChaserModule;
+import com.boss.pvp.module.combat.AutoShieldModule;
+import com.boss.pvp.module.combat.AntiFireballModule;
+import com.boss.pvp.module.combat.BowReleaseModule;
+import com.boss.pvp.module.combat.AutoMaceModule;
+import com.boss.pvp.module.movement.AutoWindChargeModule;
+import com.boss.pvp.module.movement.KeepSprintModule;
+import com.boss.pvp.module.movement.HoleSnapModule;
+import com.boss.pvp.module.movement.TargetStrafeModule;
+import com.boss.pvp.module.movement.ReverseStepModule;
+import com.boss.pvp.module.movement.ElytraPursuitModule;
+import com.boss.pvp.module.movement.FastWebModule;
+import com.boss.pvp.module.movement.FastLadderModule;
+import com.boss.pvp.module.movement.WaterWalkModule;
+import com.boss.pvp.module.movement.TridentBoostModule;
 
 import net.minecraft.client.Minecraft;
 
@@ -58,39 +60,41 @@ public final class BossPvpAddon extends AutismAddon {
 
     public static AutoPotModule autoPot;
     public static HitboxModule hitbox;
-    public static AutoCrystalModule autoCrystal;
-    public static AutoTotemModule autoTotem;
-    public static AimAssistModule aimAssist;
-    public static KillAuraModule killAura;
     public static AutoWeaponModule autoWeapon;
-    public static SurroundModule surround;
-    public static CriticalsModule criticals;
-    public static OffhandModule offhand;
-    public static ShieldBreakerModule shieldBreaker;
-    public static AutoArmorModule autoArmor;
     public static AntiKnockbackModule antiKnockback;
     public static AutoHookModule autoHook;
-    public static ScaffoldModule scaffold;
-    public static AutoAnchorModule autoAnchor;
     public static BedAuraModule bedAura;
     public static HoleFillerModule holeFiller;
-    public static FastPlaceModule fastPlace;
     public static BurrowModule burrow;
     public static AutoGapModule autoGap;
     public static InvManagerModule invManager;
-    public static TrapperModule trapper;
-    public static AutoXPModule autoXP;
     public static AutoClutchModule autoClutch;
-    public static TriggerBotModule triggerBot;
     public static ReachModule reach;
     public static NoSlowdownModule noSlowdown;
     public static AutoLeaveModule autoLeave;
-    public static NoHurtCamModule noHurtCam;
     public static AntiEntityPushModule antiEntityPush;
     public static SelfDestructModule selfDestruct;
-    public static TrajectoryModule trajectory;
     public static AutoShootModule autoShoot;
     public static VelocityModule velocity;
+    public static AutoWindChargeModule autoWindCharge;
+    public static KeepSprintModule keepSprint;
+    public static HoleSnapModule holeSnap;
+    public static TargetStrafeModule targetStrafe;
+    public static ReverseStepModule reverseStep;
+    public static ElytraPursuitModule elytraPursuit;
+    public static FastWebModule fastWeb;
+    public static FastLadderModule fastLadder;
+    public static WaterWalkModule waterWalk;
+    public static TridentBoostModule tridentBoost;
+    public static SpearAssistModule spearAssist;
+    public static PistonPushModule pistonPush;
+    public static CityMineModule cityMine;
+    public static ClickPearlModule clickPearl;
+    public static PearlChaserModule pearlChaser;
+    public static AutoShieldModule autoShield;
+    public static AntiFireballModule antiFireball;
+    public static BowReleaseModule bowRelease;
+    public static AutoMaceModule autoMace;
     public static com.boss.pvp.module.misc.FlagReportModule flagReport;
     public static com.boss.pvp.module.misc.UpdateCheckModule updateCheck;
     public static com.boss.pvp.module.misc.VelocityClampModule velocityClamp;
@@ -107,7 +111,7 @@ public final class BossPvpAddon extends AutismAddon {
     private static Module[] registeredModules;
 
     public static java.util.List<String> friends() {
-        return killAura != null ? killAura.friends() : java.util.List.of();
+        return com.boss.pvp.util.pvp.PvpUtil.friendNames();
     }
 
     /** "Name (Category)" for each currently-enabled boss-pvp module — the flag reporter's module snapshot. */
@@ -115,7 +119,7 @@ public final class BossPvpAddon extends AutismAddon {
         java.util.List<String> out = new java.util.ArrayList<>();
         if (registeredModules != null) {
             for (Module m : registeredModules) {
-                if (m != null && m.isEnabled()) out.add(m.name() + " (" + m.category().name() + ")");
+                if (m != null && m.isEnabled()) out.add(m.name() + " (Boss PVP)");
             }
         }
         return out;
@@ -128,58 +132,97 @@ public final class BossPvpAddon extends AutismAddon {
 
     @Override
     public int apiVersion() {
-        return AutismAddons.apiVersion();
+        return Math.min(autismclient.api.ApiVersion.CURRENT, AutismAddons.apiVersion());
     }
 
     @Override
     public void onInitialize() {
         autoPot = new AutoPotModule();
         hitbox = new HitboxModule();
-        autoCrystal = new AutoCrystalModule();
-        autoTotem = new AutoTotemModule();
-        aimAssist = new AimAssistModule();
-        killAura = new KillAuraModule();
         autoWeapon = new AutoWeaponModule();
-        surround = new SurroundModule();
-        criticals = new CriticalsModule();
-        offhand = new OffhandModule();
-        shieldBreaker = new ShieldBreakerModule();
-        autoArmor = new AutoArmorModule();
         antiKnockback = new AntiKnockbackModule();
         autoHook = new AutoHookModule();
-        scaffold = new ScaffoldModule();
-        autoAnchor = new AutoAnchorModule();
         bedAura = new BedAuraModule();
         holeFiller = new HoleFillerModule();
-        fastPlace = new FastPlaceModule();
         burrow = new BurrowModule();
         autoGap = new AutoGapModule();
         invManager = new InvManagerModule();
-        trapper = new TrapperModule();
-        autoXP = new AutoXPModule();
         autoClutch = new AutoClutchModule();
-        triggerBot = new TriggerBotModule();
         reach = new ReachModule();
         noSlowdown = new NoSlowdownModule();
         autoLeave = new AutoLeaveModule();
-        noHurtCam = new NoHurtCamModule();
         antiEntityPush = new AntiEntityPushModule();
         selfDestruct = new SelfDestructModule();
-        trajectory = new TrajectoryModule();
         autoShoot = new AutoShootModule();
         velocity = new VelocityModule();
+        autoWindCharge = new AutoWindChargeModule();
+        keepSprint = new KeepSprintModule();
+        holeSnap = new HoleSnapModule();
+        targetStrafe = new TargetStrafeModule();
+        reverseStep = new ReverseStepModule();
+        elytraPursuit = new ElytraPursuitModule();
+        fastWeb = new FastWebModule();
+        fastLadder = new FastLadderModule();
+        waterWalk = new WaterWalkModule();
+        tridentBoost = new TridentBoostModule();
+        spearAssist = new SpearAssistModule();
+        pistonPush = new PistonPushModule();
+        cityMine = new CityMineModule();
+        clickPearl = new ClickPearlModule();
+        pearlChaser = new PearlChaserModule();
+        autoShield = new AutoShieldModule();
+        antiFireball = new AntiFireballModule();
+        bowRelease = new BowReleaseModule();
+        autoMace = new AutoMaceModule();
         flagReport = new com.boss.pvp.module.misc.FlagReportModule();
         updateCheck = new com.boss.pvp.module.misc.UpdateCheckModule();
         velocityClamp = new com.boss.pvp.module.misc.VelocityClampModule();
         reconfigureGuard = new com.boss.pvp.module.misc.ReconfigureGuardModule();
 
         Module[] all = {
-            autoPot, hitbox, autoCrystal, autoTotem, aimAssist, killAura, surround, criticals,
-            offhand, shieldBreaker, autoArmor, antiKnockback, autoHook, scaffold, autoAnchor,
-            bedAura, holeFiller, fastPlace, burrow, autoGap, invManager, trapper, autoXP,
-            autoClutch, triggerBot, reach, autoWeapon, noSlowdown, autoLeave, noHurtCam, antiEntityPush,
-            selfDestruct, trajectory, autoShoot, velocity, flagReport, updateCheck, velocityClamp, reconfigureGuard
+            autoPot,
+            hitbox,
+            antiKnockback,
+            autoHook,
+            bedAura,
+            holeFiller,
+            burrow,
+            autoGap,
+            invManager,
+            autoClutch,
+            reach,
+            autoWeapon,
+            noSlowdown,
+            autoLeave,
+            antiEntityPush,
+            selfDestruct,
+            autoShoot,
+            velocity,
+            autoWindCharge,
+            keepSprint,
+            holeSnap,
+            targetStrafe,
+            reverseStep,
+            elytraPursuit,
+            fastWeb,
+            fastLadder,
+            waterWalk,
+            tridentBoost,
+            spearAssist,
+            pistonPush,
+            cityMine,
+            clickPearl,
+            pearlChaser,
+            autoShield,
+            antiFireball,
+            bowRelease,
+            autoMace,
+            flagReport,
+            updateCheck,
+            velocityClamp,
+            reconfigureGuard
         };
+        java.util.Arrays.sort(all, java.util.Comparator.comparing(Module::name, String.CASE_INSENSITIVE_ORDER));
         for (Module m : all) AutismAddons.modules().register(m);
         registeredModules = all;
 
@@ -206,9 +249,29 @@ public final class BossPvpAddon extends AutismAddon {
         }
 
         logHudGateState();
-        restoreHudVisibilityOnce();
 
-        applyAlphabeticalMenuOrder(all);
+        com.boss.pvp.util.pvp.PvpUtil.migrateFriends();
+        net.fabricmc.fabric.api.event.player.AttackEntityCallback.EVENT.register((player, level, hand, target, hit) -> {
+            Minecraft client = Minecraft.getInstance();
+            if (player != client.player || !combatHooksActive(client)) return net.minecraft.world.InteractionResult.PASS;
+            if (!canAttack(client, target)) return net.minecraft.world.InteractionResult.FAIL;
+            if (autoWeapon != null && autoWeapon.isEnabled() && !player.isUsingItem()
+                    && (autoMace == null || !autoMace.ownsAttack(target))
+                    && target instanceof net.minecraft.world.entity.LivingEntity
+                    && !autoWeapon.selectBestWeapon(target)) {
+                return net.minecraft.world.InteractionResult.FAIL;
+            }
+            return net.minecraft.world.InteractionResult.PASS;
+        });
+        // The host's Packet attack mode skips Fabric's game-mode callback. True means CANCEL in this API.
+        AutismAddons.events().onPacketSend(BossPvpAddon::cancelAttackPacket);
+        AutismAddons.events().onPacketReceive(packet -> {
+            if (!(packet instanceof net.minecraft.network.protocol.game.ClientboundEntityEventPacket event)
+                    || event.getEventId() != 35) return;
+            Minecraft client = Minecraft.getInstance();
+            client.execute(() -> com.boss.pvp.util.CombatManager.observePacket(client, packet));
+        });
+        AutismAddons.events().onGameLeft(BossPvpAddon::resetWorldState);
 
         // Auto-enable the test modules 3s after joining a localhost server (client-side, so they actually
         // turn on). Disable them again on disconnect so they don't linger after testing.
@@ -238,39 +301,38 @@ public final class BossPvpAddon extends AutismAddon {
             // PVP half disabled -> genuinely inert: skip ALL pvp module ticking below (modules were also
             // force-disabled by AddonHalves, silencing their mixin-driven hooks). Infra above (update
             // check, relay, autotest plumbing) is NOT a module and keeps running.
-            if (!com.boss.pvp.util.AddonHalves.pvpOn()) return;
-
-            killAura.pollFriendKey(mc);
+            if (!com.boss.pvp.util.AddonHalves.pvpOn()) {
+                com.boss.pvp.util.pvp.RotationManager.reset();
+                com.boss.pvp.util.input.HeldSlotManager.reset();
+                com.boss.pvp.util.CombatManager.reset();
+                return;
+            }
             com.boss.pvp.util.CombatManager.tick();
             if (autoPot.isEnabled())       autoPot.tick(mc);
-            if (autoCrystal.isEnabled())   autoCrystal.tick(mc);
-            if (autoTotem.isEnabled())     autoTotem.tick(mc);
-            if (aimAssist.isEnabled())     aimAssist.tick(mc);
-            if (killAura.isEnabled())      killAura.tick(mc);
             if (autoWeapon.isEnabled())    autoWeapon.tick(mc);
-            if (surround.isEnabled())      surround.tick(mc);
-            if (criticals.isEnabled())     criticals.tick(mc);
-            if (offhand.isEnabled())       offhand.tick(mc);
-            if (shieldBreaker.isEnabled()) shieldBreaker.tick(mc);
-            if (autoArmor.isEnabled())     autoArmor.tick(mc);
             if (antiKnockback.isEnabled()) antiKnockback.tick(mc);
             if (autoHook.isEnabled())      autoHook.tick(mc);
-            if (scaffold.isEnabled())      scaffold.tick(mc);
-            if (autoAnchor.isEnabled())    autoAnchor.tick(mc);
             if (bedAura.isEnabled())       bedAura.tick(mc);
             if (holeFiller.isEnabled())    holeFiller.tick(mc);
             if (burrow.isEnabled())        burrow.tick(mc);
             if (autoGap.isEnabled())       autoGap.tick(mc);
             if (invManager.isEnabled())    invManager.tick(mc);
-            if (trapper.isEnabled())       trapper.tick(mc);
-            if (autoXP.isEnabled())        autoXP.tick(mc);
             if (autoClutch.isEnabled())    autoClutch.tick(mc);
-            if (triggerBot.isEnabled())    triggerBot.tick(mc);
             if (reach.isEnabled())         reach.tick(mc);
             if (autoLeave.isEnabled())     autoLeave.tick(mc);
             if (selfDestruct.isEnabled())  selfDestruct.tick(mc);
             if (autoShoot.isEnabled())     autoShoot.tick(mc);
             if (velocity.isEnabled())      velocity.tick(mc);
+            if (spearAssist.isEnabled())   spearAssist.tick(mc);
+            if (pistonPush.isEnabled())    pistonPush.tick(mc);
+            if (cityMine.isEnabled())      cityMine.tick(mc);
+            if (clickPearl.isEnabled())    clickPearl.tick(mc);
+            if (pearlChaser.isEnabled())   pearlChaser.tick(mc);
+            if (antiFireball.isEnabled())  antiFireball.tick(mc);
+            if (bowRelease.isEnabled())    bowRelease.tick(mc);
+            if (autoShield.isEnabled())   autoShield.tick(mc);
+            if (autoMace.isEnabled())      autoMace.tick(mc);
+            tickMovement(mc);
 
             com.boss.pvp.util.pvp.RotationManager.endTickCommit();
 
@@ -279,136 +341,60 @@ public final class BossPvpAddon extends AutismAddon {
         });
     }
 
-    private static void applyAlphabeticalMenuOrder(Module[] modules) {
-        autismclient.util.AutismConfig cfg = autismclient.util.AutismConfig.getGlobal();
-        if (cfg == null) {
-            System.out.println("[BossPvP] menu order: AutismConfig.getGlobal() was null — skipped.");
-            return;
-        }
-        if (cfg.moduleCategoryOrder == null) cfg.moduleCategoryOrder = new java.util.HashMap<>();
-
-        java.util.Map<String, java.util.List<Module>> byCat = new java.util.LinkedHashMap<>();
-        for (Module m : modules) {
-            // A module AUTISM rejected (e.g. a namespace mismatch) is never assigned a category, so category() is
-            // null. Skip those rather than NPE here and abort the whole onInitialize — the rejection is already
-            // logged by AUTISM, and menu ordering only concerns modules that actually registered.
-            if (m == null || m.category() == null) continue;
-            byCat.computeIfAbsent(m.category().name(), k -> new java.util.ArrayList<>()).add(m);
-        }
-
-        boolean migrated = getMarker(MIGRATION_MARKER_KEY);
-
-        boolean changed = false;
-        for (java.util.Map.Entry<String, java.util.List<Module>> e : byCat.entrySet()) {
-            String catKey = e.getKey();
-            java.util.List<Module> mods = e.getValue();
-            mods.sort(java.util.Comparator.comparing(Module::name, String.CASE_INSENSITIVE_ORDER));
-
-            java.util.List<String> alphabeticalIds = new java.util.ArrayList<>();
-            java.util.Map<String, String> nameById = new java.util.HashMap<>();
-            StringBuilder dbg = new StringBuilder();
-            for (Module m : mods) {
-                alphabeticalIds.add(m.id());
-                nameById.put(m.id(), m.name());
-                if (dbg.length() > 0) dbg.append(", ");
-                dbg.append(m.name());
-            }
-
-            boolean overwrite;
-            String reason;
-            if (!migrated) {
-
-                overwrite = true;
-                reason = "v1 migration: forcing alphabetical";
-            } else {
-
-                java.util.List<String> saved = cfg.moduleCategoryOrder.get(catKey);
-                if (saved == null || saved.isEmpty()) {
-                    overwrite = true;
-                    reason = "post-migration: no saved order";
-                } else {
-                    java.util.List<String> savedFiltered = new java.util.ArrayList<>();
-                    for (String id : saved) if (nameById.containsKey(id)) savedFiltered.add(id);
-                    java.util.List<String> savedAlpha = new java.util.ArrayList<>(savedFiltered);
-                    savedAlpha.sort(java.util.Comparator.comparing(nameById::get, String.CASE_INSENSITIVE_ORDER));
-                    overwrite = savedFiltered.equals(savedAlpha);
-                    reason = overwrite
-                        ? "post-migration: saved order already alphabetical (re-sorting to include new modules)"
-                        : "post-migration: manual reorder detected — leaving user's order untouched (saved="
-                            + saved + ")";
-                }
-            }
-
-            if (overwrite) {
-                cfg.moduleCategoryOrder.put(catKey, alphabeticalIds);
-                changed = true;
-                System.out.println("[BossPvP] menu order for category '" + catKey + "' (" + alphabeticalIds.size()
-                    + " modules) -> alphabetical [" + reason + "]: " + dbg);
-            } else {
-                System.out.println("[BossPvP] menu order for category '" + catKey + "': " + reason);
-            }
-        }
-
-        if (changed) persistModuleCategoryOrder(cfg.moduleCategoryOrder);
-
-        if (!migrated) setMarker(MIGRATION_MARKER_KEY, "v1 alphabetical migration");
+    private static boolean combatHooksActive(Minecraft mc) {
+        return mc != null && mc.player != null && mc.level != null
+            && com.boss.pvp.util.AddonHalves.pvpOn() && !com.boss.pvp.util.pvp.PvpUtil.hostEnabled("hide");
     }
 
-    private static void persistModuleCategoryOrder(
-            java.util.Map<String, java.util.List<String>> liveOrder) {
-        try {
-            autismclient.util.AutismConfig disk = autismclient.util.AutismConfig.load();
-            disk.moduleCategoryOrder = liveOrder;
-            disk.save();
-            System.out.println("[BossPvP] menu order: persisted moduleCategoryOrder (non-clobbering disk overlay).");
-        } catch (Exception ex) {
-            System.out.println("[BossPvP] menu order: non-clobbering persist failed (" + ex
-                + "); menu is correct in-memory this session, will retry next launch.");
-        }
+    private static boolean canAttack(Minecraft mc, net.minecraft.world.entity.Entity target) {
+        boolean protectedTarget = combatHooksActive(mc) && target instanceof net.minecraft.world.entity.player.Player other
+            && com.boss.pvp.util.pvp.PvpUtil.isProtectedPlayer(mc, other);
+        boolean fireball = target instanceof net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball;
+        if (combatHooksActive(mc) && autoMace != null && autoMace.isEnabled() && autoMace.blocksOtherAttack()) return false;
+        return !com.boss.pvp.util.CombatManager.shouldCancelAttack(combatHooksActive(mc),
+            com.boss.pvp.util.CombatManager.isCombatPaused(), protectedTarget, fireball);
     }
 
-    private static final String MIGRATION_MARKER_KEY = "bossPvpAlphabeticalMigratedV1";
-    private static final String HUD_RESTORE_MARKER_KEY = "bossPvpHudVisibilityRestoredV1";
+    private static boolean cancelAttackPacket(net.minecraft.network.protocol.Packet<?> packet) {
+        if (!(packet instanceof net.minecraft.network.protocol.game.ServerboundAttackPacket attack)) return false;
+        Minecraft mc = Minecraft.getInstance();
+        if (!combatHooksActive(mc)) return false;
+        var target = mc.level.getEntity(attack.entityId());
+        if (target == null) return false;
+        if (!canAttack(mc, target)) return true;
+        if (autoWeapon != null && autoWeapon.isEnabled() && !mc.player.isUsingItem()
+                && (autoMace == null || !autoMace.ownsAttack(target))
+                && target instanceof net.minecraft.world.entity.LivingEntity) {
+            if (!autoWeapon.consumePreparedAttack(target)
+                    && (!autoWeapon.selectBestWeapon(target, true) || !autoWeapon.consumePreparedAttack(target))) return true;
+        }
+        com.boss.pvp.util.CombatManager.recordAttack(target);
+        if (autoWeapon != null && autoWeapon.isEnabled()) autoWeapon.attackAccepted(target);
+        if (autoMace != null && autoMace.isEnabled()) autoMace.attackAllowed(target);
+        return false;
+    }
+
+    private static void tickMovement(Minecraft mc) {
+        if (keepSprint.isEnabled()) keepSprint.tick(mc);
+        if (autoWindCharge.isEnabled()) autoWindCharge.tick(mc);
+        if (holeSnap.isEnabled()) holeSnap.tick(mc);
+        boolean controlled = holeSnap.isEnabled() && holeSnap.controlsMovement();
+        if (elytraPursuit.isEnabled()) {
+            if (controlled) elytraPursuit.onDisable(); else elytraPursuit.tick(mc);
+            controlled |= elytraPursuit.controlsMovement();
+        }
+        if (targetStrafe.isEnabled()) {
+            if (controlled) targetStrafe.onDisable(); else targetStrafe.tick(mc);
+            controlled |= targetStrafe.controlsMovement();
+        }
+        if (reverseStep.isEnabled()) {
+            if (controlled) reverseStep.onDisable(); else reverseStep.tick(mc);
+        }
+    }
 
     private static java.nio.file.Path markerFile() {
         java.nio.file.Path cfgDir = net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir();
         return cfgDir.resolve("boss-pvp.properties");
-    }
-
-    private static boolean getMarker(String key) {
-        try {
-            java.nio.file.Path f = markerFile();
-            if (!java.nio.file.Files.exists(f)) return false;
-            java.util.Properties props = new java.util.Properties();
-            try (java.io.InputStream in = java.nio.file.Files.newInputStream(f)) {
-                props.load(in);
-            }
-            return Boolean.parseBoolean(props.getProperty(key, "false"));
-        } catch (Exception ex) {
-            System.out.println("[BossPvP] marker '" + key + "': read failed (" + ex + ") — treating as unset.");
-            return false;
-        }
-    }
-
-    private static void setMarker(String key, String label) {
-        try {
-            java.nio.file.Path f = markerFile();
-            java.nio.file.Files.createDirectories(f.getParent());
-            java.util.Properties props = new java.util.Properties();
-            if (java.nio.file.Files.exists(f)) {
-                try (java.io.InputStream in = java.nio.file.Files.newInputStream(f)) {
-                    props.load(in);
-                }
-            }
-            props.setProperty(key, "true");
-            try (java.io.OutputStream out = java.nio.file.Files.newOutputStream(f)) {
-                props.store(out, "boss-pvp one-time migration markers");
-            }
-            System.out.println("[BossPvP] marker '" + key + "' set (" + label + ") @ " + f);
-        } catch (Exception ex) {
-
-            System.out.println("[BossPvP] marker '" + key + "': write failed (" + ex + ") — will retry next launch.");
-        }
     }
 
     public static String getConfigString(String key, String def) {
@@ -465,34 +451,6 @@ public final class BossPvpAddon extends AutismAddon {
         return st == null ? "absent" : Boolean.toString(st.enabled);
     }
 
-    private static void restoreHudVisibilityOnce() {
-        if (getMarker(HUD_RESTORE_MARKER_KEY)) {
-            System.out.println("[BossPvP] HUD visibility: restore already done (marker set) — leaving AUTISM's HUD settings untouched.");
-            return;
-        }
-        try {
-            Module hide = autismclient.modules.ModuleRegistry.get("hide");
-            if (hide != null && hide.isEnabled()) {
-                hide.setEnabled(false);
-                System.out.println("[BossPvP] HUD visibility: cleared active 'hide' (panic) module so the HUD can render.");
-            }
-            Module hud = autismclient.modules.ModuleRegistry.get("hud");
-            if (hud == null) {
-                System.out.println("[BossPvP] HUD visibility: built-in 'hud' module not found — cannot restore (skipped).");
-                return;
-            }
-            if (hud.isEnabled()) {
-                System.out.println("[BossPvP] HUD visibility: 'hud' module already enabled — nothing to restore.");
-            } else {
-                hud.setEnabled(true);
-                System.out.println("[BossPvP] HUD visibility: re-enabled the 'hud' module (one-time restore) — AUTISM + addon HUDs now render without holding right-shift.");
-            }
-            setMarker(HUD_RESTORE_MARKER_KEY, "v1 HUD visibility restore");
-        } catch (Throwable t) {
-
-            System.out.println("[BossPvP] HUD visibility: restore failed (" + t + ") — will retry next launch.");
-        }
-    }
 
     private static boolean isLocalhostServer(Minecraft client) {
         net.minecraft.client.multiplayer.ServerData sd = client.getCurrentServer();
@@ -505,58 +463,43 @@ public final class BossPvpAddon extends AutismAddon {
     }
 
     private static Module[] autoTestModules() {
-        return new Module[]{ killAura, autoTotem, autoArmor, surround, reach, noSlowdown, antiEntityPush, scaffold, autoCrystal };
+        return new Module[]{ reach, noSlowdown, antiEntityPush };
     }
 
     private static void enableTestModules() {
-        Minecraft mc = Minecraft.getInstance();
-        System.out.println("[BossPvP] auto-enable firing: in-world=" + (mc.player != null && mc.level != null)
-            + " — enabling " + autoTestModules().length + " test modules");
-        for (Module m : autoTestModules()) {
-            if (m == null) { System.out.println("[BossPvP]   - <null module reference> (skipped)"); continue; }
-            if (m.isEnabled()) { System.out.println("[BossPvP]   - " + m.name() + ": already enabled"); continue; }
-            try {
-                m.setEnabled(true);
-                System.out.println("[BossPvP]   - " + m.name() + ": setEnabled(true) -> isEnabled=" + m.isEnabled());
-            } catch (Throwable t) {
-                System.out.println("[BossPvP]   - " + m.name() + ": setEnabled(true) FAILED -> " + t);
-            }
-        }
-        // AUTISM persists option values to disk and restores them on load, so a previously-saved
-        // "minecraft:player" entities list overrides our DEFAULT_COMBAT_TARGETS default. Force the
-        // combat target list (and drop Surround's threat/center gates) for the test session.
-        String hostileMobs = com.boss.pvp.util.pvp.PvpUtil.DEFAULT_COMBAT_TARGETS;
-        if (killAura != null) {
-            killAura.setValue("entities", hostileMobs);
-            // KillAura's "range" option is hard-capped at 3.5 by the module (5.0 would clamp to 3.5);
-            // targetRange (max 6.0) lets it acquire the Reach test dummy past 3 blocks. These are option
-            // values only — no module code/behavior is changed.
-            killAura.setValue("range", "3.5");
-            killAura.setValue("targetRange", "6.0");
-        }
-        if (autoCrystal != null) autoCrystal.setValue("entities", hostileMobs);
-        if (reach != null) {
-            reach.setValue("attackRange", "5.0");
-            reach.setValue("interactRange", "5.0");
-        }
-        if (surround != null) {
-            surround.setValue("onlyWhenThreatened", "false");
-            surround.setValue("centerFirst", "false");
-        }
-        System.out.println("[BossPvP] forced test settings: entities=DEFAULT_COMBAT_TARGETS, KillAura range=3.5/targetRange=6.0, "
-            + "Reach attackRange=5.0, Surround onlyWhenThreatened=false/centerFirst=false");
-
+        for (Module m : autoTestModules()) if (m != null && !m.isEnabled()) m.setEnabled(true);
         autoTestEnabled = true;
         autoTestCountdown = -1;
-        if (mc.player != null) {
-            mc.player.sendSystemMessage(net.minecraft.network.chat.Component.literal("[BossPVP] Test modules enabled automatically"));
-        }
     }
 
     private static void disableTestModules() {
         for (Module m : autoTestModules()) if (m != null && m.isEnabled()) m.setEnabled(false);
         autoTestEnabled = false;
         autoTestCountdown = -1;
+    }
+
+    private static void resetWorldState() {
+        if (registeredModules != null) {
+            for (Module module : registeredModules) {
+                if (module == null || !module.isEnabled()) continue;
+                try {
+                    module.onDisable();
+                } catch (RuntimeException failure) {
+                    System.err.println("[BossAddon] Cleanup failed for " + module.name() + ": " + failure.getClass().getSimpleName());
+                }
+            }
+        }
+        com.boss.pvp.util.CombatManager.reset();
+        com.boss.pvp.util.input.HeldSlotManager.reset();
+        com.boss.pvp.util.input.OffhandManager.reset();
+        com.boss.pvp.util.pvp.RotationManager.reset();
+        com.boss.pvp.util.pvp.PlayerSimulation.reset();
+        com.boss.pvp.util.pvp.PvpUtil.resetCaches();
+    }
+
+    @Override
+    public void onUnload() {
+        resetWorldState();
     }
 
     @Override

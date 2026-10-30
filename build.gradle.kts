@@ -58,6 +58,13 @@ fun toMinecraftCompat(version: String): String {
 }
 
 tasks {
+    jar {
+        from("LICENSE") {
+            into("META-INF/licenses")
+            rename { "BossAddon-GPL-3.0.txt" }
+        }
+    }
+
     test {
         useJUnitPlatform()
     }

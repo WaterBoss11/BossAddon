@@ -1,0 +1,39 @@
+BossAddon PvP ports and compatibility utilities
+
+LiquidBounce (CCBlueX)
+Copyright (c) 2015-2026 CCBlueX.
+Selected movement, projectile and weapon-support behavior is adapted under
+GPL-3.0-or-later. Upstream: https://github.com/CCBlueX/LiquidBounce
+Reference revision: 0696396ff83b66d277f658cbe6637644e81ceb80.
+
+ThunderHack / the supplied ThunderHack-Exploitcore source tree
+Selected movement, shield, pearl, fireball and piston behavior is adapted
+under the supplied GNU GPL version 3 license. Original source notices apply.
+
+Nami
+Copyright (c) 2025 Kiriyaga7615. MIT notice: Nami-MIT.txt.
+Selected restocking and ranged-support behavior.
+
+Sydney
+Copyright (c) 2026. MIT notice: Sydney-MIT.txt.
+Selected hole movement, web handling and ranged-support behavior.
+
+Silk
+Selected mace-selection behavior from the supplied GPL-3.0 source tree.
+
+Krispy
+Copyright (c) 2026 Krispy. Upstream remains All Rights Reserved.
+Mace-swap behavior was supplied for modification and redistribution in this
+GPL addon under separate permission confirmed by the contributor. This notice
+does not grant permission to copy or redistribute other upstream Krispy code.
+
+Shoreline
+Selected opponent-surround block-selection behavior was supplied under the
+contributor's stated reuse permission. The donor packet-mining engine is not
+included; native Minecraft mining remains responsible for execution.
+
+AUTISM Client
+Native compatibility utilities are adapted from the supplied GPL-3.0 source,
+without relying on renamed internal client helper classes.
+
+BossAddon's GNU GPL version 3 license accompanies this artifact.

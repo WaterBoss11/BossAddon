@@ -2,7 +2,6 @@ package com.boss.pvp.module.misc;
 
 import com.boss.pvp.BossPvpAddon;
 
-import autismclient.api.AutismAddons;
 import autismclient.modules.Module;
 
 /**
@@ -16,7 +15,6 @@ public final class UpdateCheckModule extends Module {
 
     public UpdateCheckModule() {
         super(BossPvpAddon.ID + ":updatecheck", "Update Checker",
-            AutismAddons.modules().registerCategory("Client"),
             "Always checks for a newer version at launch.");
     }
 }

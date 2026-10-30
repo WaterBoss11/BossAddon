@@ -1,6 +1,6 @@
 package com.boss.pvp.util.pvp;
 
-import autismclient.util.AutismRotationUtil;
+import com.boss.pvp.util.pvp.RotationUtil;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
@@ -25,7 +25,7 @@ import net.minecraft.util.Mth;
  *
  * <p>The {@code step}/{@code normalize}/{@code snapDelta}/{@code angleDifference} methods are pure
  * (sensitivity is a parameter) and unit-tested. {@link #liveStep} and {@link #normalize(
- * AutismRotationUtil.Rotation, AutismRotationUtil.Rotation)} read {@link Minecraft} for the live
+ * RotationUtil.Rotation, RotationUtil.Rotation)} read {@link Minecraft} for the live
  * sensitivity and are the client-facing entry points used by the combat/aim modules.
  */
 public final class Gcd {
@@ -97,9 +97,9 @@ public final class Gcd {
      * Client-facing convenience: GCD-normalize {@code wanted} against {@code current} using the live
      * sensitivity step. Drop-in for the library's {@code normalizeToSensitivity(wanted, current)}.
      */
-    public static AutismRotationUtil.Rotation normalize(AutismRotationUtil.Rotation current,
-                                                        AutismRotationUtil.Rotation wanted) {
+    public static RotationUtil.Rotation normalize(RotationUtil.Rotation current,
+                                                        RotationUtil.Rotation wanted) {
         float[] r = normalize(current.yaw(), current.pitch(), wanted.yaw(), wanted.pitch(), liveStep());
-        return new AutismRotationUtil.Rotation(r[0], r[1]);
+        return new RotationUtil.Rotation(r[0], r[1]);
     }
 }

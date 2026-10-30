@@ -7,6 +7,7 @@ public final class HeldSlotManager {
     public static final int PRIORITY_BURROW       = 90;
     public static final int PRIORITY_AUTOCLUTCH   = 88;
     public static final int PRIORITY_AUTOHOOK     = 85;
+    public static final int PRIORITY_AUTOWEAPON   = 20;
     public static final int PRIORITY_SURROUND     = 80;
     public static final int PRIORITY_AUTOCRYSTAL  = 60;
     public static final int PRIORITY_AUTOANCHOR   = 55;
@@ -27,6 +28,12 @@ public final class HeldSlotManager {
     private static int pendingPriority = Integer.MIN_VALUE;
     private static boolean ownerRenewed = false;
     private static int ticksSinceRenew = 0;
+    private static boolean unwinding;
+
+    public interface Revocable {
+        /** Restore owned slot/input state while the old lease is still valid; do not reacquire here. */
+        void onLeaseRevoked();
+    }
 
     private HeldSlotManager() {}
 
@@ -42,15 +49,41 @@ public final class HeldSlotManager {
         }
     }
 
+    public static boolean tryAcquire(Object module, int priority) {
+        if (module == null) return false;
+        request(module, priority);
+        if (owner == null && !unwinding && pendingOwner == module) {
+            owner = module;
+            ownerPriority = priority;
+            ownerRenewed = true;
+            ticksSinceRenew = 0;
+            pendingOwner = null;
+            pendingPriority = Integer.MIN_VALUE;
+        }
+        return holds(module);
+    }
+
     public static boolean holds(Object module) {
-        return owner == module;
+        return module != null && owner == module;
     }
 
     public static void release(Object module) {
         if (owner == module) {
             owner = null;
+            ownerPriority = Integer.MIN_VALUE;
             ownerRenewed = false;
             ticksSinceRenew = 0;
+        }
+    }
+
+    private static void revokeOwner() {
+        Object previous = owner;
+        try {
+            if (previous instanceof Revocable revocable) revocable.onLeaseRevoked();
+        } catch (RuntimeException failure) {
+            System.err.println("[BossAddon] Slot unwind failed: " + failure.getClass().getSimpleName());
+        } finally {
+            if (owner == previous) release(previous);
         }
     }
 
@@ -58,12 +91,12 @@ public final class HeldSlotManager {
         boolean gapForUnwind = false;
         if (owner != null) {
             if (ownerRenewed) ticksSinceRenew = 0;
-            else if (++ticksSinceRenew > RENEW_TIMEOUT_TICKS) { owner = null; gapForUnwind = true; }
+            else if (++ticksSinceRenew > RENEW_TIMEOUT_TICKS) { revokeOwner(); gapForUnwind = true; }
         }
 
         if (owner != null && pendingOwner != null && pendingPriority > ownerPriority
                 && (pendingPriority >= HEAL_PREEMPT_MIN || ownerPriority <= PRIORITY_SCAFFOLD)) {
-            owner = null;
+            revokeOwner();
             gapForUnwind = true;
         }
 
@@ -72,9 +105,12 @@ public final class HeldSlotManager {
             ownerPriority = pendingPriority;
             ticksSinceRenew = 0;
         }
+        unwinding = gapForUnwind;
         ownerRenewed = false;
-        pendingOwner = null;
-        pendingPriority = Integer.MIN_VALUE;
+        if (!gapForUnwind) {
+            pendingOwner = null;
+            pendingPriority = Integer.MIN_VALUE;
+        }
     }
 
     public static void clear(Object module) {
@@ -89,5 +125,6 @@ public final class HeldSlotManager {
         pendingPriority = Integer.MIN_VALUE;
         ownerRenewed = false;
         ticksSinceRenew = 0;
+        unwinding = false;
     }
 }

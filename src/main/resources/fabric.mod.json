@@ -37,6 +37,6 @@
     "minecraft": "${mc_compat}",
     "fabricloader": ">=0.18.4",
     "fabric-api": "*",
-    "autism": ">=2.3"
+    "autism": ">=5.0-26.2-dev"
   }
 }

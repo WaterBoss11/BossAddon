@@ -30,7 +30,7 @@ public abstract class EntityHitboxMixin {
         if (h <= 0.0 && v <= 0.0) return;
 
         if (hb.onlyTargeted()
-                && (BossPvpAddon.killAura == null || BossPvpAddon.killAura.currentTarget() != self)) return;
+                && com.boss.pvp.util.CombatManager.currentTarget(net.minecraft.client.Minecraft.getInstance()) != self) return;
 
         AABB box = cir.getReturnValue();
         cir.setReturnValue(box.inflate(h, v, h));

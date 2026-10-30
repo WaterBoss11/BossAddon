@@ -7,30 +7,15 @@ import java.nio.file.Path;
 import java.util.Properties;
 
 /**
- * Resolves the flags webhook URL (the BossUtility flags channel) for the running client.
- *
- * <p><b>Shipped default.</b> Flag reporting is on for every user out of the box: the webhook is baked into
- * the addon here ({@link #DEFAULT_WEBHOOK}, committed — not gitignored) so all clients report to the same
- * shared channel. Users opt out via the in-game "Report crashes &amp; kicks" toggle (the flag report
- * module), not by editing config.
- *
- * <p><b>Optional local override.</b> For a private/dev channel, a machine-local source can override the
- * baked default (never committed): {@code BOSS_UTILITY_FLAGS_WEBHOOK} env var, else
- * {@code <run>/config/boss-utility/flags.properties} with {@code webhook=...}. This is a LOCAL CLIENT
- * override, not a GitHub Actions secret.
- *
- * <p>Precedence: env var → local file → baked default. If the resolved value is blank or still the
- * unfilled placeholder, reporting is silently disabled.
+ * Resolves reporting endpoints from machine-local configuration only.
+ * BOSS_UTILITY_FLAGS_WEBHOOK takes precedence over config/boss-utility/flags.properties;
+ * absent or placeholder endpoints disable reporting. No credentials ship in the addon.
  */
 public final class FlagConfig {
 
     private FlagConfig() {}
 
-    // Baked-in shipped webhook for the shared BossUtility flags channel ("Flagged Utility"). PUBLIC by design
-    // (it ships in the jar) — see the README privacy section. If this is ever reset to a value containing the
-    // placeholder marker (REPLACE_ME), reporting auto-disables so no client POSTs to a bogus URL.
-    static final String DEFAULT_WEBHOOK =
-        "https://discord.com/api/webhooks/1527841707259858998/l00lO5oSzoX5dqbbEGwbKlHc17hJCgpzY3B9DjlI24jTYEUPUJWuuIuvqe0I82FC-Imt";
+    static final String DEFAULT_WEBHOOK = "";
 
     private static final String PLACEHOLDER_MARKER = "REPLACE_ME";
     private static final String ENV_KEY = "BOSS_UTILITY_FLAGS_WEBHOOK";

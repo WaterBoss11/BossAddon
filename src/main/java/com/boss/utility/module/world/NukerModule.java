@@ -13,15 +13,15 @@ import autismclient.api.module.DoubleSetting;
 import autismclient.api.module.IntSetting;
 import autismclient.api.module.RegistryListSetting;
 import autismclient.util.AutismClientMessaging;
-import autismclient.util.AutismRotationUtil;
-import autismclient.util.AutismWorldGeometry;
+import com.boss.pvp.util.pvp.RotationUtil;
+
 
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.rendertype.AutismRenderTypes;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -341,9 +341,9 @@ public final class NukerModule extends Module {
 
     private void sendSilentLook(Minecraft mc, LocalPlayer p, Vec3 point) {
         if (mc.getConnection() == null) return;
-        AutismRotationUtil.Rotation cur = AutismRotationUtil.playerRotation(p);
-        AutismRotationUtil.Rotation look = AutismRotationUtil.normalizeToSensitivity(
-            AutismRotationUtil.lookingAt(point, p.getEyePosition()), cur);
+        RotationUtil.Rotation cur = RotationUtil.playerRotation(p);
+        RotationUtil.Rotation look = RotationUtil.normalizeToSensitivity(
+            RotationUtil.lookingAt(point, p.getEyePosition()), cur);
         mc.getConnection().send(new net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.Rot(
             look.yaw(), look.pitch(), p.onGround(), p.horizontalCollision));
     }
@@ -394,7 +394,7 @@ public final class NukerModule extends Module {
         BlockPos center = mc.player.blockPosition();
 
         context.submitNodeCollector().submitCustomGeometry(context.poseStack(),
-            AutismRenderTypes.tracerEspLines(),
+            RenderTypes.linesTranslucent(),
             (pose, vc) -> {
                 for (BlockPos bp : targets) {
                     drawBoxLines(pose, vc, bp.getX() - cx, bp.getY() - cy, bp.getZ() - cz,
@@ -412,25 +412,35 @@ public final class NukerModule extends Module {
             });
     }
 
-    // Wireframe box: 12 edges. AutismWorldGeometry exposes only line(), matching TrajectoryModule's approach.
+    // Wireframe box: 12 edges. Native geometry is submitted through the existing render pipeline.
     private static void drawBoxLines(com.mojang.blaze3d.vertex.PoseStack.Pose pose,
                                      com.mojang.blaze3d.vertex.VertexConsumer vc,
                                      double x1, double y1, double z1, double x2, double y2, double z2,
                                      int color, float width) {
         // bottom rectangle
-        AutismWorldGeometry.line(pose, vc, x1, y1, z1, x2, y1, z1, color, width);
-        AutismWorldGeometry.line(pose, vc, x2, y1, z1, x2, y1, z2, color, width);
-        AutismWorldGeometry.line(pose, vc, x2, y1, z2, x1, y1, z2, color, width);
-        AutismWorldGeometry.line(pose, vc, x1, y1, z2, x1, y1, z1, color, width);
+        line(pose, vc, x1, y1, z1, x2, y1, z1, color, width);
+        line(pose, vc, x2, y1, z1, x2, y1, z2, color, width);
+        line(pose, vc, x2, y1, z2, x1, y1, z2, color, width);
+        line(pose, vc, x1, y1, z2, x1, y1, z1, color, width);
         // top rectangle
-        AutismWorldGeometry.line(pose, vc, x1, y2, z1, x2, y2, z1, color, width);
-        AutismWorldGeometry.line(pose, vc, x2, y2, z1, x2, y2, z2, color, width);
-        AutismWorldGeometry.line(pose, vc, x2, y2, z2, x1, y2, z2, color, width);
-        AutismWorldGeometry.line(pose, vc, x1, y2, z2, x1, y2, z1, color, width);
+        line(pose, vc, x1, y2, z1, x2, y2, z1, color, width);
+        line(pose, vc, x2, y2, z1, x2, y2, z2, color, width);
+        line(pose, vc, x2, y2, z2, x1, y2, z2, color, width);
+        line(pose, vc, x1, y2, z2, x1, y2, z1, color, width);
         // vertical edges
-        AutismWorldGeometry.line(pose, vc, x1, y1, z1, x1, y2, z1, color, width);
-        AutismWorldGeometry.line(pose, vc, x2, y1, z1, x2, y2, z1, color, width);
-        AutismWorldGeometry.line(pose, vc, x2, y1, z2, x2, y2, z2, color, width);
-        AutismWorldGeometry.line(pose, vc, x1, y1, z2, x1, y2, z2, color, width);
+        line(pose, vc, x1, y1, z1, x1, y2, z1, color, width);
+        line(pose, vc, x2, y1, z1, x2, y2, z1, color, width);
+        line(pose, vc, x2, y1, z2, x2, y2, z2, color, width);
+        line(pose, vc, x1, y1, z2, x1, y2, z2, color, width);
+    }
+    private static void line(com.mojang.blaze3d.vertex.PoseStack.Pose pose,
+                             com.mojang.blaze3d.vertex.VertexConsumer buffer,
+                             double x1, double y1, double z1, double x2, double y2, double z2,
+                             int color, float width) {
+        org.joml.Vector3f normal = new org.joml.Vector3f((float) (x2 - x1), (float) (y2 - y1), (float) (z2 - z1));
+        if (normal.lengthSquared() <= 1.0E-8F || !Float.isFinite(width) || width <= 0.0f) return;
+        normal.normalize();
+        buffer.addVertex(pose, (float) x1, (float) y1, (float) z1).setColor(color).setNormal(pose, normal).setLineWidth(width);
+        buffer.addVertex(pose, (float) x2, (float) y2, (float) z2).setColor(color).setNormal(pose, normal).setLineWidth(width);
     }
 }

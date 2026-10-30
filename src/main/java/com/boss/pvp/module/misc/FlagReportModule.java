@@ -2,7 +2,6 @@ package com.boss.pvp.module.misc;
 
 import com.boss.pvp.BossPvpAddon;
 
-import autismclient.api.AutismAddons;
 import autismclient.modules.Module;
 import autismclient.api.module.BoolSetting;
 
@@ -16,7 +15,6 @@ public final class FlagReportModule extends Module {
 
     public FlagReportModule() {
         super(BossPvpAddon.ID + ":flagreport", "Crash & Kick Reports",
-            AutismAddons.modules().registerCategory("Client"),
             "Report crashes and kicks to the developer.");
         add(new BoolSetting("report", "Report crashes & kicks", true)
             .description("Sends a report to the developer's Discord when you crash or get kicked: what "

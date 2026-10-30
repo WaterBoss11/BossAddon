@@ -29,14 +29,9 @@ public final class BossAutoTestCommand {
     }
 
     private static void enableModules() {
-        setOn(BossPvpAddon.killAura);
-        setOn(BossPvpAddon.autoTotem);
-        setOn(BossPvpAddon.autoArmor);
-        setOn(BossPvpAddon.surround);
         setOn(BossPvpAddon.reach);
         setOn(BossPvpAddon.noSlowdown);
         setOn(BossPvpAddon.antiEntityPush);
-        setOn(BossPvpAddon.scaffold);
     }
 
     private static void setOn(Module m) {

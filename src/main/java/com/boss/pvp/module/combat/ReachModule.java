@@ -61,10 +61,10 @@ public final class ReachModule extends Module {
     }
 
     private boolean inCombat() {
-        KillAuraModule ka = BossPvpAddon.killAura;
-        if (ka == null) return false;
-        if (ka.currentTarget() != null) return true;
-        return System.currentTimeMillis() - ka.lastAttackMs() < COMBAT_WINDOW_MS;
+        if (com.boss.pvp.util.CombatManager.currentTarget(Minecraft.getInstance()) != null) return true;
+        long last = com.boss.pvp.util.CombatManager.lastAttackMs();
+        long age = System.currentTimeMillis() - last;
+        return last != 0L && age >= 0L && age < COMBAT_WINDOW_MS;
     }
 
     private static void setBase(LocalPlayer p, Holder<Attribute> attr, double value) {

@@ -1,6 +1,6 @@
 package com.boss.pvp.util.pvp;
 
-import autismclient.util.AutismRotationUtil;
+import com.boss.pvp.util.pvp.RotationUtil;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.protocol.Packet;
@@ -54,11 +54,11 @@ public final class RotationManager {
 
         float realYaw = mc.player.getYRot();
         float realPitch = mc.player.getXRot();
-        AutismRotationUtil.Rotation current = new AutismRotationUtil.Rotation(realYaw, realPitch);
-        AutismRotationUtil.Rotation desired = new AutismRotationUtil.Rotation(req.yaw(), req.pitch());
+        RotationUtil.Rotation current = new RotationUtil.Rotation(realYaw, realPitch);
+        RotationUtil.Rotation desired = new RotationUtil.Rotation(req.yaw(), req.pitch());
         // GCD-snap the sent rotation onto the mouse-sensitivity grid so silent aim looks mouse-produced.
         // When the requester disables GCD, send the raw desired rotation (still silent, just ungridded).
-        AutismRotationUtil.Rotation norm = req.gcd() ? Gcd.normalize(current, desired) : desired;
+        RotationUtil.Rotation norm = req.gcd() ? Gcd.normalize(current, desired) : desired;
         float yaw = norm.yaw();
         float pitch = norm.pitch();
 

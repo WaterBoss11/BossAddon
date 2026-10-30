@@ -21,7 +21,7 @@ public abstract class AntiEntityPushMixin {
         Entity self = (Entity) (Object) this;
         if (self != Minecraft.getInstance().player) return;
         if (m.onlyWhileSurrounded()
-                && (BossPvpAddon.surround == null || !BossPvpAddon.surround.isEnabled())) return;
+                && !com.boss.pvp.util.pvp.PvpUtil.hostEnabled("surround")) return;
 
         // Replace the vanilla push with the mode's result. Either way the original full push is cancelled;
         // in Modify mode the scaled remainder is re-applied (vanilla push just adds to deltaMovement, so this

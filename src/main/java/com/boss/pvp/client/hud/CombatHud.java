@@ -58,8 +58,7 @@ public final class CombatHud implements HudElementProvider {
         }
 
         int line = y;
-        LivingEntity t = (BossPvpAddon.killAura != null && BossPvpAddon.killAura.isEnabled())
-            ? BossPvpAddon.killAura.currentTarget() : null;
+        LivingEntity t = com.boss.pvp.util.CombatManager.currentTarget(mc);
         if (t != null) {
             int hp = (int) Math.ceil(t.getHealth() + t.getAbsorptionAmount());
             ctx.text(font, "Target: " + t.getName().getString() + " " + hp + "hp", x, line, 0xFFFF6655);
@@ -111,15 +110,22 @@ public final class CombatHud implements HudElementProvider {
 
     private String activeModules() {
         StringBuilder sb = new StringBuilder();
-        add(sb, "Crystal", BossPvpAddon.autoCrystal);
-        add(sb, "KA", BossPvpAddon.killAura);
-        add(sb, "Surround", BossPvpAddon.surround);
-        add(sb, "Anchor", BossPvpAddon.autoAnchor);
+        addHost(sb, "Crystal", "crystal-aura");
+        addHost(sb, "KA", "kill-aura");
+        addHost(sb, "Surround", "surround");
+        addHost(sb, "Anchor", "anchor-aura");
         add(sb, "Bed", BossPvpAddon.bedAura);
-        add(sb, "Totem", BossPvpAddon.autoTotem);
+        addHost(sb, "Totem", "auto-totem");
+        add(sb, "Clutch", BossPvpAddon.autoClutch);
         add(sb, "Pot", BossPvpAddon.autoPot);
         add(sb, "Gap", BossPvpAddon.autoGap);
         return sb.length() == 0 ? "-" : sb.toString();
+    }
+
+    private void addHost(StringBuilder sb, String name, String id) {
+        if (!com.boss.pvp.util.pvp.PvpUtil.hostEnabled(id)) return;
+        if (sb.length() > 0) sb.append(' ');
+        sb.append(name);
     }
 
     private void add(StringBuilder sb, String name, Module m) {

@@ -24,12 +24,8 @@ import com.boss.pvp.BossPvpAddon;
  * a running client (AUTISM's {@code Module} can't be instantiated headlessly). Settings are never touched —
  * only enabled flags — so every module keeps its exact configuration through any number of toggles.
  *
- * <p><b>Which modules belong to a half</b> is answered from AUTISM's <em>live</em> module registry, filtered by
- * the half's id-namespace ({@code bossaddon:pvp:} vs {@code bossaddon:utility:}) — see {@link #modulesFor}. This is the
- * authoritative source and does not depend on each addon's {@code registerPvp}/{@code registerUtility} call
- * having populated a cached array: the utility half was silently enumerating zero modules because it relied on
- * that array, and the live-registry filter fixes it. The registration arrays remain a fallback for headless
- * tests where the registry isn't reachable.
+ * <p>Each entry point supplies its registered modules. Namespace filtering keeps the two halves separate
+ * without linking AUTISM's renamed internal registry, and never toggles the host's replacement modules.
  */
 public final class AddonHalves {
 
@@ -65,12 +61,8 @@ public final class AddonHalves {
     @FunctionalInterface
     public interface ModuleSource { java.util.List<ModuleView> all(); }
 
-    // How each half's modules are enumerated. The truth is AUTISM's live module registry filtered by the half's
-    // id-namespace ("bossaddon:pvp:" / "bossaddon:utility:"), NOT the array captured at registration — so a half is found
-    // even if its addon's registerXxx() never ran (e.g. the second addon-in-one-mod init not populating it, which
-    // silently zeroed the utility half). The registered arrays below remain a fallback for when the live registry
-    // is unavailable (headless tests) or empty. Swapped in tests via setModuleSource.
-    private static volatile ModuleSource moduleSource = AddonHalves::liveModulesFromRegistry;
+    // Both entry points register their own instances; tests can supply synthetic module views.
+    private static volatile ModuleSource moduleSource = AddonHalves::registeredModules;
 
     public static boolean pvpOn() { return pvpOn; }
     public static boolean utilityOn() { return utilityOn; }
@@ -181,21 +173,17 @@ public final class AddonHalves {
         try { return m.id(); } catch (Throwable ignored) { return null; }
     }
 
-    /** Wrap every live AUTISM module as a {@link ModuleView}. Guarded so a headless/test context (no registry)
-     * falls back to the registered arrays rather than throwing. */
-    private static java.util.List<ModuleView> liveModulesFromRegistry() {
-        try {
-            java.util.List<ModuleView> out = new java.util.ArrayList<>();
-            for (Module m : autismclient.modules.ModuleRegistry.all()) if (m != null) out.add(realView(m));
-            return out;
-        } catch (Throwable t) {
-            return java.util.List.of();
-        }
+    /** Enumerate only instances registered by this addon, using the stable module API. */
+    private static java.util.List<ModuleView> registeredModules() {
+        java.util.List<ModuleView> out = new java.util.ArrayList<>(pvpModules.length + utilityModules.length);
+        java.util.Collections.addAll(out, pvpModules);
+        java.util.Collections.addAll(out, utilityModules);
+        return out;
     }
 
-    /** Override the live module source (package-private, for tests). Null restores the default AUTISM registry. */
+    /** Override the live module source (package-private, for tests). Null restores the registered addon instances. */
     static void setModuleSource(ModuleSource src) {
-        moduleSource = src != null ? src : AddonHalves::liveModulesFromRegistry;
+        moduleSource = src != null ? src : AddonHalves::registeredModules;
     }
 
     private static boolean readFlag(String half) {

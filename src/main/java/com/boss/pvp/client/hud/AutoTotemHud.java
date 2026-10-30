@@ -1,8 +1,9 @@
 package com.boss.pvp.client.hud;
 
-import com.boss.pvp.module.automation.AutoTotemModule;
-
 import com.boss.pvp.BossPvpAddon;
+import com.boss.pvp.util.CombatManager;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.item.Items;
 
 import autismclient.api.hud.HudElementProvider;
 
@@ -27,8 +28,13 @@ public final class AutoTotemHud implements HudElementProvider {
     @Override
     public void render(GuiGraphicsExtractor ctx, Font font, int x, int y, float alpha) {
         if (!firstRenderLogged) { firstRenderLogged = true; System.out.println("[BossPvP] HUD first render: " + id()); }
-        AutoTotemModule m = BossPvpAddon.autoTotem;
-        if (m == null || !m.isEnabled()) return;
-        ctx.text(font, "Totems: " + m.totemCount() + "  Pops: " + m.popCount(), x, y, 0xFFFFE066);
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null) return;
+        int count = 0;
+        for (int i = 0; i < mc.player.getInventory().getContainerSize(); i++) {
+            var stack = mc.player.getInventory().getItem(i);
+            if (stack.is(Items.TOTEM_OF_UNDYING)) count += stack.getCount();
+        }
+        ctx.text(font, "Totems: " + count + "  Pops: " + CombatManager.totemPops(), x, y, 0xFFFFE066);
     }
 }

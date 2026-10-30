@@ -1,18 +1,16 @@
-# libs/ — local dependency drop-in
+# Local AUTISM Client API jars
 
-Drop your **AUTISM API jar** here:
+Supply the host jars separately from the corresponding AUTISM Client distributions:
 
+```text
+libs\autism-5.1-26.2.jar        V4 / 5.1, API v4 (default target)
+libs\autism-5.0-26.2-dev.jar   Public 5.0, API v3
 ```
-libs/autism-3.4.jar
-```
 
-The Gradle build resolves the AUTISM Client API from this folder via a `flatDir`
-repository (see `build.gradle.kts`). The file name must match the coordinate in
-`gradle/libs.versions.toml` — i.e. `autism-<version>.jar` (currently `autism-3.4.jar`).
+The [build](../build.gradle.kts) uses a `flatDir` repository. The file name must match
+`autism` in the [version catalog](../gradle/libs.versions.toml). Build each target with
+its matching jar; restore the default `5.1-26.2` selector afterwards.
 
-**This jar is NOT included in version control** (`.gitignore` excludes `libs/*.jar`).
-Each builder must supply their own copy of the AUTISM API jar, obtained separately
-from the AUTISM Client distribution.
-
-If you bump the `autism` version in `gradle/libs.versions.toml`, drop the matching
-`autism-<new-version>.jar` here as well.
+These dependency jars are ignored by Git and are **not bundled in BossAddon**. Do not
+commit credentials or copy a live Minecraft profile here. See the [main README](../README.md)
+for Java 25, artifact selection, and build instructions.

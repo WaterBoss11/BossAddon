@@ -4,7 +4,6 @@ import com.boss.pvp.BossPvpAddon;
 import com.boss.pvp.flag.FlagReporter;
 import com.boss.pvp.util.ReconfigureLoopDetector;
 
-import autismclient.api.AutismAddons;
 import autismclient.modules.Module;
 import autismclient.api.module.BoolSetting;
 
@@ -39,7 +38,6 @@ public final class ReconfigureGuardModule extends Module {
 
     public ReconfigureGuardModule() {
         super(BossPvpAddon.ID + ":reconfigureguard", "Reconfigure Loop Guard",
-            AutismAddons.modules().registerCategory("Client"),
             "Auto-disconnect if a server traps you in a reconfigure loop.");
         add(new BoolSetting("guard", "Guard against reconfigure loops", true)
             .description("If a server repeatedly forces your client back into the configuration phase right after "

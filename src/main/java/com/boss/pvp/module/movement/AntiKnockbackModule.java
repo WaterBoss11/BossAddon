@@ -104,7 +104,7 @@ public final class AntiKnockbackModule extends Module {
         if (mc.options == null || mc.gui.screen() != null) { endTap(mc); wtapPrimed = false; return; }
 
         boolean atkDown = mc.options.keyAttack.isDown();
-        long kaMs = (BossPvpAddon.killAura != null) ? BossPvpAddon.killAura.lastAttackMs() : 0L;
+        long kaMs = com.boss.pvp.util.CombatManager.lastAttackMs();
         if (!wtapPrimed) {
             prevAttackDown = atkDown;
             prevKaAttackMs = kaMs;
@@ -119,7 +119,7 @@ public final class AntiKnockbackModule extends Module {
 
         boolean attackEdge = atkDown && !prevAttackDown;
         prevAttackDown = atkDown;
-        boolean kaHit = BossPvpAddon.killAura != null && BossPvpAddon.killAura.isEnabled() && kaMs != prevKaAttackMs;
+        boolean kaHit = kaMs != 0L && kaMs != prevKaAttackMs;
         prevKaAttackMs = kaMs;
         boolean onHit = attackEdge || kaHit;
 
@@ -156,7 +156,6 @@ public final class AntiKnockbackModule extends Module {
 
     private boolean attacking(Minecraft mc) {
         if (mc.options != null && mc.options.keyAttack.isDown()) return true;
-        return BossPvpAddon.killAura != null && BossPvpAddon.killAura.isEnabled()
-            && BossPvpAddon.killAura.currentTarget() != null;
+        return com.boss.pvp.util.CombatManager.currentTarget(mc) != null;
     }
 }

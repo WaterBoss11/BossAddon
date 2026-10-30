@@ -9,7 +9,7 @@ import com.boss.pvp.util.MenuMode;
 import autismclient.modules.Module;
 import autismclient.api.module.*;
 import autismclient.util.AutismClientMessaging;
-import autismclient.util.AutismRotationUtil;
+import com.boss.pvp.util.pvp.RotationUtil;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -185,9 +185,9 @@ public final class AutoPotModule extends Module {
     }
 
     private void applyRotation(LocalPlayer p, float yaw, float pitch) {
-        AutismRotationUtil.Rotation current = AutismRotationUtil.playerRotation(p);
-        AutismRotationUtil.Rotation desired = new AutismRotationUtil.Rotation(yaw, pitch);
-        AutismRotationUtil.apply(p, AutismRotationUtil.normalizeToSensitivity(desired, current), false);
+        RotationUtil.Rotation current = RotationUtil.playerRotation(p);
+        RotationUtil.Rotation desired = new RotationUtil.Rotation(yaw, pitch);
+        RotationUtil.apply(p, RotationUtil.normalizeToSensitivity(desired, current), false);
     }
 
     private void selectHotbarSlot(Minecraft mc, LocalPlayer p, int slot) {

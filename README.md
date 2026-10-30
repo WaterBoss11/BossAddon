@@ -12,136 +12,214 @@
 
 [![License](https://img.shields.io/github/license/WaterBoss11/BossAddon?color=blue)](LICENSE)
 ![Minecraft](https://img.shields.io/badge/Minecraft-26.2-brightgreen)
-![AUTISM Client](https://img.shields.io/badge/AUTISM%20Client-3.4-orange)
+![AUTISM Client](https://img.shields.io/badge/AUTISM%20Client-5.0%20%2F%205.1-orange)
 [![Release](https://img.shields.io/github/v/release/WaterBoss11/BossAddon?color=success&label=release)](https://github.com/WaterBoss11/BossAddon/releases/latest)
 [![Issues](https://img.shields.io/github/issues/WaterBoss11/BossAddon)](https://github.com/WaterBoss11/BossAddon/issues)
 
-A combat addon for AUTISM Client. It adds 31 modules and 3 HUDs covering crystal PvP, melee, survival
-automation, movement, and defense. Modules use real vanilla explosion-damage math, silent server-side
-rotations, a ghost-safe rotate-before-act packet path, and a shared slot/rotation arbiter so they do not
-conflict within a tick.
+BossAddon complements the main client's combat modules instead of registering duplicate auras,
+armor/totem managers, scaffold, or render controls. This version has **52 modules across its two halves**,
+including the existing guards/reporting controls, and eight HUD providers. It adds **19 modules** and
+upgrades AutoWeapon, AutoHook, AutoShoot, and InvManager. **AutoClutch is intentionally retained.**
+
+New modules start **disabled**. Existing settings and enabled states are retained for surviving modules.
+Use only one BossAddon jar at a time, matched to the host version below.
 
 > [!WARNING]
-> Intended for servers without anticheat. On servers that run anticheat or enforce rules, many modules will
-> fail or get you banned. Use responsibly.
+> Server rules and server-side validation still apply. Experimental movement can be rejected or corrected;
+> no anticheat compatibility is guaranteed. Test settings in a local world before using them elsewhere.
+
+## New movement modules
+
+| Module | Behavior |
+|---|---|
+| AutoWindCharge | Deliberate jump/key-triggered wind-charge assistance with landing and cooldown checks |
+| KeepSprint | Retains attack momentum; yields to conflicting critical-hit/sprint-reset settings |
+| HoleSnap | Moves toward a nearby unoccupied, reachable resistant hole |
+| TargetStrafe | Orbits an eligible target with collision and ledge checks |
+| FastWeb | Configurable web slowdown/escape handling |
+| FastLadder | Faster ladder/vine ascent, with climbable and headroom checks |
+| WaterWalk | Experimental liquid-surface movement; sneak to descend, no fire/lava immunity |
+| ReverseStep | Faster bounded descents, without overriding intentional jumps or fall protection |
+| TridentBoost | Experimental boost of real water/rain Riptide impulses; no dry-land guarantee |
+| ElytraPursuit | Target-relative steering while already gliding, with collision/separation checks |
+
+Movement controllers yield rather than all steering at once. Host Flight, Speed, Sprint, Scaffold,
+SafeWalk, and InvMove remain the main client's responsibility.
+
+## New combat, defense, and ranged helpers
+
+| Module | Behavior |
+|---|---|
+| ClickPearl | One pearl attempt per configured hotkey press; restores the previous slot |
+| PearlChaser | Follows an identified enemy pearl toward a supported, clear landing; unknown owners are skipped |
+| AutoShield | Uses an already-equipped shield against nearby threats; does not move offhand items |
+| AntiFireball | Deflects incoming vanilla large fireballs within actual attack reach |
+| BowRelease | Releases a manually drawn bow/trident using its actual charge ticks |
+| SpearAssist | Kinetic-weapon charge/timing assistance; experimental lunge is restricted to an integrated local server |
+| PistonPush | Bounded piston/power placement with server-confirmed state transitions |
+| CityMine | Opponent-surround block selection using native mining, not another packet-mining engine |
+
+ClickPearl's action key is unbound until configured. BowRelease requires physical use input by default.
+PearlChaser skips fluid/unloaded/unsafe predictions instead of guessing a destination. AutoShield releases
+only its own use input and yields when the player takes over.
+
+## AutoMace
+
+**AutoMace is a separate, disabled-by-default module**, not a rename of AutoWeapon. It attacks during a real
+native mace-smash fall; it does not fake fall height or force server attributes.
+
+- **Actual AUTISM AimAssist logic:** the installed host's own AimAssist executes through the stable module
+  callbacks. No replacement approximation is used. Choose the host's existing settings or AutoMace-specific
+  FOV, range, target point, axes, priority, deadzone, smoothing speeds, direction factor and midpoint.
+  Human mode uses V4's real implementation; API v3 uses its native interpolation. An already-enabled host
+  AimAssist keeps control. AutoMace neither enables it automatically nor overwrites its saved settings;
+  custom overrides exist only inside the borrowed aim tick and are restored even if that tick fails.
+- **Smash controls:** fall-distance window, descent speed, optional held attack/activation bind, preparation
+  during ascent, charge requirement, repeat interval, one hit per fall, health floor and bounded timeout.
+- **Mace selection:** fixed or automatic hotbar slot, native damage ranking, or Density/Breach/Wind Burst
+  preference; optional automatic switching and slot restoration.
+- **Axe stun slam:** independently toggle the axe-first shield attack, axe slot, charge/hold requirement,
+  follow-up delay and shield-lowering confirmation. The separate experimental **axe attribute swap** option
+  holds a prepared axe until the real aligned, in-range smash window, then swaps for that strike.
+  The isolated vanilla test observed the mace retaining the axe's native damage attribute for that hit;
+  timing-dependent benefits on other servers remain experimental.
+- **Spear reach swap:** optionally use a real spear jab at its native reach and then switch to mace once a
+  mace hit is legal. Spear slot, preparation hold and the extra jab are configurable. Vanilla 26.2 stores
+  spear reach on the held item's attack-range component: **swapping cannot legitimately grant that range
+  to a mace**. No fake extended-range success is reported. A spear jab is vetoed if its line would also
+  pierce a protected friend or an unselected living target.
+- **Spear swap for auto lunge:** separately enable automatic selection of a **Lunge-enchanted** spear and
+  a native jab that triggers the server's dash. Configure target range, cooldown, hunger floor, forward
+  clearance, approach-only behavior and optional ground activation. The spear is held through real equipment/
+  charge readiness and the previous slot is restored after the request; airborne sequences can follow with
+  the mace only at legal mace range. Lunge strength, exhaustion and durability come from the real enchantment,
+  not invented velocity. Unenchanted spears, low hunger, blocked/protected paths or a disabled ground option
+  do not trigger an automatic lunge. This option is off by default.
+
+Each action checks real aim/visibility/weapon reach and friend protection. Higher-priority item use,
+manual slot/item changes, GUI opening, invalid targets, landing or timeout cancel the owned sequence.
+AutoWeapon does not replace the axe/mace during AutoMace's own accepted attack.
+## Retained modules and upgrades
+
+- **Combat:** BedAura, HoleFiller, AutoWeapon, Reach, AntiEntityPush, AutoShoot.
+- **Automation:** AutoPot, AutoGap, AutoHook, InvManager, **AutoClutch**, AutoLeave, Hitbox.
+- **Existing movement:** Burrow, AntiKnockback, Velocity, NoSlowdown; BossUtility's Step remains available.
+- **Existing extras:** BossChat, non-overlapping utility/farming modules, HUDs, and local reporting/guards remain.
+  The existing destructive SelfDestruct control is still unbound by default; it is never used by QA.
+
+AutoWeapon now uses native mace/fall/enchantment data, including manual attacks. A normal weapon swap
+holds one attack request while native equipment attributes and fresh charge settle, then sends it once and
+restores the old slot. The pending request cancels on GUI/target/range/manual-slot changes, higher-priority
+item use, or after three seconds. The default equipment safety margin is 100 ms; native falling-mace hits
+retain their immediate short-window behavior. No server attributes or attack tickers are fabricated.
+AutoHook tracks the actual bobber and uses bounded projectile prediction. AutoShoot adds motion
+leading and clear-shot checks to its existing projectile behavior. InvManager replenishes component-matching
+partial stacks at a configurable threshold, preserves its existing empty-hotbar restocking, and always pauses
+for other containers or a non-empty cursor.
+
+## Features owned by the main client
+
+These **20 addon modules were removed**, not hidden or re-enabled as fallback copies:
+
+| Removed addon modules | Main-client replacement |
+|---|---|
+| AutoCrystal, AutoAnchor | CrystalAura, AnchorAura |
+| KillAura, AimAssist, TriggerBot | Corresponding host modules |
+| AutoArmor, AutoTotem | Corresponding host modules |
+| Surround, Scaffold, Sprint | Corresponding host modules |
+| Trapper | AutoTrap |
+| Trajectory | Trajectories |
+| Criticals, ShieldBreaker | KillAura's Criticals / Shield Break settings |
+| FastPlace, AutoXP | FastUse's Fast Blocks / Fast EXP modes |
+| NoHurtCam, TimeChanger, WeatherChanger | NoRender settings |
+| Offhand | Host AutoTotem; the old addon's extra offhand modes are retired too |
+
+The removal policy intentionally retires addon-specific extras in overlapping modules. **AutoClutch is the
+explicit exception:** its ID, five settings, and saved configuration stay intact despite host NoFall overlap.
+No host replacement is silently enabled and unrelated saved settings are not wiped.
+
+## Friends, teams, and HUDs
+
+The host **Teams / friends list** is shared by retained and new target-selection helpers. Legacy BossAddon
+KillAura friends are merged case-insensitively into that list without discarding existing names. If saving
+fails, legacy protection remains active. Scoreboard/dyed-leather team checks follow the shared targeting
+policy; friend names are protected independently of whether automatic team detection is enabled. While the
+PvP half is active, its outgoing-attack policy also protects stored friends from native Packet-mode attacks
+even if host Teams is disabled. Enable host Teams as well to make native auras skip those targets earlier;
+the addon never enables it silently.
+
+Borrowed hotbar/input state is restored before an emergency item owner takes over. A manual slot or item
+change is not overwritten as though it still belonged to the old action.
+
+The Combat HUD and totem counter use shared attack/pop observations rather than deleted aura/totem modules.
+The FOV circle follows the host AimAssist enabled state and retains its old display settings. Existing utility
+HUDs and the update notice remain available. Half toggles affect only addon-owned modules, not the host's
+replacement modules or its panic/HUD settings.
 
 ---
-
-## Combat Modules
-
-| Module | Description |
-|--------|-------------|
-| AutoCrystal | Places and detonates end crystals with vanilla damage math |
-| AutoAnchor | Places, charges, and detonates respawn anchors |
-| BedAura | Places and detonates beds in Nether/End |
-| KillAura | Attacks nearby entities with smooth rotation |
-| AimAssist | Aims toward targets (Linear/Sigmoid/Interpolation) |
-| AutoWeapon | Switches to the best weapon before each hit |
-| Criticals | Times attacks for critical hits |
-| Surround | Places obsidian around you |
-| HoleFiller | Fills holes around enemies |
-| Trapper | Traps enemies in obsidian |
-| ShieldBreaker | Breaks enemy shields with an axe |
-| Reach | Extends attack and interact range |
-| TriggerBot | Attacks the entity on your crosshair |
-| AntiEntityPush | Cancels or reduces entity push (Cancel, or Modify with horizontal/vertical keep %). Reducing push is still anticheat-detectable — same category as the full cancel |
-
-## Automation Modules
-
-| Module | Description |
-|--------|-------------|
-| AutoPot | Throws splash potions when health is low |
-| AutoGap | Eats golden apples when health is low |
-| AutoTotem | Keeps a totem of undying in the offhand |
-| AutoArmor | Equips the best armor |
-| AutoHook | Uses a fishing rod to pull enemies |
-| AutoXP | Uses XP bottles |
-| AutoClutch | Places blocks to prevent fall damage |
-| Offhand | Manages offhand item cycling |
-| InvManager | Manages the inventory |
-| AutoLeave | Disconnects when health drops below a threshold |
-| SelfDestruct | Clears logs, removes the addon jar, empties the recycle bin |
-| FastPlace | Removes place delay |
-| Hitbox | Expands entity hitboxes |
-
-## Movement Modules
-
-| Module | Description |
-|--------|-------------|
-| Scaffold | Places blocks beneath you while walking |
-| Burrow (Beta) | Buries you in obsidian |
-| AntiKnockback | Reduces or cancels knockback |
-| NoSlowdown | Removes slowdown while eating/drinking/blocking |
-
-## Render
-
-| Module | Description |
-|--------|-------------|
-| NoHurtCam | Removes the camera shake/tilt when you take damage |
-| Trajectory | Predicts projectile flight paths (bow, pearl, snowball, potion, etc.) before you throw |
-
-## HUD
-
-| Module | Description |
-|--------|-------------|
-| AimAssist FOV Circle | FOV ring for AimAssist |
-| Combat HUD | Combat stats |
-| Totem Pops | Totem pop counter |
-
----
-
-## Team Check
-
-Every combat module has an optional Team check toggle (default off). When on, a nearby player is treated as a
-teammate and skipped by targeting, placement, and threat detection if they wear leather armor dyed the same
-color as yours.
-
-- Each armor slot where both you and the target wear dyed leather is compared by RGB.
-- A slot matches when every channel is within ±15.
-- At least 2 slots must match, so default brown leather does not cause false positives.
-- If you wear no dyed leather, the check is disabled.
-
-Wired into KillAura, AimAssist, AutoCrystal, AutoAnchor, BedAura, TriggerBot, ShieldBreaker, Trapper,
-HoleFiller, and Surround.
-
-## Friends List
-
-KillAura holds a shared **Friends list** (an editable list of player names) that all of the team-check modules
-above also respect. Any player whose name matches an entry (case-insensitive) is skipped whenever the list has
-entries — independent of Team check. Bind **Add target to friends** in KillAura to add your current crosshair or
-combat target to the list on the fly. The list persists via AUTISM's settings.
-
----
-
 ## Requirements
 
 - Minecraft 26.2
-- AUTISM Client 3.4
+- AUTISM Client 5.0 (API v3) or V4 / 5.1 (API v4)
 - Fabric API 0.152.2+26.2
 - Java 25+
 
 ---
 
+## Verification scope
+
+Both prerelease builds pass the unit suite and compiled client-API reference checks. Isolated API3 gameplay
+checks also confirmed real AutoClutch placement/consumption/landing/restoration; exactly-once deferred weapon
+attacks and cancellation; native AimAssist movement without enabling it or changing saved settings; real
+falling AutoMace damage; and native Lunge-enchantment movement, durability/exhaustion costs and slot restoration.
+Additional support checks confirmed genuine shield-disable axe→mace follow-up, independent axe-preparation
+mace hits, and a real spear-range jab without any out-of-range mace attack. The negative, cancellation,
+preemption and protected-bystander cases remain part of those fixtures. The complete unit suite currently
+has **430 passing tests**, and both jars resolve their checked client API references on both host versions.
+
+These are **targeted checks, not a claim that every module/mode is gameplay-verified**. V4's own Discord/
+donator authentication gate prevented full in-world API4 QA and was not bypassed. Fabric's pre-existing
+anisotropic-filter option error and an optional Sodium warning also prevent a clean strict-log verdict,
+even where native assertions pass and the test JVM exits zero. Raw diagnostics are retained, not suppressed.
+
+## Which jar do I use?
+
+| Jar version | Client | API |
+|---|---|---|
+| [bossaddon-2-pre.1.jar](https://github.com/WaterBoss11/BossAddon/releases/download/v2-pre.1/bossaddon-2-pre.1.jar) | AUTISM Client V4 / 5.1 | v4 |
+| [bossaddon-2-pre.1+client5.0.jar](https://github.com/WaterBoss11/BossAddon/releases/download/v2-pre.1/bossaddon-2-pre.1%2Bclient5.0.jar) | AUTISM Client 5.0 | v3 |
+
+The default source target is `5.1-26.2`; the API declaration is capped to what the host supports. Direct and
+inherited client references must still be checked on both hosts; an API-version number alone is not enough.
+**v2-pre.1 is a prerelease.** The stable release badge may still point to an older version; use the
+versioned downloads above. Install only one jar, and back up your existing BossAddon configuration first.
+
 ## Build
 
-```bash
-# 1. Place the AUTISM Client 3.4 API jar in libs/ as autism-3.4.jar.
-# 2. Point JAVA_HOME at a JDK 25 install, then build:
-gradlew build          # Windows
-./gradlew build        # macOS / Linux
-# Output: build/libs/bossaddon-<version>.jar
+Place the matching local host API jar in `libs/`: `autism-5.1-26.2.jar` by default, or
+`autism-5.0-26.2-dev.jar` for the API-v3 build. Dependency jars are ignored by Git.
+
+```powershell
+$env:JAVA_HOME = "$env:USERPROFILE\.jdks\ms-25.0.4"
+.\gradlew.bat test --offline
+.\gradlew.bat build --offline
 ```
 
-Match the versions in `gradle/libs.versions.toml` (minecraft, fabric, autism) to the AUTISM release you build
-against.
+The output is `build/libs/bossaddon-<version>.jar`. For a client-5.0 artifact, select
+`autism = "5.0-26.2-dev"` and suffix `mod-version` with `+client5.0` in
+`gradle/libs.versions.toml`, then rebuild. Restore the default `5.1-26.2` selector and unsuffixed version
+when finished. Use Java 25, not a PATH-provided Java 17. Offline builds require the dependencies to be cached.
+
+Unit tests cover decision math/state and are not a substitute for gameplay checks. The separate gametest
+source set uses fresh isolated profiles, disabled reporting/BossChat, and real server-owned fixtures.
+Production profiles are never modified to make tests pass.
 
 ---
-
 ## Installation
 
-1. Download the latest release from the [Releases](https://github.com/WaterBoss11/BossAddon/releases/latest) page.
+1. Use a locally built jar, or a published release containing these changes, matched to the table above.
 2. Drop `bossaddon-<version>.jar` into your `.minecraft/mods/` folder.
-3. Launch with AUTISM Client 3.4 and Fabric API for Minecraft 26.2. The modules appear under the Boss's PVP
+3. Launch with the matching AUTISM Client 5.0 or V4/5.1 and Fabric API for Minecraft 26.2. The modules appear under the Boss's PVP
    and BossUtility addon categories — the two halves of BossAddon. Toggle either half with
    `?bossaddon pvp|utility on|off`: turning a half off disables its modules and skips their ticking entirely,
    and turning it back on restores exactly the modules that were enabled.
@@ -232,8 +310,11 @@ connected; use **disable** to stop participating entirely.
 
 ## Crash & kick reporting (privacy)
 
-By default this addon reports **kicks and crashes** to the developer's Discord to help fix bugs. Each report
-contains:
+Reporting is **disabled until a machine-local webhook is configured**. No webhook credentials ship in the
+source or jars. Configure `BOSS_PVP_FLAGS_WEBHOOK` or `config/boss-pvp/flags.properties` (`webhook=...`);
+`BOSS_PVP_FLAGS_DUAL_WEBHOOK` / `dualWebhook` optionally selects a combined reporting channel. The utility
+fallback uses `BOSS_UTILITY_FLAGS_WEBHOOK` or `config/boss-utility/flags.properties`. Keep these files private.
+When configured and enabled, each report contains:
 
 - the event type and its reason text — disconnects are labelled by what actually happened: **Server rejected
   connection** (VPN/proxy block, wrong loader, whitelist, ban), **Kicked** (kicked mid-game), **Timed out**,
@@ -271,7 +352,7 @@ own position/section math and crash the client deep inside vanilla's `EntitySect
 (reproducible even with Lithium fully disabled, so it isn't an optimisation-mod bug — and the identical values
 turned up on two separate accounts, which points at a deliberate server-side trigger rather than a glitch).
 
-The **Packet Crash Guard** module (under the **Client** category, **on by default**) checks incoming packet
+The **Packet Crash Guard** module (under the **Boss's PVP** category, **on by default**) checks incoming packet
 fields against one shared sanity ceiling before vanilla processes them. An out-of-range **velocity** for your
 player is clamped to a sane magnitude; a packet carrying an impossible **position or velocity** — explosion
 knockback, entity/player teleports, position syncs, entity spawns — is dropped before it is applied. What began
@@ -283,7 +364,7 @@ affected**; only impossible values are caught, and you get a one-time chat notic
 
 This is a **purely defensive, local-only** protection, the same honest category as the Anti-Knockback
 disclosure: it protects *your own client* from processing an impossible value. It never changes anything you
-send to the server and never fakes an acknowledgement. You can turn it off under **Client → Packet Crash
+send to the server and never fakes an acknowledgement. You can turn it off under **Boss's PVP → Packet Crash
 Guard**, but there's no reason to.
 
 ---
@@ -294,7 +375,7 @@ A malicious server can repeatedly force your client from the play phase back int
 phase right after you load in, trapping you in an endless **Loading terrain → Reconfiguring → Loading terrain**
 loop that never lets you actually play.
 
-The **Reconfigure Loop Guard** module (under the **Client** category, **on by default**) watches those
+The **Reconfigure Loop Guard** module (under the **Boss's PVP** category, **on by default**) watches those
 play→configuration transitions and, if they repeat too many times in a short window (3 within ~12 seconds),
 **cleanly disconnects** you with a clear reason instead of leaving you stuck indefinitely. A single legitimate
 reconfigure — e.g. a server-side resource-pack reload — never trips it.
@@ -303,7 +384,7 @@ It is **detect-and-disconnect only, never deceive-and-continue.** It never alter
 fakes any packet or acknowledgment sent to the server — the server's reconfigure request is always handled
 normally; the guard only *observes* the phase changes and, on a detected loop, closes the **local** connection
 (the same "observe and leave" category as the crash & kick reporting). If the flag reporter is on, the auto-
-disconnect is logged there as a **"Reconfigure loop"** event. Toggle it under **Client → Reconfigure Loop
+disconnect is logged there as a **"Reconfigure loop"** event. Toggle it under **Boss's PVP → Reconfigure Loop
 Guard**.
 
 ---
@@ -325,4 +406,5 @@ if GitHub is unreachable or the check fails for any reason it fails silently and
 
 ## License
 
-GPL-3.0 — see [LICENSE](LICENSE).
+GPL-3.0 — see [LICENSE](LICENSE). Donor notices, including the Nami/Sydney MIT terms and the stated
+Krispy/Shoreline permission basis, are packaged under [META-INF/licenses](src/main/resources/META-INF/licenses).

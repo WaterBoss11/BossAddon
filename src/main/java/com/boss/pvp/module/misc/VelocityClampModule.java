@@ -2,7 +2,6 @@ package com.boss.pvp.module.misc;
 
 import com.boss.pvp.BossPvpAddon;
 
-import autismclient.api.AutismAddons;
 import autismclient.modules.Module;
 import autismclient.api.module.BoolSetting;
 
@@ -42,7 +41,6 @@ public final class VelocityClampModule extends Module {
         // Module id stays "velocityclamp" so existing configs and keybinds are preserved; the display name is the
         // broader "Packet Crash Guard" now that the guard covers more than just the velocity packet.
         super(BossPvpAddon.ID + ":velocityclamp", "Packet Crash Guard",
-            AutismAddons.modules().registerCategory("Client"),
             "Reject or clamp absurd incoming packet values so a bad number can't crash your client.");
         add(new BoolSetting("clamp", "Guard against crash values", true)
             .description("Catches malformed or absurd numeric values from the server — extreme knockback/velocity, "

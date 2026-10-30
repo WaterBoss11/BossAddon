@@ -10,14 +10,11 @@ import com.boss.utility.hud.CompassHud;
 import com.boss.utility.hud.ItemHud;
 import com.boss.utility.hud.PotionTimersHud;
 import com.boss.utility.module.misc.NotifierModule;
-import com.boss.utility.module.movement.SprintModule;
 import com.boss.utility.module.movement.StepModule;
 import com.boss.utility.module.player.AntiAfkModule;
 import com.boss.utility.module.player.AutoRespawnModule;
 import com.boss.utility.module.player.ChestSwapModule;
 import com.boss.utility.module.render.AmbienceModule;
-import com.boss.utility.module.render.TimeChangerModule;
-import com.boss.utility.module.render.WeatherChangerModule;
 import com.boss.utility.module.world.AutoBreedModule;
 import com.boss.utility.module.world.AutoMountModule;
 import com.boss.utility.module.world.AutoShearerModule;
@@ -40,7 +37,6 @@ public final class BossUtilityAddon extends AutismAddon {
     public static final String ID = "bossaddon:utility";
 
     // Movement
-    public static SprintModule sprint;
     public static StepModule step;
     // Player
     public static AntiAfkModule antiAfk;
@@ -49,8 +45,6 @@ public final class BossUtilityAddon extends AutismAddon {
     // Misc
     public static NotifierModule notifier;
     // Render
-    public static TimeChangerModule timeChanger;
-    public static WeatherChangerModule weatherChanger;
     public static AmbienceModule ambience;
     // World
     public static AutoMountModule autoMount;
@@ -70,19 +64,16 @@ public final class BossUtilityAddon extends AutismAddon {
 
     @Override
     public int apiVersion() {
-        return AutismAddons.apiVersion();
+        return Math.min(autismclient.api.ApiVersion.CURRENT, AutismAddons.apiVersion());
     }
 
     @Override
     public void onInitialize() {
-        sprint = new SprintModule();
         step = new StepModule();
         antiAfk = new AntiAfkModule();
         autoRespawn = new AutoRespawnModule();
         chestSwap = new ChestSwapModule();
         notifier = new NotifierModule();
-        timeChanger = new TimeChangerModule();
-        weatherChanger = new WeatherChangerModule();
         ambience = new AmbienceModule();
         autoMount = new AutoMountModule();
         autoBreed = new AutoBreedModule();
@@ -91,8 +82,17 @@ public final class BossUtilityAddon extends AutismAddon {
         flagReport = new com.boss.utility.module.misc.FlagReportModule();
 
         Module[] all = {
-            sprint, step, antiAfk, autoRespawn, chestSwap, notifier,
-            timeChanger, weatherChanger, ambience, autoMount, autoBreed, autoShearer, nuker, flagReport
+            step,
+            antiAfk,
+            autoRespawn,
+            chestSwap,
+            notifier,
+            ambience,
+            autoMount,
+            autoBreed,
+            autoShearer,
+            nuker,
+            flagReport
         };
         for (Module m : all) AutismAddons.modules().register(m);
         registeredModules = all;
@@ -118,7 +118,7 @@ public final class BossUtilityAddon extends AutismAddon {
         java.util.List<String> out = new java.util.ArrayList<>();
         if (registeredModules != null) {
             for (Module m : registeredModules) {
-                if (m != null && m.isEnabled()) out.add(m.name() + " (" + m.category().name() + ")");
+                if (m != null && m.isEnabled()) out.add(m.name() + " (BossUtility)");
             }
         }
         return out;
@@ -129,13 +129,10 @@ public final class BossUtilityAddon extends AutismAddon {
         // Utility half disabled -> genuinely inert: skip ALL utility module ticking (modules were also
         // force-disabled by AddonHalves, which silences their mixin/render/packet hooks too).
         if (!com.boss.pvp.util.AddonHalves.utilityOn()) return;
-        if (sprint.isEnabled()) sprint.tick(mc);
         if (step.isEnabled()) step.tick(mc);
         if (antiAfk.isEnabled()) antiAfk.tick(mc);
         if (autoRespawn.isEnabled()) autoRespawn.tick(mc);
         if (notifier.isEnabled()) notifier.tick(mc);
-        if (timeChanger.isEnabled()) timeChanger.tick(mc);
-        if (weatherChanger.isEnabled()) weatherChanger.tick(mc);
         if (autoMount.isEnabled()) autoMount.tick(mc);
         if (autoBreed.isEnabled()) autoBreed.tick(mc);
         if (autoShearer.isEnabled()) autoShearer.tick(mc);

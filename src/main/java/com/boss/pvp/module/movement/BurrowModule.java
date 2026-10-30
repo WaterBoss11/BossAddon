@@ -7,8 +7,8 @@ import com.boss.pvp.util.input.HeldSlotManager;
 
 import autismclient.modules.Module;
 import autismclient.api.module.*;
-import autismclient.util.AutismInventoryHelper;
-import autismclient.util.AutismRotationUtil;
+import com.boss.pvp.util.InventoryUtil;
+import com.boss.pvp.util.pvp.RotationUtil;
 
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -78,7 +78,7 @@ public final class BurrowModule extends Module {
         Minecraft mc = Minecraft.getInstance();
         if (mc != null) {
             releaseWalkKeys(mc);
-            if (mc.player != null && prevSlot >= 0) AutismInventoryHelper.selectHotbarSlot(mc, prevSlot);
+            if (mc.player != null && prevSlot >= 0) InventoryUtil.selectHotbarSlot(mc, prevSlot);
         }
         prevSlot = -1;
         legitAim = null;
@@ -95,7 +95,7 @@ public final class BurrowModule extends Module {
 
         if (!HeldSlotManager.holds(this) && prevSlot >= 0) {
             releaseWalkKeys(mc);
-            AutismInventoryHelper.selectHotbarSlot(mc, prevSlot);
+            InventoryUtil.selectHotbarSlot(mc, prevSlot);
             prevSlot = -1;
             return;
         }
@@ -213,10 +213,10 @@ public final class BurrowModule extends Module {
 
     private void easeLegitCamera(LocalPlayer me) {
         if (legitAim == null) return;
-        AutismRotationUtil.Rotation cur = AutismRotationUtil.playerRotation(me);
-        AutismRotationUtil.Rotation target = AutismRotationUtil.lookingAt(legitAim, me.getEyePosition());
-        AutismRotationUtil.Rotation eased = AutismRotationUtil.interpolate(cur, target, LEGIT_EASE);
-        AutismRotationUtil.apply(me, AutismRotationUtil.normalizeToSensitivity(eased, cur), false);
+        RotationUtil.Rotation cur = RotationUtil.playerRotation(me);
+        RotationUtil.Rotation target = RotationUtil.lookingAt(legitAim, me.getEyePosition());
+        RotationUtil.Rotation eased = RotationUtil.interpolate(cur, target, LEGIT_EASE);
+        RotationUtil.apply(me, RotationUtil.normalizeToSensitivity(eased, cur), false);
     }
 
     private void reapConfirmed(Level level) {
@@ -289,7 +289,7 @@ public final class BurrowModule extends Module {
         for (int i = 0; i <= 8; i++) {
             if (me.getInventory().getItem(i).is(block)) {
                 if (prevSlot < 0) prevSlot = me.getInventory().getSelectedSlot();
-                AutismInventoryHelper.selectHotbarSlot(mc, i);
+                InventoryUtil.selectHotbarSlot(mc, i);
                 return false;
             }
         }
@@ -297,7 +297,7 @@ public final class BurrowModule extends Module {
     }
 
     private void restoreSlot(Minecraft mc, LocalPlayer me) {
-        if (prevSlot >= 0) AutismInventoryHelper.selectHotbarSlot(mc, prevSlot);
+        if (prevSlot >= 0) InventoryUtil.selectHotbarSlot(mc, prevSlot);
         prevSlot = -1;
     }
 }

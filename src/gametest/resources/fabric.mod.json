@@ -4,7 +4,9 @@
   "version": "1.0.0",
   "name": "Boss PVP Tests",
   "environment": "client",
+  "mixins": ["boss-qa-test.mixins.json"],
   "entrypoints": {
+    "preLaunch": ["com.boss.pvp.test.BossQaIsolation"],
     "fabric-client-gametest": ["com.boss.pvp.test.BossPvpClientGameTest"]
   },
   "depends": {

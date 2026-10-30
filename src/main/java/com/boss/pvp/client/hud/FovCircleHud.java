@@ -1,11 +1,10 @@
 package com.boss.pvp.client.hud;
 
-import com.boss.pvp.module.combat.AimAssistModule;
-
 import com.boss.pvp.BossPvpAddon;
-
+import com.boss.pvp.util.CombatManager;
+import com.boss.pvp.util.pvp.PvpUtil;
 import autismclient.api.hud.HudElementProvider;
-import autismclient.util.AutismUiScale;
+import net.minecraft.client.Minecraft;
 
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -41,7 +40,7 @@ public final class FovCircleHud implements HudElementProvider {
     @Override public String defaultAnchor() { return "CENTER"; }
     @Override public int defaultX() { return 0; }
     @Override public int defaultY() {
-        int sh = AutismUiScale.getVirtualScreenHeight();
+        int sh = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         return sh > 0 ? (sh - height()) / 2 : 0;
     }
 
@@ -50,30 +49,43 @@ public final class FovCircleHud implements HudElementProvider {
     @Override
     public void render(GuiGraphicsExtractor ctx, Font font, int x, int y, float alpha) {
         if (!firstRenderLogged) { firstRenderLogged = true; System.out.println("[BossPvP] HUD first render: " + id()); }
-        AimAssistModule m = BossPvpAddon.aimAssist;
-        if (m == null || !m.isEnabled() || !m.showCircle()) return;
-        coreHalf = m.circleCoreHalf();
+        if (!PvpUtil.hostEnabled("aim-assist")
+                || !Boolean.parseBoolean(PvpUtil.hostSetting("bossaddon:pvp:aimassist", "showCircle", "true"))) return;
+        coreHalf = Math.max(1, Math.min(16, option("circleThickness", 2))) / 2.0;
 
-        int vw = AutismUiScale.getVirtualScreenWidth();
-        int vh = AutismUiScale.getVirtualScreenHeight();
+        int vw = Minecraft.getInstance().getWindow().getGuiScaledWidth();
+        int vh = Minecraft.getInstance().getWindow().getGuiScaledHeight();
         if (vw <= 0 || vh <= 0) return;
-        double cx = vw / 2.0;
-        double cy = vh / 2.0;
+        org.joml.Vector2f center = centerForPose(ctx.pose(), vw, vh);
+        if (!Float.isFinite(center.x) || !Float.isFinite(center.y)) return;
+        double cx = center.x;
+        double cy = center.y;
 
         double r = radius();
-        int rgb = m.isLockedOn() ? RGB_LOCKED : RGB_SEARCHING;
+        int rgb = CombatManager.currentTarget(Minecraft.getInstance()) != null ? RGB_LOCKED : RGB_SEARCHING;
         float a = alpha <= 0 ? 1.0f : Math.min(1.0f, alpha);
 
-        if (m.circleFilled()) {
+        if (Boolean.parseBoolean(PvpUtil.hostSetting("bossaddon:pvp:aimassist", "filled", "false"))) {
             drawDisk(ctx, cx, cy, r - coreHalf, rgb, 0x55, a);
         }
         drawRing(ctx, cx, cy, r, rgb, a);
     }
 
+    public static org.joml.Vector2f centerForPose(org.joml.Matrix3x2fc pose, int guiWidth, int guiHeight) {
+        return new org.joml.Matrix3x2f(pose).invert()
+            .transformPosition(guiWidth / 2.0f, guiHeight / 2.0f, new org.joml.Vector2f());
+    }
+
     private int radius() {
-        AimAssistModule m = BossPvpAddon.aimAssist;
-        int r = (m != null) ? m.circleRadius() : DEFAULT_RADIUS;
-        return Math.max(1, r);
+        return Math.max(1, Math.min(512, option("circleRadius", DEFAULT_RADIUS)));
+    }
+
+    private static int option(String key, int fallback) {
+        try {
+            return Integer.parseInt(PvpUtil.hostSetting("bossaddon:pvp:aimassist", key, Integer.toString(fallback)));
+        } catch (NumberFormatException invalid) {
+            return fallback;
+        }
     }
 
     private void drawRing(GuiGraphicsExtractor ctx, double cx, double cy, double R, int rgb, float hudAlpha) {

@@ -7,8 +7,8 @@ import com.boss.pvp.util.input.HeldSlotManager;
 
 import autismclient.modules.Module;
 import autismclient.api.module.*;
-import autismclient.util.AutismInventoryHelper;
-import autismclient.util.AutismRotationUtil;
+import com.boss.pvp.util.InventoryUtil;
+import com.boss.pvp.util.pvp.RotationUtil;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -60,7 +60,7 @@ public final class BedAuraModule extends Module {
 
         Minecraft mc = Minecraft.getInstance();
         if (mc != null && mc.player != null && prevSlot >= 0 && bool("switchBack")) {
-            AutismInventoryHelper.selectHotbarSlot(mc, prevSlot);
+            InventoryUtil.selectHotbarSlot(mc, prevSlot);
         }
         bedPos = null;
         prevSlot = -1;
@@ -73,7 +73,7 @@ public final class BedAuraModule extends Module {
         if (me == null || level == null || mc.gameMode == null || mc.gui.screen() != null) return;
 
         if (!HeldSlotManager.holds(this) && prevSlot >= 0) {
-            AutismInventoryHelper.selectHotbarSlot(mc, prevSlot);
+            InventoryUtil.selectHotbarSlot(mc, prevSlot);
             prevSlot = -1;
             bedPos = null;
             return;
@@ -167,7 +167,7 @@ public final class BedAuraModule extends Module {
         for (int i = 0; i <= 8; i++) {
             if (me.getInventory().getItem(i).getItem() instanceof BedItem) {
                 if (prevSlot < 0) prevSlot = me.getInventory().getSelectedSlot();
-                AutismInventoryHelper.selectHotbarSlot(mc, i);
+                InventoryUtil.selectHotbarSlot(mc, i);
                 return false;
             }
         }
@@ -176,12 +176,12 @@ public final class BedAuraModule extends Module {
 
     private boolean ensureNonBed(Minecraft mc, LocalPlayer me) {
         if (!(me.getMainHandItem().getItem() instanceof BedItem)) return true;
-        AutismInventoryHelper.selectHotbarSlot(mc, prevSlot >= 0 ? prevSlot : 0);
+        InventoryUtil.selectHotbarSlot(mc, prevSlot >= 0 ? prevSlot : 0);
         return false;
     }
 
     private void restoreSlot(Minecraft mc, LocalPlayer me) {
-        if (prevSlot >= 0 && bool("switchBack")) AutismInventoryHelper.selectHotbarSlot(mc, prevSlot);
+        if (prevSlot >= 0 && bool("switchBack")) InventoryUtil.selectHotbarSlot(mc, prevSlot);
         prevSlot = -1;
     }
 
@@ -195,10 +195,10 @@ public final class BedAuraModule extends Module {
         if (legitAim == null) return;
         double ease = decimal("legitEase");
         if (ease <= 0) ease = LEGIT_EASE;
-        AutismRotationUtil.Rotation cur = AutismRotationUtil.playerRotation(me);
-        AutismRotationUtil.Rotation target = AutismRotationUtil.lookingAt(legitAim, me.getEyePosition());
-        AutismRotationUtil.Rotation eased = AutismRotationUtil.interpolate(cur, target, (float) ease);
-        AutismRotationUtil.apply(me, AutismRotationUtil.normalizeToSensitivity(eased, cur), false);
+        RotationUtil.Rotation cur = RotationUtil.playerRotation(me);
+        RotationUtil.Rotation target = RotationUtil.lookingAt(legitAim, me.getEyePosition());
+        RotationUtil.Rotation eased = RotationUtil.interpolate(cur, target, (float) ease);
+        RotationUtil.apply(me, RotationUtil.normalizeToSensitivity(eased, cur), false);
     }
 
     private Player nearestEnemy(Minecraft mc, LocalPlayer me) {

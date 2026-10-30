@@ -7,8 +7,8 @@ import com.boss.pvp.util.input.HeldSlotManager;
 
 import autismclient.modules.Module;
 import autismclient.api.module.*;
-import autismclient.util.AutismInventoryHelper;
-import autismclient.util.AutismRotationUtil;
+import com.boss.pvp.util.InventoryUtil;
+import com.boss.pvp.util.pvp.RotationUtil;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -53,7 +53,7 @@ public final class HoleFillerModule extends Module {
     public void onDisable() {
 
         Minecraft mc = Minecraft.getInstance();
-        if (mc != null && mc.player != null && prevSlot >= 0) AutismInventoryHelper.selectHotbarSlot(mc, prevSlot);
+        if (mc != null && mc.player != null && prevSlot >= 0) InventoryUtil.selectHotbarSlot(mc, prevSlot);
         prevSlot = -1;
         HeldSlotManager.clear(this);
     }
@@ -64,7 +64,7 @@ public final class HoleFillerModule extends Module {
         if (me == null || level == null || mc.gameMode == null || mc.gui.screen() != null) return;
 
         if (!HeldSlotManager.holds(this) && prevSlot >= 0) {
-            AutismInventoryHelper.selectHotbarSlot(mc, prevSlot);
+            InventoryUtil.selectHotbarSlot(mc, prevSlot);
             prevSlot = -1;
             return;
         }
@@ -110,10 +110,7 @@ public final class HoleFillerModule extends Module {
 
     private LivingEntity pickTarget(Minecraft mc, LocalPlayer me) {
         if (bool("onlyWithKillAura")) {
-            if (BossPvpAddon.killAura != null && BossPvpAddon.killAura.isEnabled()) {
-                return BossPvpAddon.killAura.currentTarget();
-            }
-            return null;
+            return com.boss.pvp.util.CombatManager.currentTarget(mc);
         }
         Player best = null;
         double bestDist = 36.0;
@@ -156,7 +153,7 @@ public final class HoleFillerModule extends Module {
         for (int i = 0; i <= 8; i++) {
             if (me.getInventory().getItem(i).is(block)) {
                 if (prevSlot < 0) prevSlot = me.getInventory().getSelectedSlot();
-                AutismInventoryHelper.selectHotbarSlot(mc, i);
+                InventoryUtil.selectHotbarSlot(mc, i);
                 return false;
             }
         }
@@ -164,7 +161,7 @@ public final class HoleFillerModule extends Module {
     }
 
     private void restoreSlot(Minecraft mc, LocalPlayer me) {
-        if (prevSlot >= 0) AutismInventoryHelper.selectHotbarSlot(mc, prevSlot);
+        if (prevSlot >= 0) InventoryUtil.selectHotbarSlot(mc, prevSlot);
         prevSlot = -1;
     }
 
@@ -172,9 +169,9 @@ public final class HoleFillerModule extends Module {
         if (legitAim == null) return;
         double ease = decimal("legitEase");
         if (ease <= 0) ease = LEGIT_EASE;
-        AutismRotationUtil.Rotation cur = AutismRotationUtil.playerRotation(me);
-        AutismRotationUtil.Rotation target = AutismRotationUtil.lookingAt(legitAim, me.getEyePosition());
-        AutismRotationUtil.Rotation eased = AutismRotationUtil.interpolate(cur, target, (float) ease);
-        AutismRotationUtil.apply(me, AutismRotationUtil.normalizeToSensitivity(eased, cur), false);
+        RotationUtil.Rotation cur = RotationUtil.playerRotation(me);
+        RotationUtil.Rotation target = RotationUtil.lookingAt(legitAim, me.getEyePosition());
+        RotationUtil.Rotation eased = RotationUtil.interpolate(cur, target, (float) ease);
+        RotationUtil.apply(me, RotationUtil.normalizeToSensitivity(eased, cur), false);
     }
 }

@@ -1,6 +1,6 @@
 package com.boss.pvp.util.pvp;
 
-import autismclient.util.AutismRotationUtil;
+import com.boss.pvp.util.pvp.RotationUtil;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -56,6 +56,101 @@ public final class PvpUtil {
     private static final Random RNG = new Random();
 
     private PvpUtil() {}
+
+    private static String cachedHostFriends;
+    private static String cachedLegacyFriends;
+    private static List<String> cachedFriends = List.of();
+
+    public static boolean hostEnabled(String id) {
+        var config = autismclient.util.AutismConfig.getGlobal();
+        var state = config == null || config.modules == null ? null : config.modules.get(id);
+        return state != null && state.enabled;
+    }
+
+    public static String hostSetting(String id, String key, String fallback) {
+        var config = autismclient.util.AutismConfig.getGlobal();
+        var state = config == null || config.modules == null ? null : config.modules.get(id);
+        if (state == null || state.settings == null) return fallback;
+        String value = state.settings.get(key);
+        return value == null ? fallback : value;
+    }
+
+    public static List<String> mergeFriendNames(String first, String second) {
+        var names = new java.util.LinkedHashMap<String, String>();
+        for (String source : new String[]{first, second}) {
+            if (source == null) continue;
+            for (String value : source.split("\\|")) {
+                String name = value.trim();
+                if (!name.isEmpty()) names.putIfAbsent(name.toLowerCase(Locale.ROOT), name);
+            }
+        }
+        return List.copyOf(names.values());
+    }
+
+    public static List<String> friendNames() {
+        String host = hostSetting("teams", "friends", "");
+        String legacy = hostSetting("bossaddon:pvp:killaura", "friends", "");
+        if (!host.equals(cachedHostFriends) || !legacy.equals(cachedLegacyFriends)) {
+            cachedFriends = mergeFriendNames(host, legacy);
+            cachedHostFriends = host;
+            cachedLegacyFriends = legacy;
+        }
+        return cachedFriends;
+    }
+
+    public static void migrateFriends() {
+        var config = autismclient.util.AutismConfig.getGlobal();
+        if (config == null || config.modules == null) return;
+        var legacy = config.modules.get("bossaddon:pvp:killaura");
+        var teams = config.modules.get("teams");
+        if (legacy == null || teams == null || legacy.settings == null || teams.settings == null) return;
+        String old = legacy.settings.get("friends");
+        if (old == null || old.isBlank()) return;
+        String previous = teams.settings.get("friends");
+        teams.settings.put("friends", String.join("|", mergeFriendNames(previous, old)));
+        legacy.settings.remove("friends");
+        try {
+            config.save();
+        } catch (Exception ex) {
+            legacy.settings.put("friends", old);
+            if (previous == null) teams.settings.remove("friends"); else teams.settings.put("friends", previous);
+            System.err.println("[BossAddon] Friend migration could not be saved; legacy protection remains active.");
+        }
+        cachedHostFriends = null;
+        cachedLegacyFriends = null;
+    }
+
+    public static boolean isProtectedPlayer(Minecraft mc, Player target) {
+        if (mc == null || mc.player == null || target == null || target == mc.player || target.isSpectator()) return true;
+        if (isFriend(target, friendNames())) return true;
+        if (!hostEnabled("teams") || !Boolean.parseBoolean(hostSetting("teams", "auto-teams", "false"))) return false;
+        return autoTeamsMatch(mc.player.isAlliedTo(target), nameColor(mc.player), nameColor(target),
+            helmetColor(mc.player), helmetColor(target));
+    }
+
+    public static boolean autoTeamsMatch(boolean allied, Integer ownName, Integer otherName,
+                                         Integer ownHelmet, Integer otherHelmet) {
+        return allied || ownName != null && ownName.equals(otherName)
+            || ownHelmet != null && ownHelmet.equals(otherHelmet);
+    }
+
+    private static Integer nameColor(Player player) {
+        var name = player.getDisplayName();
+        var color = name == null ? null : name.getStyle().getColor();
+        return color == null ? null : color.getValue();
+    }
+
+    private static Integer helmetColor(Player player) {
+        var helmet = player.getItemBySlot(EquipmentSlot.HEAD);
+        var color = helmet.isEmpty() ? null : helmet.get(DataComponents.DYED_COLOR);
+        return color == null ? null : color.rgb() & 0xFFFFFF;
+    }
+
+    public static void resetCaches() {
+        livingCacheTick = Long.MIN_VALUE;
+        livingCacheLevel = null;
+        livingCache.clear();
+    }
 
     public static long cpsDelayMs(int minCps, int maxCps) {
         double lo = Math.max(1, Math.min(minCps, maxCps));
@@ -140,6 +235,7 @@ public final class PvpUtil {
         for (int i = 0; i < living.size(); i++) {
             LivingEntity entity = living.get(i);
             if (entity == me || entity.isRemoved() || !entity.isAlive()) continue;
+            if (entity instanceof Player player && isProtectedPlayer(mc, player)) continue;
             if (!matchesEntity(entity, ids)) continue;
             if (entity.distanceToSqr(me) > rangeSq) continue;
             if (fov < 180.0 && angleTo(me, entity) > fov) continue;
@@ -199,9 +295,9 @@ public final class PvpUtil {
 
     public static void ghostSafeUseOn(Minecraft mc, LocalPlayer p, BlockHitResult hit) {
         if (mc == null || p == null || hit == null || mc.gameMode == null) return;
-        AutismRotationUtil.Rotation cur = AutismRotationUtil.playerRotation(p);
-        AutismRotationUtil.Rotation look = AutismRotationUtil.normalizeToSensitivity(
-            AutismRotationUtil.lookingAt(hit.getLocation(), p.getEyePosition()), cur);
+        RotationUtil.Rotation cur = RotationUtil.playerRotation(p);
+        RotationUtil.Rotation look = RotationUtil.normalizeToSensitivity(
+            RotationUtil.lookingAt(hit.getLocation(), p.getEyePosition()), cur);
         if (mc.getConnection() != null) {
             mc.getConnection().send(new ServerboundMovePlayerPacket.Rot(
                 look.yaw(), look.pitch(), p.onGround(), p.horizontalCollision));
@@ -216,15 +312,59 @@ public final class PvpUtil {
 
     public static void ghostSafeAttack(Minecraft mc, LocalPlayer p, Entity target, Vec3 lookPoint, boolean swing) {
         if (mc == null || p == null || target == null || mc.gameMode == null) return;
-        AutismRotationUtil.Rotation cur = AutismRotationUtil.playerRotation(p);
-        AutismRotationUtil.Rotation look = AutismRotationUtil.normalizeToSensitivity(
-            AutismRotationUtil.lookingAt(lookPoint, p.getEyePosition()), cur);
+        RotationUtil.Rotation cur = RotationUtil.playerRotation(p);
+        RotationUtil.Rotation look = RotationUtil.normalizeToSensitivity(
+            RotationUtil.lookingAt(lookPoint, p.getEyePosition()), cur);
         if (mc.getConnection() != null) {
             mc.getConnection().send(new ServerboundMovePlayerPacket.Rot(
                 look.yaw(), look.pitch(), p.onGround(), p.horizontalCollision));
         }
         mc.gameMode.attack(p, target);
         if (swing) p.swing(InteractionHand.MAIN_HAND);
+    }
+
+    public static boolean useHotbarItem(Minecraft mc, Object owner, int priority,
+                                        net.minecraft.world.item.Item item, float yaw, float pitch) {
+        if (mc == null || mc.player == null || mc.level == null || mc.gameMode == null
+                || mc.getConnection() == null || mc.gui.screen() != null || hostEnabled("hide")
+                || !mc.player.isAlive() || mc.player.isSpectator() || mc.player.isUsingItem()
+                || !Float.isFinite(yaw) || !Float.isFinite(pitch)) return false;
+        var player = mc.player;
+        InteractionHand hand = player.getOffhandItem().is(item) ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
+        int previous = player.getInventory().getSelectedSlot();
+        int selected = previous;
+        if (hand == InteractionHand.MAIN_HAND && !player.getMainHandItem().is(item)) {
+            selected = -1;
+            for (int i = 0; i < 9; i++) {
+                if (player.getInventory().getItem(i).is(item)) { selected = i; break; }
+            }
+            if (selected < 0) return false;
+        }
+        var stack = hand == InteractionHand.OFF_HAND ? player.getOffhandItem() : player.getInventory().getItem(selected);
+        if (player.getCooldowns().isOnCooldown(stack)
+                || !com.boss.pvp.util.input.HeldSlotManager.tryAcquire(owner, priority)) return false;
+        float oldYaw = player.getYRot();
+        float oldPitch = player.getXRot();
+        try {
+            if (hand == InteractionHand.MAIN_HAND) com.boss.pvp.util.InventoryUtil.selectHotbarSlot(mc, selected);
+            if (hand == InteractionHand.MAIN_HAND && player.getInventory().getSelectedSlot() != selected) return false;
+            player.setYRot(yaw);
+            player.setXRot(net.minecraft.util.Mth.clamp(pitch, -90.0f, 90.0f));
+            player.connection.send(new ServerboundMovePlayerPacket.Rot(player.getYRot(), player.getXRot(),
+                player.onGround(), player.horizontalCollision));
+            boolean used = mc.gameMode.useItem(player, hand).consumesAction();
+            if (used) player.swing(hand);
+            return used;
+        } finally {
+            player.setYRot(oldYaw);
+            player.setXRot(oldPitch);
+            player.connection.send(new ServerboundMovePlayerPacket.Rot(oldYaw, oldPitch, player.onGround(), player.horizontalCollision));
+            if (hand == InteractionHand.MAIN_HAND && selected != previous
+                    && player.getInventory().getSelectedSlot() == selected) {
+                com.boss.pvp.util.InventoryUtil.selectHotbarSlot(mc, previous);
+            }
+            com.boss.pvp.util.input.HeldSlotManager.clear(owner);
+        }
     }
 
     private static final EquipmentSlot[] TEAM_ARMOR_SLOTS =

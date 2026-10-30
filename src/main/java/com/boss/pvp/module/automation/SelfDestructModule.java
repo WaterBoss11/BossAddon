@@ -4,8 +4,7 @@ import com.boss.pvp.BossPvpAddon;
 
 import autismclient.modules.Module;
 import autismclient.api.module.*;
-import autismclient.util.AutismBindUtil;
-import autismclient.util.AutismInputGate;
+import com.boss.pvp.util.InputUtil;
 
 import com.boss.pvp.util.MenuMode;
 
@@ -53,9 +52,9 @@ public final class SelfDestructModule extends Module {
         if (mc.player == null || mc.level == null) return;
         LocalPlayer p = mc.player;
         int key = parseKey(value("triggerKey"));
-        if (key == -1 || !AutismInputGate.canRunAutismKeybinds()) { prevDown = false; return; }
+        if (key == -1 || !InputUtil.canRunKeybinds(mc)) { prevDown = false; return; }
 
-        boolean down = AutismBindUtil.isBindPressed(mc, key);
+        boolean down = InputUtil.isBindPressed(mc, key);
         boolean rising = down && !prevDown;
         prevDown = down;
         if (!rising) return;

@@ -7,8 +7,8 @@ import com.boss.pvp.util.MenuMode;
 
 import autismclient.modules.Module;
 import autismclient.api.module.*;
-import autismclient.util.AutismInventoryHelper;
-import autismclient.util.AutismRotationUtil;
+import com.boss.pvp.util.InventoryUtil;
+import com.boss.pvp.util.pvp.RotationUtil;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -49,7 +49,7 @@ public final class AutoClutchModule extends Module {
     @Override
     public void onDisable() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc != null && mc.player != null && prevSlot >= 0) AutismInventoryHelper.selectHotbarSlot(mc, prevSlot);
+        if (mc != null && mc.player != null && prevSlot >= 0) InventoryUtil.selectHotbarSlot(mc, prevSlot);
         prevSlot = -1;
         HeldSlotManager.clear(this);
     }
@@ -60,7 +60,7 @@ public final class AutoClutchModule extends Module {
         if (p == null || level == null || mc.gameMode == null || mc.gui.screen() != null) return;
 
         if (!HeldSlotManager.holds(this) && prevSlot >= 0) {
-            AutismInventoryHelper.selectHotbarSlot(mc, prevSlot);
+            InventoryUtil.selectHotbarSlot(mc, prevSlot);
             prevSlot = -1;
             return;
         }
@@ -117,15 +117,15 @@ public final class AutoClutchModule extends Module {
     }
 
     private void placeAt(Minecraft mc, LocalPlayer p, Hit h) {
-        AutismRotationUtil.Rotation cur = AutismRotationUtil.playerRotation(p);
-        AutismRotationUtil.Rotation look = AutismRotationUtil.normalizeToSensitivity(
-            AutismRotationUtil.lookingAt(h.vec(), p.getEyePosition()), cur);
+        RotationUtil.Rotation cur = RotationUtil.playerRotation(p);
+        RotationUtil.Rotation look = RotationUtil.normalizeToSensitivity(
+            RotationUtil.lookingAt(h.vec(), p.getEyePosition()), cur);
 
         if (mc.getConnection() != null) {
             mc.getConnection().send(new ServerboundMovePlayerPacket.Rot(
                 look.yaw(), look.pitch(), p.onGround(), p.horizontalCollision));
         }
-        if (!bool("silent")) AutismRotationUtil.apply(p, look, false);
+        if (!bool("silent")) RotationUtil.apply(p, look, false);
         mc.gameMode.useItemOn(p, InteractionHand.MAIN_HAND,
             new BlockHitResult(h.vec(), h.face(), h.neighbor(), false));
         p.swing(InteractionHand.MAIN_HAND);
@@ -140,7 +140,7 @@ public final class AutoClutchModule extends Module {
         int slot = pickSlot(p);
         if (slot < 0) return false;
         if (prevSlot < 0) prevSlot = p.getInventory().getSelectedSlot();
-        AutismInventoryHelper.selectHotbarSlot(mc, slot);
+        InventoryUtil.selectHotbarSlot(mc, slot);
         return false;
     }
 
@@ -163,7 +163,7 @@ public final class AutoClutchModule extends Module {
     }
 
     private void restoreSlot(Minecraft mc, LocalPlayer p) {
-        if (prevSlot >= 0) AutismInventoryHelper.selectHotbarSlot(mc, prevSlot);
+        if (prevSlot >= 0) InventoryUtil.selectHotbarSlot(mc, prevSlot);
         prevSlot = -1;
     }
 }
