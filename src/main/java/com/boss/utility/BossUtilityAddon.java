@@ -15,11 +15,14 @@ import com.boss.utility.module.player.AntiAfkModule;
 import com.boss.utility.module.player.AutoRespawnModule;
 import com.boss.utility.module.player.ChestSwapModule;
 import com.boss.utility.module.render.AmbienceModule;
+import com.boss.utility.module.render.ItemRenderCapModule;
+import com.boss.utility.itemrendercap.ItemRenderCap;
 import com.boss.utility.module.world.AutoBreedModule;
 import com.boss.utility.module.world.AutoMountModule;
 import com.boss.utility.module.world.AutoShearerModule;
 import com.boss.utility.module.world.NukerModule;
 
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.client.Minecraft;
 
 /**
@@ -46,6 +49,7 @@ public final class BossUtilityAddon extends AutismAddon {
     public static NotifierModule notifier;
     // Render
     public static AmbienceModule ambience;
+    public static ItemRenderCapModule itemRenderCap;
     // World
     public static AutoMountModule autoMount;
     public static AutoBreedModule autoBreed;
@@ -75,6 +79,7 @@ public final class BossUtilityAddon extends AutismAddon {
         chestSwap = new ChestSwapModule();
         notifier = new NotifierModule();
         ambience = new AmbienceModule();
+        itemRenderCap = new ItemRenderCapModule();
         autoMount = new AutoMountModule();
         autoBreed = new AutoBreedModule();
         autoShearer = new AutoShearerModule();
@@ -88,6 +93,7 @@ public final class BossUtilityAddon extends AutismAddon {
             chestSwap,
             notifier,
             ambience,
+            itemRenderCap,
             autoMount,
             autoBreed,
             autoShearer,
@@ -96,7 +102,7 @@ public final class BossUtilityAddon extends AutismAddon {
         };
         for (Module m : all) AutismAddons.modules().register(m);
         registeredModules = all;
-        // ChestSwap is a one-shot; everything else is driven per-tick below.
+        // ChestSwap is a one-shot; Item Render Cap uses extraction hooks, not tick dispatch.
         tickables = all;
 
         // BossAddon halves: register this half with the group toggle (?bossaddon utility on|off) and apply
@@ -111,6 +117,7 @@ public final class BossUtilityAddon extends AutismAddon {
         com.boss.utility.flag.FlagReporter.init();
 
         AutismAddons.events().onTick(BossUtilityAddon::onClientTick);
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> ItemRenderCap.reset());
     }
 
     /** "Name (Category)" for each currently-enabled BossUtility module — the flag reporter's module snapshot. */

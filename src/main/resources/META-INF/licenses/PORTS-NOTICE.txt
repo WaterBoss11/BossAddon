@@ -36,4 +36,12 @@ AUTISM Client
 Native compatibility utilities are adapted from the supplied GPL-3.0 source,
 without relying on renamed internal client helper classes.
 
+Boss Optimizations / Item Render Cap
+Copyright (c) 2026 Item Render Cap contributors. MIT notice: BossOptimizations-MIT.txt.
+Upstream: https://github.com/WaterBoss11/boss-optimizations
+Reference revision: 6707d67b15741fe9c36d94a1356e7c78ef9d9780.
+Item grouping/selection, tests, crosshair exemption and render hooks are adapted.
+The addon uses native module settings and its own half/frame lifecycle; no donor
+configuration loader, startup entrypoint or Book Safety module is included.
+
 BossAddon's GNU GPL version 3 license accompanies this artifact.

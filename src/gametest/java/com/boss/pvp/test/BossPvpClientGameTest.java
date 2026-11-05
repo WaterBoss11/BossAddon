@@ -38,7 +38,7 @@ public final class BossPvpClientGameTest implements FabricClientGameTest {
     public void runTest(ClientGameTestContext context) {
         BossQaIsolation.profile();
         String batch = System.getProperty("boss.qa.batch", "registration");
-        BossQaIsolation.require(batch.equals("registration") || batch.equals("fixtures") || batch.equals("autoclutch") || batch.equals("damage-controls") || batch.equals("deferred-attacks") || batch.equals("automace-native") || batch.equals("automace-support-native"),
+        BossQaIsolation.require(batch.equals("registration") || batch.equals("fixtures") || batch.equals("autoclutch") || batch.equals("damage-controls") || batch.equals("deferred-attacks") || batch.equals("automace-native") || batch.equals("automace-support-native") || batch.equals("item-render-cap"),
                 "Unknown QA batch (no silent fallback): " + batch);
         result.addProperty("schema", "boss-qa-v1");
         result.addProperty("runId", BossQaIsolation.profile().getFileName().toString());
@@ -82,7 +82,12 @@ public final class BossPvpClientGameTest implements FabricClientGameTest {
                 runCase("registered-identities-18-new-and-5-retained", () -> context.runOnClient(BossQaModules::checkRegistration));
                 runCase("reporting-and-bosschat-disabled-log-capture", () -> context.runOnClient(client -> BossQaModules.checkDisabledReporting()));
                 runCase("offline-enable-disable-cleanup-only", () -> context.runOnClient(BossQaModules::checkSafeLifecycle));
-                if (!batch.equals("registration")) runWorldBatch(context, batch);
+                if (batch.equals("item-render-cap")) {
+                    try (TestSingleplayerContext world = context.worldBuilder().setUseConsistentSettings(true).create()) {
+                        world.getClientLevel().waitForChunksDownload();
+                        runCase("item-cap-client-adapter-frame-and-lifecycle", () -> context.runOnClient(BossQaItemRenderCap::check));
+                    }
+                } else if (!batch.equals("registration")) runWorldBatch(context, batch);
             }
             runCase("real-disconnected-vanilla-title-state", () -> {
                 context.setScreen(TitleScreen::new);

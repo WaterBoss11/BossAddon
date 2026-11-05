@@ -26,7 +26,7 @@
 # look identical. Jar is bossaddon-<version>.jar.
 # The local config FILE stays "boss-pvp.properties", and module ids are scoped under the fabric mod id
 # ("bossaddon:pvp:*" / "bossaddon:utility:*") — AUTISM 3.4 rejects any module whose id doesn't start with it.
-mod-version = "2-pre.1"
+mod-version = "2-pre.2"
 
 minecraft = "26.2"
 fabric-loader = "0.19.3"

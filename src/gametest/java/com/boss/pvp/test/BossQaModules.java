@@ -63,6 +63,15 @@ final class BossQaModules {
             String suffix = module.id().substring(module.id().lastIndexOf(':') + 1);
             BossQaIsolation.require(!RETIRED_IDS.contains(suffix), "Retired addon module still registered: " + module.id());
         }
+        BossQaIsolation.require(modules.size() == 53, "Expected 41 PvP + 12 utility modules");
+        BossQaIsolation.require(modules.keySet().stream().filter(id -> id.startsWith("bossaddon:utility:")).count() == 12,
+                "Utility module count differs from the release manifest");
+        Module cap = modules.get("bossaddon:utility:itemrendercap");
+        BossQaIsolation.require(cap != null && !cap.isEnabled(), "Item Render Cap must register disabled");
+        Map<String, Object> capDefaults = new LinkedHashMap<>();
+        cap.settings().forEach(setting -> capDefaults.put(setting.id(), setting.defaultValueTyped()));
+        BossQaIsolation.require(capDefaults.equals(Map.of("maxPerGroup", 5, "cellWidth", 4.0D)),
+                "Item Render Cap setting IDs/defaults differ: " + capDefaults);
         registered = Map.copyOf(modules);
         Module clutch = require(modules, "autoclutch");
         try {

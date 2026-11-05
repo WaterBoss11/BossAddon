@@ -17,8 +17,8 @@
 [![Issues](https://img.shields.io/github/issues/WaterBoss11/BossAddon)](https://github.com/WaterBoss11/BossAddon/issues)
 
 BossAddon complements the main client's combat modules instead of registering duplicate auras,
-armor/totem managers, scaffold, or render controls. This version has **52 modules across its two halves**,
-including the existing guards/reporting controls, and eight HUD providers. It adds **19 modules** and
+armor/totem managers, scaffold, or overlapping render controls. This version has **53 modules across its two halves** (41 PvP + 12 utility),
+including the existing guards/reporting controls, and eight HUD providers. It adds **20 modules** and
 upgrades AutoWeapon, AutoHook, AutoShoot, and InvManager. **AutoClutch is intentionally retained.**
 
 New modules start **disabled**. Existing settings and enabled states are retained for surviving modules.
@@ -27,6 +27,31 @@ Use only one BossAddon jar at a time, matched to the host version below.
 > [!WARNING]
 > Server rules and server-side validation still apply. Experimental movement can be rejected or corrected;
 > no anticheat compatibility is guaranteed. Test settings in a local world before using them elsewhere.
+
+## New optimization: Item Render Cap
+
+**BossUtility → Item Render Cap** is a disabled-by-default port from
+[Boss Optimizations](https://github.com/WaterBoss11/boss-optimizations/tree/6707d67b15741fe9c36d94a1356e7c78ef9d9780).
+It rejects excess dropped-item renders before render-state extraction; it does not remove items,
+change their state, send packets, or alter ticking, picking, pickup, merging or despawning.
+
+- **Items per cell:** default **5**, configurable **0–128**. Zero hides all but the crosshair exemption.
+- **Cell width:** default **4 blocks**, configurable **0.5–128**. Cells are grid-aligned cubes, not radius groups.
+  Full coordinate tuples keep cells independent, fixing an inherited hash collision between mirrored cells.
+- Higher entity IDs win, favoring newer drops while server IDs increase normally. An aimed-at item within
+  the donor's 32-block visual ray is exempt and can add **one extra item**. This ray ignores walls and does
+  not modify Minecraft's hit result. Selection includes offscreen items.
+- Membership and settings are snapshotted once per extraction frame, never on a timer or midway through
+  item queries. Enable/disable, disconnect and world replacement clear stale selection.
+- Disabling the utility half makes it inert immediately. Turning the half back on restores only previously
+  enabled modules, without changing their settings or any host/PvP modules.
+- If standalone Fabric mod **`bossoptimizations`** is installed, the addon cap does **no selection work**,
+  even if that mod's cap is disabled. Configure one owner; no donor settings are read or changed.
+
+This trades a per-frame item scan/ray test for fewer extracted/rendered item states in dense piles.
+**No FPS improvement is promised or benchmarked.** Moving items crossing cell boundaries can still change
+selection; Sodium/Iris combinations and native gameplay have not been verified for this port.
+The donor's full MIT notice is packaged with BossAddon; the addon remains GPL-3.0.
 
 ## New movement modules
 
@@ -168,14 +193,24 @@ replacement modules or its panic/HUD settings.
 
 ## Verification scope
 
-Both prerelease builds pass the unit suite and compiled client-API reference checks. Isolated API3 gameplay
+### v2-pre.2 (November 5, 2026)
+
+Only the **Client 5.0 / API3** artifact is built for this release. All **463 unit tests** pass;
+release packaging and compiled game-test checks pass. Detailed verification results are
+recorded in [RELEASE-NOTES-2-pre.2.md](RELEASE-NOTES-2-pre.2.md). The local API4 dependency was unavailable,
+so **no unchecked API4 artifact is published**. The new item-cap game-test batch is compile-checked only;
+no new gameplay, server pickup/despawn, Sodium/Iris or FPS benchmark result is claimed.
+
+### Historical v2-pre.1 evidence (not rerun gameplay for this release)
+
+Both v2-pre.1 builds passed the unit suite and compiled client-API reference checks. Isolated API3 gameplay
 checks also confirmed real AutoClutch placement/consumption/landing/restoration; exactly-once deferred weapon
 attacks and cancellation; native AimAssist movement without enabling it or changing saved settings; real
 falling AutoMace damage; and native Lunge-enchantment movement, durability/exhaustion costs and slot restoration.
 Additional support checks confirmed genuine shield-disable axe→mace follow-up, independent axe-preparation
 mace hits, and a real spear-range jab without any out-of-range mace attack. The negative, cancellation,
-preemption and protected-bystander cases remain part of those fixtures. The complete unit suite currently
-has **430 passing tests**, and both jars resolve their checked client API references on both host versions.
+preemption and protected-bystander cases remain part of those fixtures. That release's complete unit suite
+had **430 passing tests**, and both prior jars resolved their checked client API references on both host versions.
 
 These are **targeted checks, not a claim that every module/mode is gameplay-verified**. V4's own Discord/
 donator authentication gate prevented full in-world API4 QA and was not bypassed. Fabric's pre-existing
@@ -186,12 +221,13 @@ even where native assertions pass and the test JVM exits zero. Raw diagnostics a
 
 | Jar version | Client | API |
 |---|---|---|
+| [bossaddon-2-pre.2+client5.0.jar](https://github.com/WaterBoss11/BossAddon/releases/download/v2-pre.2/bossaddon-2-pre.2%2Bclient5.0.jar) | AUTISM Client 5.0 (new item cap) | v3 |
 | [bossaddon-2-pre.1.jar](https://github.com/WaterBoss11/BossAddon/releases/download/v2-pre.1/bossaddon-2-pre.1.jar) | AUTISM Client V4 / 5.1 | v4 |
 | [bossaddon-2-pre.1+client5.0.jar](https://github.com/WaterBoss11/BossAddon/releases/download/v2-pre.1/bossaddon-2-pre.1%2Bclient5.0.jar) | AUTISM Client 5.0 | v3 |
 
 The default source target is `5.1-26.2`; the API declaration is capped to what the host supports. Direct and
 inherited client references must still be checked on both hosts; an API-version number alone is not enough.
-**v2-pre.1 is a prerelease.** The stable release badge may still point to an older version; use the
+**v2-pre.2 is a prerelease and is API3-only.** API4 users can retain v2-pre.1, which does not include this port. The stable release badge may still point to an older version; use the
 versioned downloads above. Install only one jar, and back up your existing BossAddon configuration first.
 
 ## Build
@@ -200,15 +236,22 @@ Place the matching local host API jar in `libs/`: `autism-5.1-26.2.jar` by defau
 `autism-5.0-26.2-dev.jar` for the API-v3 build. Dependency jars are ignored by Git.
 
 ```powershell
-$env:JAVA_HOME = "$env:USERPROFILE\.jdks\ms-25.0.4"
+$env:JAVA_HOME = "C:\path\to\your\jdk-25" # replace with your installed JDK 25 directory
 .\gradlew.bat test --offline
 .\gradlew.bat build --offline
 ```
 
-The output is `build/libs/bossaddon-<version>.jar`. For a client-5.0 artifact, select
-`autism = "5.0-26.2-dev"` and suffix `mod-version` with `+client5.0` in
-`gradle/libs.versions.toml`, then rebuild. Restore the default `5.1-26.2` selector and unsuffixed version
-when finished. Use Java 25, not a PATH-provided Java 17. Offline builds require the dependencies to be cached.
+The output is `build/libs/bossaddon-<version>.jar`. Build the Client 5.0 release without editing the catalog:
+
+```powershell
+.\gradlew.bat --offline -PhostClientVersion=5.0-26.2-dev -PaddonVersion=2-pre.2+client5.0 build compileGametestJava
+```
+
+The overrides select the dependency and artifact/resource version independently. The default catalog keeps
+`5.1-26.2` / `2-pre.2` for API4 source compatibility, but needs that real local host jar to verify a build.
+Use Java 25, not an older PATH-provided Java. Offline builds require cached dependencies; omit `--offline`
+on the first build to fetch the declared public dependencies. Do not run `deploy.ps1` for verification:
+it targets a live mods folder and an obsolete hardcoded jar name.
 
 Unit tests cover decision math/state and are not a substitute for gameplay checks. The separate gametest
 source set uses fresh isolated profiles, disabled reporting/BossChat, and real server-owned fixtures.
@@ -406,5 +449,5 @@ if GitHub is unreachable or the check fails for any reason it fails silently and
 
 ## License
 
-GPL-3.0 — see [LICENSE](LICENSE). Donor notices, including the Nami/Sydney MIT terms and the stated
+GPL-3.0 — see [LICENSE](LICENSE). Donor notices, including the Boss Optimizations/Nami/Sydney MIT terms and the stated
 Krispy/Shoreline permission basis, are packaged under [META-INF/licenses](src/main/resources/META-INF/licenses).

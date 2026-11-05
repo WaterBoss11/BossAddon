@@ -4,7 +4,7 @@ plugins {
 
 base {
     archivesName = properties["archives_base_name"] as String
-    version = libs.versions.mod.version.get()
+    version = providers.gradleProperty("addonVersion").orElse(libs.versions.mod.version).get()
     group = properties["maven_group"] as String
 }
 
@@ -25,7 +25,7 @@ dependencies {
     implementation(libs.fabric.api)
 
     // The AUTISM Client API — resolved from libs/autism-<version>.jar via the flatDir repo above.
-    implementation(libs.autism)
+    implementation("com.autismclient:autism:${providers.gradleProperty("hostClientVersion").orElse(libs.versions.autism).get()}")
 
     // Unit testing. NOTE: fabric-loader-junit was tried first (per the usual Fabric guide) but its global
     // JUnit LauncherSessionListener boots the Fabric loader (Knot) for every test and fails with "No game

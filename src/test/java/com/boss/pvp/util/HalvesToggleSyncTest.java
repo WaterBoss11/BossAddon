@@ -93,6 +93,31 @@ class HalvesToggleSyncTest {
     }
 
     @Test
+    void utilityItemCapRestoresOnlyItsEnabledStateWithoutTouchingOtherHalves() {
+        if (!AddonHalves.utilityOn()) AddonHalves.setHalf(AddonHalves.UTILITY, true);
+        FakeModule cap = new FakeModule("bossaddon:utility:itemrendercap", true);
+        FakeModule ambience = new FakeModule("bossaddon:utility:ambience", false);
+        FakeModule pvp = new FakeModule("bossaddon:pvp:reach", true);
+        FakeModule host = new FakeModule("norender", true);
+        AddonHalves.setModuleSource(() -> List.of(cap, ambience, pvp, host));
+        try {
+            AddonHalves.setHalf(AddonHalves.UTILITY, false);
+            assertFalse(cap.enabled);
+            assertTrue(pvp.enabled);
+            assertTrue(host.enabled);
+            AddonHalves.setHalf(AddonHalves.UTILITY, true);
+            assertTrue(cap.enabled);
+            assertFalse(ambience.enabled);
+            assertEquals(1, cap.disables);
+            assertEquals(1, cap.enables);
+            assertEquals(0, pvp.disables);
+            assertEquals(0, host.disables);
+        } finally {
+            if (!AddonHalves.utilityOn()) AddonHalves.setHalf(AddonHalves.UTILITY, true);
+        }
+    }
+
+    @Test
     void parseSavedRoundTrips() {
         assertTrue(AddonHalves.parseSaved("").isEmpty());
         assertTrue(AddonHalves.parseSaved(null).isEmpty());
